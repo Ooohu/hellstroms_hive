@@ -811,6 +811,7 @@ int convertToLibSVM(bdt_info &info, bdt_file *signal_file, bdt_file *background_
 
 int bdt_XGtrain(std::string dir, bdt_info &info){
 	bool print_message = true;
+	bool print_train_info = false;
 
     std::string const name = info.identifier;
 
@@ -928,9 +929,12 @@ int bdt_XGtrain(std::string dir, bdt_info &info){
             iteration.push_back(i);
 
 			if(print_message){ 
-//				std::cout<<"RES "<<res<<std::endl;
-				std::cout<<"\rTraining BDT trees: "<<i+1<<"/"<<n_trees;
-				std::cout.flush();
+				if(print_train_info){				
+					std::cout<<"RES "<<res<<std::endl;
+				}else{
+					std::cout<<"\rTraining BDT trees: "<<i+1<<"/"<<n_trees;
+					std::cout.flush();
+				}
 			}
 //            printf("%s\n", eval_result);
 
@@ -1277,15 +1281,14 @@ int bdt_XGtrain(std::string dir, bdt_info &info){
         std::vector<size_t> sorted_by_total_gain = sort_indexes<double>(total_gain);
         std::vector<size_t> sorted_by_mean_gain = sort_indexes<double>(mean_gain);
         std::vector<size_t> sorted_by_uses = sort_indexes<int>(variable_uses);
-
-        /* 
+/*
            for(int i = 0; i < sorted_by_uses.size(); i++){
            std::cout<<"sorted_by_uses["<<i<<"] = "<<sorted_by_uses[i]<<std::endl;
            }
            for(int i = 0; i < info.train_vars.size(); i++){
            std::cout<<i<<":  "<<info.train_vars[i].unit<<std::endl;
            }
-           */
+		   */
 
         TCanvas cuses("","",3000,1200);
         cuses.cd();

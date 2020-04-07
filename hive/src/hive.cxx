@@ -1140,6 +1140,7 @@ else if(mode_option == "eff2"){
 //
 
 }else if(mode_option == "sbnfit"){
+	gadget_buildfolder(analysis_tag+"_sbnfit");
     if(which_stage==-1) which_stage ==1;
     if(which_file==-1){
         for(size_t f =0; f< bdt_files.size(); f++){
