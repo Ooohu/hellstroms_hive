@@ -312,6 +312,8 @@ int main (int argc, char *argv[]){
                 std::cout<<" -- For the purposes of calculting a significance, this is a signal file"<<std::endl;
 				bdt_files[f]->is_signal = true;
                 signal_bdt_files.push_back(bdt_files.back());
+//				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");
+//            f->addFriend("sss_precalc",analysis_tag+"_"+f->tag+"_SSSprecalc.root");
             }else{
 				bdt_files[f]->is_signal = false;
                 std::cout<<" -- For the purposes of calculting a significance, this is a BKG file"<<std::endl;
@@ -322,8 +324,12 @@ int main (int argc, char *argv[]){
         if(XMLconfig.bdt_is_training_signal[f]){//Mark training files
 //            incl_in_stack = false;
             training_bdt_files.push_back(bdt_files.back());
+//				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");//CHECK
         }
-
+		
+	if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-3,3,"nue")==0){ 
+			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root_Nue_mBtouB_weights.root");
+		}
 
 //        bdt_files.back()->calcPOT();
 

@@ -265,11 +265,12 @@
 
 <!--<precut def = "reco_track_displacement<85&amp;&amp;reco_track_displacement>65" name = "track cut"/>-->
 <!--
+<precut def = "miniPI0_mva>0.33 &amp;&amp; miniPI0_mva<0.66" name = " BDT cut"/>
 <precut def = "el.EnuQE<1250&amp;&amp;el.EnuQE>200" name = "EnuQE Cut"/>
-<precut def = "miniPI0_mva<0.33" name = " BDT cut"/>
-<precut def = "miniPI0_mva<0.33" name = " BDT cut"/>
+<precut def = "miniPI0_mva<0.5" name = " BDT cut"/>
 -->
 <precut def = "el.EnuQE>200" name = "EnuQE Cut"/>
+<precut def = "miniPI0_mva<0.66 &amp;&amp; miniPI0_mva >0.33" name = " BDT cut"/>
 
 
 <!--
@@ -279,21 +280,23 @@
 
 <!-- ============================================== Variables, BDT training and otherwise ====================================== -->
 
-<var def = "el.R" binning="(12,0,600)" unit = "R [cm]" type = "d" logplot = "false"  training = "012" group = "1"/>
-<var def = "el.X" binning="(20,-600,600)" unit = "X [cm]" type = "d" logplot = "false"  training = "012"/>
-<var def = "el.Y" binning="(20,-600,600)" unit = "Y [cm]" type = "d" logplot = "false"  training = "012"/>
-<var def = "el.Z" binning="(20,-600,600)" unit = "Z [cm]" type = "d" logplot = "false"  training = "012"/>
+<var def = "el.R" binning="(12,0,600)" unit = "R [cm]" type = "d" logplot = "false"  training = "0" group = "1"/>
+<var def = "el.X" binning="(20,-600,600)" unit = "X [cm]" type = "d" logplot = "false"  training = "0"/>
+<var def = "el.Y" binning="(20,-600,600)" unit = "Y [cm]" type = "d" logplot = "false"  training = "0"/>
+<var def = "el.Z" binning="(20,-600,600)" unit = "Z [cm]" type = "d" logplot = "false"  training = "0"/>
 <var def = "el.EnuQE" binning="(24,100,1300)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1"/>
-<var def = "el.E" binning="(24,100,1300)" unit = "Energy [MeV]" type = "d" logplot = "false"  training = "012" group = "1"/>
+<var def = "el.EnuQE" binning="(24,100,1300)" unit = "E_{#nu}^{QE} [MeV](log)" type = "d" logplot = "true"  training = "" group = "1"/>
+<var def = "el.E" binning="(24,100,1300)" unit = "Energy [MeV]" type = "d" logplot = "false"  training = "0" group = "1"/>
 
-<!--6 is below-->
-<var def = "el.UZ" binning="(20,0.8,1)" unit = "cos#theta" type = "d" logplot = "false"  training = "012" group = "1"/>
+<!--7 is below-->
+<var def = "el.UZ" binning="(20,-1,1)" unit = "cos#theta" type = "d" logplot = "false"  training = "012" group = "1"/>
+<var def = "el.UZ" binning="(20,0.8,1)" unit = "cos#theta (zoome-in)" type = "d" logplot = "false"  training = "012" group = "1"/>
 <var def = "el.UY" binning="(8,-1,1)" unit = "UY" type = "d" logplot = "false"  training = "012"/>
 <var def = "el.UX" binning="(8,-1,1)" unit = "UX" type = "d" logplot = "false"  training = "012"/>
-<var def = "sqrt(pow(el.UY,2)+pow(el.UX,2))" binning="(8,-1,1)" unit = "#sqrt{UY^{2}+UX^{2}}" type = "d" logplot = "false"  training = ""/>
+<var def = "sqrt(pow(el.UY,2)+pow(el.UX,2))" binning="(8,0,1)" unit = "#sqrt{UY^{2}+UX^{2}}" type = "d" logplot = "false"  training = ""/>
 
-<var def = "mu.F - el.F" binning= "(20,-0.1,1)" unit ="electron/muon log likelihood" type = "d" logplot = "false"  training = "012" group ="1"/>
-<var def = "piFix.F - el.F" binning= "(20,-0.08,0.08)" unit ="electron/pion log likelihood" type = "d" logplot = "false"  training = "012" group ="1"/>
+<var def = "mu.F - el.F" binning= "(20,-0.1,1)" unit ="electron/muon log likelihood" type = "d" logplot = "false"  training = "" group ="1"/>
+<var def = "piFix.F - el.F" binning= "(20,-0.08,0.08)" unit ="electron/pion log likelihood" type = "d" logplot = "false"  training = "" group ="1"/>
 <!--
 <var def = "piNoFix.E1" binning="(24,100,1300)" unit = "pi0NoFix Energy1 [MeV]" type = "d" logplot = "false"  training = "0"/>
 <var def = "piFix.E1" binning="(24,100,1300)" unit = "pi0Fix Energy1 [MeV]" type = "d" logplot = "false"  training = "0"/>
@@ -303,8 +306,8 @@
 <var def = "piFix.E1+piFix.E2" binning="(24,100,1300)" unit = "pi0Fix Energy1+2 [MeV]" type = "d" logplot = "false"  training = "0"/>
 <var def = "el.E/el.EnuQE" binning="(10,0,1.5)" unit = "Energy/E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "01"/>
 -->
-
-<var def = "miniPI0_mva" binning = "(20,0,1.1)" unit = "PI0 BDT Score" type="d" training= "" logplot="false" group = "2"/> 
+<!--13-->
+<var def = "miniPI0_mva" binning = "(24,-0.1,1.1)" unit = "PI0 BDT Score" type="d" training= "" logplot="false" group = "2"/> 
 <var def = "miniPI0_mva" binning = "(20,0,1.1)" unit = "PI0 BDT Score (log)" type="d" training= "" logplot="true" group = "2"/> 
 <!--
 <var def = "miniNCPI0_mva" binning = "(20,0,1.1)" unit = "NCPI0 BDT Score" type="d" training= "" logplot="false" group = "1"/> 
@@ -314,6 +317,8 @@
 <var def = "miniDELTA_mva" binning = "(15,0,1.1)" unit =  "DELTA BDT Score log" type="d" training= "" logplot="true" group = "1"/> 
 <var def = "miniCOHPI0_mva" binning = "(15,0,1.1)" unit = "COHPI0 BDT Score log" type="d" training= "" logplot="true" group = "1"/> 
 -->
+<var def = "el.RtoWallB" binning="(20,0,1000)" unit = "R to Wall backward[cm]" type = "d" logplot = "false"  training = "0" group = "1"/>
+
 <alias key="vlen" value ="sqrt(el.X*el.X+el.Y*el.Y+el.Z*el.Z)"/><!--vector length-->
 <alias key="cvlen" value ="sqrt(pow(el.UX-el.X,2)+pow(el.UY-el.Y,2)+pow(el.UZ-el.Z,2))"/>
 <!--

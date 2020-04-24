@@ -411,11 +411,9 @@ int convertToLibSVMTT(
     size_t next_entry_sig_test = signal_file_test->precut_list->GetEntry(0);
     size_t num_sig_test = 0;
     while(num_sig_test < signal_file_test->precut_list->GetN()){
-
         signal_file_test->tvertex->GetEntry(next_entry_sig_test);
         sig_weight_test->GetNdata();
         double wei = sig_weight_test->EvalInstance();
-
         if(wei<0 || wei!=wei || isinf(wei) ){
              std::cout<<"WARNING WARNING, the weight here is "<<wei<<std::endl;
             std::cout<<"Setting to 1 for now, investigate!"<<std::endl;

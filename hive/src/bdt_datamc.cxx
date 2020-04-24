@@ -203,6 +203,7 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
         std::cout<<"Need min 2 vars to make DataMinusMC 2D plots, try again!"<<std::endl;
         return 0;
     }
+	bool count_signal = false;
 
     double plot_pot=data_file->pot;
     if(stack_mode) plot_pot = stack_pot;
@@ -266,7 +267,7 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
 					
 					bool copy_this = true;
 					for(auto &f: mc_stack->stack){//introduce MC's and substract them from d0;
-
+						if(!count_signal && f->is_signal) continue;
 						std::cout<<"Stack "<<f->tag<<" level "<<s<<std::endl;
 						
 
@@ -395,7 +396,11 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
 					TLegend *legend = new TLegend(0, 0.1,0.8,0.2);
 					legend->SetNColumns(2);
 					legend->AddEntry(projected_datay, "Data","P");
-					legend->AddEntry(projected_MCy, "MC = BkgMC + Best Fit","F");
+					if(count_signal){
+					legend->AddEntry(projected_MCy, "MC = BkgMC+bestFit","F");
+					} else{
+					legend->AddEntry(projected_MCy, "MC = BkgMC","F");
+					}
 					legend->Draw();
 
                     std::cout<<"Writing png and pdf."<<std::endl;
