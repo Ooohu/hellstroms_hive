@@ -327,10 +327,24 @@ int main (int argc, char *argv[]){
 //				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");//CHECK
         }
 		
-	if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-3,3,"nue")==0){ 
-			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root_Nue_mBtouB_weights.root");
+	if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-3,3,"Nue")==0){ 
+//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root_Nue_mBtouB_weights.root");
+//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights.root");
+//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights_1499.root");
+//		    bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights_1699.root");
+		    bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/weights_Nue_1699.root");
 		}
+	
+	if(bdt_files[f]->tag.compare("fulloscTrain")==0){ 
+		    bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/fullosc_step_weights.root");
+	}
+	if(bdt_files[f]->tag.compare("FulloscTrain")==0){ 
+		    bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/weights_Nue_fullosc.root");
+	}
 
+	if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-4,4,"Numu")==0){ 
+			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Numu_3_weights_1499.root");
+		}
 //        bdt_files.back()->calcPOT();
 
         //std::string r1 = "run_number>=5121 && run_number <=5946";
@@ -766,8 +780,8 @@ int main (int argc, char *argv[]){
 
         if (vector != ""){//if passed specific variables
             std::vector<bdt_variable> tmp_var =  real_datamc.GetSelectVars(vector, vars);
-//            real_datamc.plot2D(ftest, tmp_var, fbdtcuts);
 			real_datamc.plot2D_DataMinusMC(ftest, tmp_var, fbdtcuts);
+            real_datamc.plot2D(ftest, tmp_var, fbdtcuts);
         }else{
             real_datamc.plot2D(ftest, vars, fbdtcuts); //warning this will make a lot of plots
         }//if passed a vector

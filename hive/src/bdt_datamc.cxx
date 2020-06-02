@@ -203,7 +203,7 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
         std::cout<<"Need min 2 vars to make DataMinusMC 2D plots, try again!"<<std::endl;
         return 0;
     }
-	bool count_signal = false;
+	bool count_signal = true;
 
     double plot_pot=data_file->pot;
     if(stack_mode) plot_pot = stack_pot;
@@ -390,7 +390,7 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
 					std::string pot_unit_s = "e20";
 					std::string pot_draw = data_file->topo_name+" "+to_string_prec(plot_pot/pot_unit,1)+ pot_unit_s+" POT";
 					std::string description = "Stage " + std::to_string(s)+" "+stage_names[s];
-					pottex.DrawLatex(.10,.40, description.c_str());
+//					pottex.DrawLatex(.10,.40, description.c_str());
 					pottex.DrawLatex(.20,.30, pot_draw.c_str());
 					//legend
 					TLegend *legend = new TLegend(0, 0.1,0.8,0.2);
@@ -576,6 +576,9 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 	bool print_message = true;
 	bool debug_message = true;
+	bool label_removal = true;//remove title and ratio portion;
+	bool disable_number = false;//remove number of events
+
 	double plot_pot=data_file->pot;
 //	if(stack_mode) plot_pot = stack_pot;//always false for now;
 
@@ -681,7 +684,8 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			std::string temp_data_name = std::to_string(stage)+"_d0_"+std::to_string(bdt_cuts[stage])+"_"+data_file->tag+"_"+var.safe_name;
 			TH1* d0 = (TH1*)data_file->getTH1(var, "1", temp_data_name, plot_pot);//Data points.
 
-			TLegend *l0 = new TLegend(0.14,0.65,0.89,0.89);//Legend
+			TLegend *l0; 
+			l0= new TLegend(0.14,0.65,0.89,0.89);//Legend
 //			TH1* leg_hack = (TH1*)tsum->Clone(("leg_tmp_tsum"+std::to_string(stage)).c_str());//legend?
 //			std::vector<TH1F*> fake_legend_hists;
 			
@@ -728,7 +732,11 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				tsum_name = var.covar_legend_name.c_str();
 				legend_style = "fl";
 			}else{
+				if(disable_number){
+					tsum_name = "All MC with Stats-Only Error ";
+				} else{
 				tsum_name = "All MC with Stats-Only Error "+ to_string_prec(total_MC_events,2);
+				}
 				legend_style = "le";
 			}
 			if(debug_message) std::cout<<"Total MC:"<<total_MC_events<<", total MCbkg:"<<total_MCbkg_events<<", data:"<<NdatEvents<<std::endl;
@@ -778,7 +786,11 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				//Top TPad
 			pad0top->SetBottomMargin(0); // Upper and lower plot are joined
 			if(var.is_logplot){//adjust the Maximum y of the plot
-				pad0top->SetLogy();
+				if(label_removal){
+					cobs->SetLogy();
+				}else{
+					pad0top->SetLogy();
+				}
 				max_modifier=1000.0;
 				min_val = 0.1;
 			}else{
@@ -837,12 +849,21 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				TString string_events = f->plot_name+" "+to_string_prec(Nevents,2);//legend name
 				if(do_subtraction && subtraction_vec[jndex]) string_events+=" (Subtracted)";
 
-				l0->AddEntry(temp_histogram,string_events,"f");
+				if(disable_number){
+					l0->AddEntry(temp_histogram, (f->plot_name).c_str(),"f");
+				}else{
+					l0->AddEntry(temp_histogram,string_events,"f");
+				}
 
 //				if(mc_stack->signal_on_top[n]) which_signal = n;//currently, only 1 signal sample is allowed, delete CHECK, not necessary
 			}
+
 			l0->AddEntry(tsum, tsum_name, legend_style);
-			l0->AddEntry(d0,(data_file->plot_name+" "+to_string_prec(NdatEvents,2)).c_str(),"lp");
+			if(disable_number){
+				l0->AddEntry(d0,(data_file->plot_name).c_str(),"lp");
+			}else{
+				l0->AddEntry(d0,(data_file->plot_name+" "+to_string_prec(NdatEvents,2)).c_str(),"lp");
+			}
 
 			//STEP 2.2.C.2: Bottom Plot
 				//ratio_data [ratio numerator], ratio_bkgMC [ratio denomenator, need to evaluate here], ratunit[shade region, inversely proportional to total MC number], ratio_data_err [error for ratio]
@@ -889,7 +910,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 			stage_label = new TText(0.88, 0.92, current_stage.c_str() );//For stage label
 
-			TString pot_content = data_file->topo_name + " " + to_string_prec(plot_pot/pot_unit,1) + pot_unit_string + " POT";//For POT info
+			TString pot_content = data_file->topo_name + " " + to_string_prec(plot_pot/pot_unit,2) + pot_unit_string + " POT";//For POT info
 
 //			std::string pot_draw = data_file->topo_name+" "+to_string_prec(plot_pot/pot_unit,1)+ pot_unit_s+" POT";
 
@@ -899,37 +920,44 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			std::string ks = "(KS: "+to_string_prec(tsum->KolmogorovTest(d0),3) + ")     (#chi^{2}/n#it{DOF}: "+to_string_prec(mychi,2) + "/"+to_string_prec(ndof) +")    (#chi^{2} P^{val}: "+to_string_prec(TMath::Prob(mychi,ndof),3)+")";
 			std::string combined = mean + "  " + mean2 + "  " + ks;
 			estimators = new TLatex(0.11,0.02,combined.c_str());
+			TLine * line;//horizontal line for the bottom plot;
 
 			if(print_message){
-			std::cout<<"Binned KS-test: "<<var.name<<" "<<tsum->KolmogorovTest(d0)<<std::endl;
-			std::cout<<"Binned Chi-test standard: "<<var.name<<" "<<tsum->Chi2Test(d0,"CHI2")<<std::endl;
-			std::cout<<"Binned Chi-test: "<<var.name<<" "<<tsum->Chi2Test(d0,"UW CHI2")<<std::endl;
-			std::cout<<"Binned Chi-test (rev): "<<var.name<<" "<<d0->Chi2Test(tsum,"UW CHI2")<<std::endl;
+				std::cout<<"Binned KS-test: "<<var.name<<" "<<tsum->KolmogorovTest(d0)<<std::endl;
+				std::cout<<"Binned Chi-test standard: "<<var.name<<" "<<tsum->Chi2Test(d0,"CHI2")<<std::endl;
+				std::cout<<"Binned Chi-test: "<<var.name<<" "<<tsum->Chi2Test(d0,"UW CHI2")<<std::endl;
+				std::cout<<"Binned Chi-test (rev): "<<var.name<<" "<<d0->Chi2Test(tsum,"UW CHI2")<<std::endl;
 			}
 
 
 			//STEP 2.3 Draw
 			cobs->cd();//CHECK, go to last section
 			pad0top->Draw();// Draw TPads now; draw histogram later after switch to corresponding pad cd()
-			pad0bot->Draw();
+			if(!label_removal){ 
+				pad0bot->Draw();
+				pad0top->cd();//CHECK, still working on the top Tpad for the code below;
+			}
 
-			pottex.DrawLatex(.66,.72, pot_content);
-
-			pad0top->cd();//CHECK, still working on the top Tpad for the code below;
 			stk->Draw("hist");
 			tsum->DrawCopy("Same E2");//the statistic error;
 			d0->Draw("same E1 E0");
 			l0->Draw();
-			title->Draw();
-			stage_label->Draw();
 
-			pad0bot->cd();       // pad0bot becomes the current pad
-			ratunit->Draw("E2");
-			TLine *line = new TLine(ratunit->GetXaxis()->GetXmin(),1.0,ratunit->GetXaxis()->GetXmax(),1.0 );
-			line->Draw("same");
-			ratio_data->Draw("same P hist");
-			ratio_data_err->Draw("E0 same");
-			estimators->Draw("same");
+			pottex.SetNDC();//coordinate from 0 to 1?
+			pottex.DrawLatex(.63,.58, pot_content);
+
+			if(!label_removal){
+				title->Draw();
+				stage_label->Draw();
+
+				pad0bot->cd();       // pad0bot becomes the current pad
+				ratunit->Draw("E2");
+				line = new TLine(ratunit->GetXaxis()->GetXmin(),1.0,ratunit->GetXaxis()->GetXmax(),1.0 );
+				line->Draw("same");
+				ratio_data->Draw("same P hist");
+				ratio_data_err->Draw("E0 same");
+				estimators->Draw("same");
+			}
 
 			//STEP 2.4: Configure plots
 				//Top Histograms: stk, tsum, d0 , l0
@@ -939,7 +967,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			stk->GetYaxis()->SetTitleSize(0.05);
 			stk->GetYaxis()->SetTitleOffset(0.9);
 			stk->SetMaximum( std::max(tsum->GetBinContent(tsum->GetMaximumBin()), d0->GetMaximum())*max_modifier);
-			stk->SetMinimum(min_val);
+			if(!label_removal) stk->SetMinimum(min_val);
 
 			tsum->SetMarkerSize(0);
 			tsum->SetLineWidth(3);
@@ -956,50 +984,54 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			l0->SetLineWidth(0);
 			l0->SetNColumns(2);
 			l0->SetLineColor(0);
-			l0->SetTextSize(0.04);
+			if(label_removal){
+				l0->SetTextSize(0.03);
+			}else{
+				l0->SetTextSize(0.04);
+			}
 			
 			//Bottom Histogram: ratio_data, ratio_bkgMC, ratunit, ratio_data_err			
-			ratunit->SetFillColor(kGray+1);
-			ratunit->SetMarkerStyle(0);
-			ratunit->SetMarkerSize(0);
-			ratunit->SetFillStyle(3354);
-			//gStyle->SetHatchesLineWidth(1);
-			//gStyle->SetHatchesSpacing(1);
-			ratunit->SetLineColor(kBlack);
-			ratunit->SetTitle("");
-			ratunit->SetMinimum(rmin);	
-			ratunit->SetMaximum(rmax);//ratunit->GetMaximum()*1.1);
-			ratunit->GetYaxis()->SetTitle(  (stack_mode ? "#splitline{Systematic}{Uncertainty}" : "Data/(BkgMC)"));
-			ratunit->GetYaxis()->SetTitleOffset(title_offset_ratioY*1.25);
-			ratunit->GetYaxis()->SetTitleSize(title_size_ratio);
-			ratunit->GetYaxis()->SetLabelSize(label_size_ratio);
-			ratunit->GetYaxis()->SetNdivisions(505);
-			ratunit->GetXaxis()->SetTitle(var.unit.c_str());
-			ratunit->GetXaxis()->SetTitleOffset(title_offset_ratioX);
-			ratunit->GetXaxis()->SetTitleSize(title_size_ratio);
-			ratunit->GetXaxis()->SetLabelSize(label_size_ratio);
+			if(!label_removal){
+				ratunit->SetFillColor(kGray+1);
+				ratunit->SetMarkerStyle(0);
+				ratunit->SetMarkerSize(0);
+				ratunit->SetFillStyle(3354);
+				//gStyle->SetHatchesLineWidth(1);
+				//gStyle->SetHatchesSpacing(1);
+				ratunit->SetLineColor(kBlack);
+				ratunit->SetTitle("");
+				ratunit->SetMinimum(rmin);	
+				ratunit->SetMaximum(rmax);//ratunit->GetMaximum()*1.1);
+				ratunit->GetYaxis()->SetTitle(  (stack_mode ? "#splitline{Systematic}{Uncertainty}" : "Data/(BkgMC)"));
+				ratunit->GetYaxis()->SetTitleOffset(title_offset_ratioY*1.25);
+				ratunit->GetYaxis()->SetTitleSize(title_size_ratio);
+				ratunit->GetYaxis()->SetLabelSize(label_size_ratio);
+				ratunit->GetYaxis()->SetNdivisions(505);
+				ratunit->GetXaxis()->SetTitle(var.unit.c_str());
+				ratunit->GetXaxis()->SetTitleOffset(title_offset_ratioX);
+				ratunit->GetXaxis()->SetTitleSize(title_size_ratio);
+				ratunit->GetXaxis()->SetLabelSize(label_size_ratio);
 
-			ratio_data_err->SetLineWidth(1);
+				ratio_data_err->SetLineWidth(1);
 
-			ratio_data->SetLineColor(kBlack);
-			ratio_data->SetTitle("");
-			ratio_data->SetFillColor(kGray+1);
-			ratio_data->SetMarkerStyle(20);
-			ratio_data->SetMarkerSize(ratio_data->GetMarkerSize()*0.7);
-			ratio_data->SetFillStyle(3144);
+				ratio_data->SetLineColor(kBlack);
+				ratio_data->SetTitle("");
+				ratio_data->SetFillColor(kGray+1);
+				ratio_data->SetMarkerStyle(20);
+				ratio_data->SetMarkerSize(ratio_data->GetMarkerSize()*0.7);
+				ratio_data->SetFillStyle(3144);
 
+				//Text: title, stage lable, pottex, estimators
+				title->SetTextColor(kBlack);
+				title->SetNDC();
 
-			//Text: title, stage lable, pottex, estimators
-			title->SetTextColor(kBlack);
-			title->SetNDC();
-
-			stage_label->SetTextColor(kBlack);
-			stage_label->SetNDC();
-			stage_label->SetTextAlign(31); // Right-adjusted 
-
+				stage_label->SetTextColor(kBlack);
+				stage_label->SetNDC();
+				stage_label->SetTextAlign(31); // Right-adjusted 
+			}
 			pottex.SetTextSize(0.06);
 			pottex.SetTextAlign(13);  //align at top
-			pottex.SetNDC();//coordinate from 0 to 1?
+//			pottex.SetNDC();//coordinate from 0 to 1
 
 			estimators->SetNDC();
 			estimators->SetTextColor(kRed-7);

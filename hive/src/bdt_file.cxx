@@ -459,7 +459,7 @@ int bdt_file::calcBaseEntryList(std::string analysis_tag){
 
         hash_right = fpre->GetListOfKeys()->Contains(s_precut_hash.c_str());
         if(hash_right){
-            std::cout<<"File has correct hash! Just going to load the TEntryLists"<<std::endl;
+            std::cout<<"\nFile has correct hash! Just going to load the TEntryLists"<<std::endl;
             topological_list = (TEntryList*)fpre->Get(topological_list_name.c_str());
             precut_list = (TEntryList*)fpre->Get(precut_list_name.c_str());
 
