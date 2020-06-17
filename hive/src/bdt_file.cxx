@@ -39,6 +39,7 @@ bdt_file::bdt_file(size_t index,
 		col		(XMLconfig.bdt_cols[index]->GetNumber()),
 		fillstyle(XMLconfig.bdt_fillstyles[index]),
 		linestyle(XMLconfig.bdt_linestyles[index]),
+		group  (XMLconfig.bdt_group[index]),
 		linecol(XMLconfig.bdt_linecols[index]),
 		weight_branch(XMLconfig.bdt_weight[index]),
 		scale_data(XMLconfig.bdt_scales[index]),
@@ -1117,39 +1118,45 @@ int bdt_file::makePrecalcSBNfitFile(const std::string &analysis_tag, int which_s
     return 0;
 }
 
+int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<bdt_info>& bdt_infos, int which_stage, const std::vector<double> & fbdtcuts, const std::string &input_string, const std::vector<bdt_variable> & vars, double plot_pot){
+        return makeSBNfitFile( analysis_tag, bdt_infos, which_stage,fbdtcuts,input_string,vars,plot_pot,"1");
+}
 
-int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<bdt_info>& bdt_infos, int which_stage, const std::vector<double> & fbdtcuts, const std::string &input_string, const std::vector<bdt_variable> & vars){
+int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<bdt_info>& bdt_infos, int which_stage, const std::vector<double> & fbdtcuts, const std::string &input_string, const std::vector<bdt_variable> & vars, double plot_pot, std::string external_cuts){
     std::cout<<"Beginning SBNfit file creation for stage "<<which_stage<<" for file "<<this->tag<<std::endl;
     //have to first add the vertex tree as a friend to the eventweight tree, you will see why later.. if i get to those comments
-//    this->teventweight->AddFriend(this->tvertex);
+    this->teventweight->AddFriend(this->tvertex);
+    this->tslice->AddFriend(this->tvertex);
     
-    std::string output_file_name = analysis_tag+"_sbnfit/sbnfit_"+analysis_tag+"_stage_"+std::to_string(which_stage)+"_"+this->tag+".root";
+    std::string output_file_name = "sbnfit_"+analysis_tag+"_stage_"+std::to_string(which_stage)+"_"+this->tag+".root";
 
     std::cout<<"Starting to make SBNFit output file named: "<<output_file_name<<std::endl;
     TFile* f_sbnfit = new TFile(output_file_name.c_str(),"recreate");
 
     std::cout<<"Creating directory structure"<<std::endl;
-//    TDirectory *cdtof = f_sbnfit->mkdir("singlephoton");
-//    cdtof->cd();    
+    TDirectory *cdtof = f_sbnfit->mkdir("singlephoton");
+    cdtof->cd();    
 
     std::string sbnfit_cuts = this->getStageCuts(which_stage,fbdtcuts);
+    sbnfit_cuts = "(("+sbnfit_cuts+") && ( " +external_cuts+"))"; 
 
     std::cout<<"Copying vertex tree"<<std::endl;
     TTree * t_sbnfit_tree = (TTree*)this->tvertex->CopyTree(sbnfit_cuts.c_str());
-//    std::cout<<"Copying POT tree"<<std::endl;
-//    TTree * t_sbnfit_pot_tree = (TTree*)this->tpot->CopyTree("1");
-//    std::cout<<"Copying eventweight tree (via friends)"<<std::endl;
-//    TTree * t_sbnfit_eventweight_tree = (TTree*)this->teventweight->CopyTree(sbnfit_cuts.c_str());
-//    std::cout<<"Copying Slice tree "<<std::endl;
-//    TTree * t_sbnfit_slice_tree = (TTree*)this->tslice->CopyTree("1");
+    std::cout<<"Copying POT tree"<<std::endl;
+    TTree * t_sbnfit_pot_tree = (TTree*)this->tpot->CopyTree("1");
+    std::cout<<"Copying RunSubrunTree"<<std::endl;
+    TTree * t_sbnfit_rs_tree = (TTree*)this->trs->CopyTree("1");
+    std::cout<<"Copying eventweight tree (via friends)"<<std::endl;
+    TTree * t_sbnfit_eventweight_tree = (TTree*)this->teventweight->CopyTree(sbnfit_cuts.c_str());
+    std::cout<<"Copying Slice tree "<<std::endl;
+    TTree * t_sbnfit_slice_tree = (TTree*)this->tslice->CopyTree(sbnfit_cuts.c_str());
 
 
     TTree * t_sbnfit_simpletree = new TTree("simple_tree","simple_tree");
-//    double simple_var = 0;
-//    double simple_wei = 0;
-  //  double simple_pot_wei = 0;
+    double simple_var = 0;
+    double simple_wei = 0;
+    double simple_pot_wei = 0;
     int original_entry = 0;
-    double plot_pot = 10.1e20;
     //double plot_pot = 13.2e20;
 
     std::vector<double> simple_bdt_vars(vars.size(),0.0);
@@ -1157,9 +1164,9 @@ int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<
 
     TTreeFormula * CUT = new TTreeFormula("CUT", sbnfit_cuts.c_str(),this->tvertex);
 
-//    t_sbnfit_simpletree->Branch("simple_variable",&simple_var);
-//    t_sbnfit_simpletree->Branch("simple_weight",&simple_wei);
-//    t_sbnfit_simpletree->Branch("simple_pot_weight",&simple_pot_wei);
+    t_sbnfit_simpletree->Branch("simple_variable",&simple_var);
+    t_sbnfit_simpletree->Branch("simple_weight",&simple_wei);
+    t_sbnfit_simpletree->Branch("simple_pot_weight",&simple_pot_wei);
     t_sbnfit_simpletree->Branch("original_entry",&original_entry);
 
     for(int i=0; i< bdt_infos.size(); i++){
@@ -1201,7 +1208,7 @@ int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<
 
         weight->GetNdata();
         var->GetNdata();
-//        simple_wei = weight->EvalInstance();
+        simple_wei = weight->EvalInstance();
 
         /*
            if(simple_wei<0 || simple_wei!=simple_wei || isinf(simple_wei) ){
@@ -1211,9 +1218,8 @@ int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<
            }
            */
 
-
-//        simple_var = var->EvalInstance();
-//        simple_pot_wei = simple_wei*this->scale_data*plot_pot/this->pot;
+        simple_var = var->EvalInstance();
+        simple_pot_wei = simple_wei*this->scale_data*plot_pot/this->pot;
         original_entry = i;
 
         for(int j=0; j< bdt_infos.size();j++){
@@ -1225,7 +1231,6 @@ int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<
             form_vec_vars[j]->GetNdata();
             simple_bdt_vars[j] = form_vec_vars[j]->EvalInstance();
         }
-
         t_sbnfit_simpletree->Fill();
     }
 
@@ -1233,16 +1238,17 @@ int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<
     TList * lf1 = (TList*)t_sbnfit_tree->GetListOfFriends();
     for(const auto&& obj: *lf1) t_sbnfit_tree->GetListOfFriends()->Remove(obj);
 
-//    TList * lf2 = (TList*)t_sbnfit_eventweight_tree->GetListOfFriends();
-//    for(const auto&& obj: *lf2) t_sbnfit_eventweight_tree->GetListOfFriends()->Remove(obj);
+    TList * lf2 = (TList*)t_sbnfit_eventweight_tree->GetListOfFriends();
+    for(const auto&& obj: *lf2) t_sbnfit_eventweight_tree->GetListOfFriends()->Remove(obj);
 
 
     std::cout<<"Writing to file"<<std::endl;
-//    cdtof->cd();
+    cdtof->cd();
     t_sbnfit_tree->Write();
-//    t_sbnfit_pot_tree->Write();
-//    t_sbnfit_eventweight_tree->Write(); 
-//    t_sbnfit_slice_tree->Write();
+    t_sbnfit_pot_tree->Write();
+    t_sbnfit_rs_tree->Write();
+    t_sbnfit_eventweight_tree->Write(); 
+    t_sbnfit_slice_tree->Write();
     t_sbnfit_simpletree->Write();
     weight->Write();
     var->Write();
@@ -1258,7 +1264,3 @@ int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<
 }
 
 
-
-//int bdt_file::convertToHashedLibSVM(){
-//
-//}

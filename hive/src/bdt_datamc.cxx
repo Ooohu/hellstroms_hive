@@ -488,79 +488,125 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
             for(int j = 0; j < vars.size(); j++){
 
                 //only want to plot different variables, but also not duplicate i.e. 12 and 21
-                if (i!= j && i < j){
-                    bdt_variable var2= vars[j];
+				if (i!= j && i < j){
+					bdt_variable var2= vars[j];
 
 
-                    std::cout<<"Starting on variable "<<var1.name<<std::endl;
+					std::cout<<"Starting on variable "<<var1.name<<std::endl;
 
-                    //make file for data
-                    TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1700,1600);
-                    cobs->cd();
+					//make file for data
+					TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1700,1600);
+					cobs->cd();
 
-                    TPad *pad = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
-                    pad->Draw();
-                    pad->cd();
+					TPad *pad = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
+					pad->Draw();
+					pad->cd();
 
-                    //THStack *stk = (THStack*)mc_stack->getEntryStack(var,s);
-                    //TH1 * tsum = (TH1*)mc_stack->getEntrySum(var,s);
-                    TH2 * d0 = (TH2*)data_file->getTH2(var1,var2, "1", std::to_string(s)+"_d0_"+std::to_string(bdt_cuts[s])+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
+					//THStack *stk = (THStack*)mc_stack->getEntryStack(var,s);
+					//TH1 * tsum = (TH1*)mc_stack->getEntrySum(var,s);
+					TH2 * d0 = (TH2*)data_file->getTH2(var1,var2, "1", std::to_string(s)+"_d0_"+std::to_string(bdt_cuts[s])+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
 
-                    pad->cd();
+					pad->cd();
 
-                    d0->Draw("COLZ");
-                    d0 ->SetTitle((data_file->tag + ", stage " + std::to_string(s)).c_str());
-                    d0->GetYaxis()->SetTitleSize(0.05);
-                    d0->GetYaxis()->SetTitleOffset(0.9);
-                    d0->GetXaxis()->SetTitleSize(0.05);
-                    d0->GetXaxis()->SetTitleOffset(0.9);
-                    pad->SetRightMargin(0.15);
-                    
-                    std::cout<<"Writing pdf."<<std::endl;
-                    cobs->Write();
-                    cobs->SaveAs(("var2D/"+tag+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
+					d0->Draw("COLZ");
+					d0->SetTitle((data_file->plot_name).c_str());
+//					d0->SetTitle((data_file->tag + ", stage " + std::to_string(s)).c_str());
+					d0->GetYaxis()->SetTitleSize(0.05);
+					d0->GetYaxis()->SetTitleOffset(0.9);
+					d0->GetXaxis()->SetTitleSize(0.05);
+					d0->GetXaxis()->SetTitleOffset(0.9);
+					pad->SetRightMargin(0.15);
 
-
-                    delete cobs;
-                    delete d0;
+					std::cout<<"Writing pdf."<<std::endl;
+					cobs->Write();
+					cobs->SaveAs(("var2D/"+tag+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
 
 
-                    //now repeat for all of the MC files
-
-               for(auto &f: mc_stack->stack){
-
-                    std::cout<<"Stack "<<f->tag<<" level "<<s<<std::endl;
-                    TCanvas *cobsmc = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
-                    cobsmc->cd();
-
-                    TPad *padmc = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
-                    padmc->Draw();
-                    padmc->cd();
-
-                                
-                    TH2 * mc = (TH2*)f->getTH2(var1,var2, "1", std::to_string(s)+"_mc_"+std::to_string(bdt_cuts[s])+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
-                    padmc->cd();
-
-                    mc->Draw("COLZ");
-                    mc ->SetTitle((f->tag + ", stage " + std::to_string(s)).c_str());
-                    mc->GetYaxis()->SetTitleSize(0.05);
-                    mc->GetYaxis()->SetTitleOffset(0.9);
-                    mc->GetXaxis()->SetTitleSize(0.05);
-                    mc->GetXaxis()->SetTitleOffset(0.9);
-                    padmc->SetRightMargin(0.15);
-                    std::cout<<"Writing pdf."<<std::endl;
-                    cobsmc->Write();
-                    cobsmc->SaveAs(("var2D/"+tag+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
-
-//                    cobsmc->SaveAs(("var2D/"+tag+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".png").c_str(),"png");
+					delete cobs;
+					delete d0;
 
 
-                    delete cobsmc;
-                    delete mc;
+					//now repeat for all of the MC files
 
-                    }//for each item in the mc stack
+					TH2* grouped_2dhist;
+					bool first_time = true;
+					TString tem_output_name;
+					std::string tem_title;
 
-                }//if different variables and haven't already used the combo
+					for(auto &f: mc_stack->stack){
+
+						std::cout<<"Stack "<<f->tag<<" level "<<s<<std::endl;
+						TCanvas *cobsmc = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
+						cobsmc->cd();
+
+						TPad *padmc = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
+						padmc->Draw();
+						padmc->cd();
+
+
+						TH2 * mc = (TH2*)f->getTH2(var1,var2, "1", std::to_string(s)+"_mc_"+std::to_string(bdt_cuts[s])+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
+						padmc->cd();
+
+						//to group or not to group
+						if( f->group != -1 ){//any group number != -1 will be considered as the same group;
+							if(first_time){
+								grouped_2dhist = (TH2*) mc->Clone();
+								tem_output_name =  "var2D/"+tag+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+"grouped.pdf";
+								first_time = false;
+								tem_title = f->plot_name;
+							} else{
+								grouped_2dhist->Add(mc);
+							}
+						}
+
+						//End of grouping
+
+						mc->Draw("COLZ");
+//						mc ->SetTitle((f->tag + ", stage " + std::to_string(s)).c_str());
+						mc ->SetTitle((f->plot_name).c_str());
+						mc->GetYaxis()->SetTitleSize(0.05);
+						mc->GetYaxis()->SetTitleOffset(0.9);
+						mc->GetXaxis()->SetTitleSize(0.05);
+						mc->GetXaxis()->SetTitleOffset(0.9);
+						padmc->SetRightMargin(0.15);
+						std::cout<<"Writing pdf."<<std::endl;
+						cobsmc->Write();
+						cobsmc->SaveAs(("var2D/"+tag+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
+
+						//                    cobsmc->SaveAs(("var2D/"+tag+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".png").c_str(),"png");
+
+						delete cobsmc;
+						delete mc;
+
+					}//for each item in the mc stack
+
+					{//make up the grouped 2dhist;
+						TCanvas *cobsmc = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
+						cobsmc->cd();
+
+						TPad *padmc = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
+						padmc->Draw();
+						padmc->cd();
+
+
+						grouped_2dhist->Draw("COLZ");
+						grouped_2dhist ->SetTitle(tem_title.c_str());
+//						grouped_2dhist ->SetTitle((tem_title + ", stage " + std::to_string(s)).c_str());
+						grouped_2dhist->GetYaxis()->SetTitleSize(0.05);
+						grouped_2dhist->GetYaxis()->SetTitleOffset(0.9);
+						grouped_2dhist->GetXaxis()->SetTitleSize(0.05);
+						grouped_2dhist->GetXaxis()->SetTitleOffset(0.9);
+						padmc->SetRightMargin(0.15);
+						std::cout<<"Writing pdf."<<std::endl;
+						cobsmc->Write();
+						cobsmc->SaveAs(tem_output_name,"pdf");
+
+						delete cobsmc;
+						delete grouped_2dhist;
+					}
+
+
+				}//if different variables and haven't already used the combo
 
             }//var2
         }//var1
@@ -576,7 +622,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 	bool print_message = true;
 	bool debug_message = true;
-	bool label_removal = false;//remove title and ratio portion;
+	bool label_removal = true;//remove title and ratio portion;
 	bool disable_number = false;//remove number of events
 
 	double plot_pot=data_file->pot;

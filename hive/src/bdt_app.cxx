@@ -272,7 +272,6 @@ int bdt_XGapp(std::string dir, bdt_info info, bdt_file* file){
             have_filled++;  
         }
         if(have_filled == working_index){
-
             std::cout<<"\r"<<have_filled<<" "<<working_index<<" "<<i<<" "<<out_result[i];
 			std::cout.flush();
 
