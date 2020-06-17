@@ -391,7 +391,7 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
 					std::string pot_draw = data_file->topo_name+" "+to_string_prec(plot_pot/pot_unit,1)+ pot_unit_s+" POT";
 					std::string description = "Stage " + std::to_string(s)+" "+stage_names[s];
 //					pottex.DrawLatex(.10,.40, description.c_str());
-					pottex.DrawLatex(.20,.30, pot_draw.c_str());
+					 pottex.DrawLatex(.20,.30, pot_draw.c_str());
 					//legend
 					TLegend *legend = new TLegend(0, 0.1,0.8,0.2);
 					legend->SetNColumns(2);
@@ -576,7 +576,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 	bool print_message = true;
 	bool debug_message = true;
-	bool label_removal = true;//remove title and ratio portion;
+	bool label_removal = false;//remove title and ratio portion;
 	bool disable_number = false;//remove number of events
 
 	double plot_pot=data_file->pot;
@@ -944,7 +944,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			l0->Draw();
 
 			pottex.SetNDC();//coordinate from 0 to 1?
-			pottex.DrawLatex(.63,.58, pot_content);
+			if(!label_removal)pottex.DrawLatex(.63,.58, pot_content); //CHECK disable POT
 
 			if(!label_removal){
 				title->Draw();
