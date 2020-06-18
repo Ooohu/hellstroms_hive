@@ -434,6 +434,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
     }
 
     // NEW ONE
+	double zmax = 60;
     double plot_pot=data_file->pot;
     if(stack_mode) plot_pot = stack_pot;
 
@@ -509,6 +510,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 					pad->cd();
 
 					d0->Draw("COLZ");
+					d0->SetMaximum(zmax);
 					d0->SetTitle((data_file->plot_name).c_str());
 //					d0->SetTitle((data_file->tag + ", stage " + std::to_string(s)).c_str());
 					d0->GetYaxis()->SetTitleSize(0.05);
@@ -562,6 +564,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 						//End of grouping
 
 						mc->Draw("COLZ");
+						mc->SetMaximum(zmax);
 //						mc ->SetTitle((f->tag + ", stage " + std::to_string(s)).c_str());
 						mc ->SetTitle((f->plot_name).c_str());
 						mc->GetYaxis()->SetTitleSize(0.05);
@@ -580,7 +583,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 
 					}//for each item in the mc stack
 
-					{//make up the grouped 2dhist;
+					if(!first_time){//make up the grouped 2dhist;
 						TCanvas *cobsmc = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
 						cobsmc->cd();
 
@@ -590,7 +593,8 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 
 
 						grouped_2dhist->Draw("COLZ");
-						grouped_2dhist ->SetTitle(tem_title.c_str());
+						grouped_2dhist->SetMaximum(zmax);
+						grouped_2dhist->SetTitle(tem_title.c_str());
 //						grouped_2dhist ->SetTitle((tem_title + ", stage " + std::to_string(s)).c_str());
 						grouped_2dhist->GetYaxis()->SetTitleSize(0.05);
 						grouped_2dhist->GetYaxis()->SetTitleOffset(0.9);
@@ -622,7 +626,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 	bool print_message = true;
 	bool debug_message = true;
-	bool label_removal = true;//remove title and ratio portion;
+	bool label_removal = false;//remove title and ratio portion;
 	bool disable_number = false;//remove number of events
 
 	double plot_pot=data_file->pot;
