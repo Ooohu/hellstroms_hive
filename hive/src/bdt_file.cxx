@@ -631,13 +631,16 @@ TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, doubl
 
 TH1* bdt_file::getTH1(std::string invar, std::string cuts, std::string nam, double plot_POT, int rebin){
 
+	std::cout<<"Out dated function "<<__func__<<" see "<<__FILE__<<__LINE__<<std::endl;
+	exit(0);
+
     //std::cout<<"Starting to get for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
     TCanvas *ctmp = new TCanvas();
     //this->CheckWeights();
     this->tvertex->Draw((invar+">>"+nam).c_str() , ("("+cuts+")*"+this->weight_branch).c_str(),"goff");
     //std::cout<<"Done with Draw for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
     TH1* th1 = (TH1*)gDirectory->Get(nam.c_str()) ;
-    th1->Sumw2();
+    th1->Sumw2();//the error will be [sum of sqrt(weights)]
     th1->Scale(this->scale_data*plot_POT/this->pot);
     //std::cout<<"IS THIS: "<<this->scale_data*plot_POT/this->pot<<" "<<th1->GetSumOfWeights()<<std::endl;
     if(rebin>1) th1->Rebin(rebin);
@@ -712,14 +715,14 @@ TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, doubl
     this->tvertex->Draw((var.name+">>"+nam+ var.binning).c_str() , ("("+cuts+"&&"+in_bins+")*"+this->weight_branch).c_str(),"goff");
     //std::cout<<"Done with Draw for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
     TH1* th1 = (TH1*)gDirectory->Get(nam.c_str()) ;
-    th1->Sumw2();
+    th1->Sumw2();//the error will be [sum of sqrt(weights)]
 
     if(plot_POT==0){
         th1->Scale(1.0/th1->Integral());
     }else{
         th1->Scale(this->scale_data*plot_POT/this->pot);
     }
-    //std::cout<<"IS THIS: "<<this->scale_data*plot_POT/this->pot<<" "<<th1->GetSumOfWeights()<<std::endl;
+//    std::cout<<"IS THIS: "<<this->scale_data*plot_POT/this->pot<<" "<<th1->GetSumOfWeights()<<std::endl;
     if(rebin>1) th1->Rebin(rebin);
     th1->SetLineColor(col);
     th1->SetLineWidth(1);

@@ -279,8 +279,9 @@ THStack* bdt_stack::getEntryStack(bdt_variable var, int level){
 		hist->SetLineWidth(1);
 		hist->SetStats(0);
 		hist->SetFillColor(stack.at(t)->col);
+		hist->SetLineStyle(stack.at(t)->linestyle);
         hist->SetFillStyle(stack.at(t)->fillstyle);
-        hist->Scale();		
+        hist->Scale();
 
         hist->GetXaxis()->SetTitle(var.unit.c_str());
         hist->GetYaxis()->SetTitle("Events");

@@ -626,8 +626,8 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 	bool print_message = true;
 	bool debug_message = true;
-	bool label_removal = false;//remove title and ratio portion;
-	bool disable_number = false;//remove number of events
+	bool label_removal = true;//remove title and ratio portion;
+	bool disable_number = true;//remove number of events
 
 	double plot_pot=data_file->pot;
 //	if(stack_mode) plot_pot = stack_pot;//always false for now;
@@ -908,7 +908,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 //				if(mc_stack->signal_on_top[n]) which_signal = n;//currently, only 1 signal sample is allowed, delete CHECK, not necessary
 			}
 
-			l0->AddEntry(tsum, tsum_name, legend_style);
+			if(!label_removal) l0->AddEntry(tsum, tsum_name, legend_style);
 			if(disable_number){
 				l0->AddEntry(d0,(data_file->plot_name).c_str(),"lp");
 			}else{
@@ -989,7 +989,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			}
 
 			stk->Draw("hist");
-			tsum->DrawCopy("Same E2");//the statistic error;
+			if(!label_removal) tsum->DrawCopy("Same E2");//the statistic error;
 			d0->Draw("same E1 E0");
 			l0->Draw();
 
@@ -1110,11 +1110,11 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 			cobs->Write();
 
-//`			if(stack_mode){
-//`				cobs->SaveAs(("stack/"+tag+"_"+data_file->tag+"_"+var.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
-//`			}else{
+			if(stack_mode){
+				cobs->SaveAs(("stack/"+tag+"_"+data_file->tag+"_"+var.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
+			}else{
 				cobs->SaveAs(("datamc/"+tag+"_"+data_file->tag+"_"+var.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
-//			}
+			}
 			//cobs->SaveAs(("datamc/"+tag+"_"+data_file->tag+"_"+var.safe_unit+"_stage_"+std::to_string(s)+".png").c_str(),"png");
 
 			delete stk;

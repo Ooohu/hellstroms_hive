@@ -23,6 +23,8 @@
 #include "bdt_scatter.h"
 #include "load_mva_param.h"
 #include "tinyxml.h"
+
+#include "bdt_systematics.h"
 /*
  * A gadget to make a directory after
  * checking if that directory exist.
@@ -354,8 +356,8 @@ int main (int argc, char *argv[]){
         if(XMLconfig.bdt_is_validate_file[f]) validate_files.push_back(bdt_files.back());//Mark validate files
 
     }
-    std::vector<bdt_file*> stack_bdt_files(signal_bdt_files);
-	stack_bdt_files.insert(stack_bdt_files.end(),bkg_bdt_files.begin(),bkg_bdt_files.end());//bkg go first, because we want signal on top; Check, specific for MiniBooNE
+    std::vector<bdt_file*> stack_bdt_files(bkg_bdt_files);
+	stack_bdt_files.insert(stack_bdt_files.end(),signal_bdt_files.begin(),signal_bdt_files.end());//bkg go first, because we want signal on top; Check, specific for MiniBooNE
 			std::cout<<"# of signal files "<<signal_bdt_files.size()<<std::endl;
 			std::cout<<"# of bkg files "<<bkg_bdt_files.size()<<std::endl;
 
@@ -520,7 +522,8 @@ int main (int argc, char *argv[]){
 
         bdt_stack *histogram_stack = new bdt_stack(analysis_tag+"_stack");
 
-        histogram_stack->plot_pot = 10.115e20; //12.25e20;//10.115e20;//4.9e19;
+        histogram_stack->plot_pot = 18.75e20;
+
         std::cout<<"flag1"<<std::endl;
 
         for(size_t f =0; f< stack_bdt_files.size(); ++f){
@@ -629,6 +632,23 @@ int main (int argc, char *argv[]){
 
 		if(number>-1){//a variable is specified
 			tmp_vars = {vars.at(number)};
+
+			if(true){//do systematics
+
+				std::string sys_root = analysis_tag + "systematics/roots";
+				std::string sys_draw = analysis_tag + "systematics/drawn";
+				gadget_buildfolder(analysis_tag + "systematics");
+				gadget_buildfolder(sys_root);
+				gadget_buildfolder(sys_draw);
+				std::vector<bdt_sys*> systematics;
+				for(int sys_index = 0; sys_index < XMLconfig.n_sys; ++sys_index){ 
+					systematics.push_back( new bdt_sys(sys_index, XMLconfig));
+
+				}
+
+				InitSys(tmp_vars[0], systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());
+			}
+
 		}else{
 			for(auto &v: vars){//load variables
 				if(which_group == -1 || which_group == v.cat){
@@ -636,6 +656,8 @@ int main (int argc, char *argv[]){
 				}
 			}
 		}
+
+		exit(0);
 
 		if(which_bdt>-1){//a bdt is specified
 			tmp_vars = bdt_infos[which_bdt].train_vars;
@@ -1332,16 +1354,16 @@ return 0;
 
     if(which_stage == -1) which_stage = 1;
 
-    std::vector<bdt_file*> training_background_files;
-    for(int i=0; i< bdt_infos.size(); i++){
-
-
-        if(!(which_bdt==i || which_bdt==-1)) continue;
-
-        bdt_file * training_signal = tagToFileMap[bdt_infos[i].TMVAmethod.sig_train_tag]; 
-        bdt_file * training_background = tagToFileMap[bdt_infos[i].TMVAmethod.bkg_train_tag]; 
-        plot_bdt_variables(training_signal, training_background, vars, bdt_infos[i], false, which_stage,fbdtcuts);
-    }
+	plot_var_allF(stack_bdt_files, onbeam_data_file, vars, false, which_stage,fbdtcuts, true);//last bool set normalization, true - normalize the sum of each type as 1;
+//    for(int i=0; i< bdt_infos.size(); i++){
+//
+//
+//        if(!(which_bdt==i || which_bdt==-1)) continue;
+//
+//        bdt_file * training_signal = tagToFileMap[bdt_infos[i].TMVAmethod.sig_train_tag]; 
+//        bdt_file * training_background = tagToFileMap[bdt_infos[i].TMVAmethod.bkg_train_tag]; 
+//        plot_bdt_variables(training_signal, training_background, vars, bdt_infos[i], false, which_stage,fbdtcuts);
+//    }
 
 
 }else {

@@ -1,6 +1,55 @@
 #include "load_mva_param.h"
 #include "method_struct.h"
+		
+bool gadget_boolreader( const char* text){
 
+		if(text ==NULL){
+			return false;
+		}else if (strcmp(text ,"yes")==0||strcmp(text,"true")==0){
+			return true;
+		}
+
+}
+
+std::vector< TString > gadget_tokenlizer( const char* text){
+	
+	bool debug = false;
+	if(debug)	std::cout<<"Tokenize input."<< std::endl;
+
+	std::vector< TString > tokens;
+
+	std::stringstream acopy(text);
+	std::string temp_s;
+
+	while(getline(acopy, temp_s, ',')){
+		tokens.push_back(temp_s);
+		if(debug)std::cout<<temp_s<<std::endl;
+	}
+
+//strcpy mess up the continuity of the char.. so fail!
+//	char copy_text[sizeof(text)];
+//	strcpy (copy_text, text);
+//	
+////	char copy_text[] = "TMulMatWeightsChunk.data_.MultiWeight[0],TMul";
+//
+//	std::cout<<"CHECK input "<<copy_text<<std::endl;
+//	char* pch; 
+//
+//
+//	pch = strtok (copy_text, " ," );
+//	while( pch !=NULL){
+//		std::string temp_s(pch);
+//		tokens.push_back( temp_s.c_str() );	
+//
+//		std::cout<<" pch   :"<<pch<<std::endl;
+//		std::cout<<"string :"<<temp_s<<std::endl;
+//		pch = strtok (NULL, ", ");
+//	}
+//	std::cout<<"CHECK "<<__LINE__<<std::endl;
+
+	return tokens;
+
+}
 
 MVALoader::MVALoader(std::string xmlname): MVALoader(xmlname,true) {
 
@@ -548,7 +597,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
 
 
-
+	//bdt variables 
     TiXmlElement *pVar = doc.FirstChildElement("var");
     std::vector<bdt_variable> bdt_all_vars;
 
@@ -558,6 +607,10 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     while(pVar){
         std::string var_def_unparsed = pVar->Attribute("def");
         std::string var_def = this->AliasParse(var_def_unparsed); 
+
+        std::string var_minidef_unparsed = var_def_unparsed;
+		 if(pVar->Attribute("minidef")!=NULL) var_minidef_unparsed =pVar->Attribute("minidef") ;
+        std::string var_minidef = this->AliasParse(var_minidef_unparsed); 
 
         std::string var_binning = pVar->Attribute("binning");
         std::string var_unit = pVar->Attribute("unit");
@@ -617,10 +670,11 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         bool is_spec = false;
         //if(var_spectator=="true") is_spec = true;
 
-        bdt_variable t(var_def,var_binning,var_unit,"false",var_type,n_var);
+        bdt_variable t(var_def, var_minidef, var_binning,var_unit,"false",var_type,n_var);
+//        bdt_variable t(var_def,var_binning,var_unit,"false",var_type,n_var);
         t.is_logplot = var_logplot_bool;
-        t.plot_min = pmin;
-        t.plot_max = pmax;
+//        t.plot_min = pmin;
+//        t.plot_max = pmax;
         t.cat = in_cat;
         if(has_covar){
             std::cout<<"Adding a covariance matrix "<<covar_name<<" from file "<<covar_file<<std::endl;
@@ -783,7 +837,70 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         }
         pRecoMC = pRecoMC->NextSiblingElement("recomc");
     }//-->end definition
+	
+	//systematics
+    std::cout<<"####################### Ststematics  ########################################"<<std::endl;
+    TiXmlElement *pSys = doc.FirstChildElement("systematics");
 
+    n_sys = 0;
+    while(pSys){
+		sys_tag.push_back(pSys->Attribute("tag"));
+		sys_dir.push_back(pSys->Attribute("dir"));
+		sys_filename.push_back(pSys->Attribute("file"));
+		sys_treename.push_back(pSys->Attribute("tree"));
+
+		//numbers
+		sys_pot.push_back(atof( pSys->Attribute("pot") ));
+		sys_throws.push_back(atof( pSys->Attribute("throws") ));
+	
+		//boolean 
+		sys_its_CV.push_back(gadget_boolreader( pSys->Attribute("isCV")));
+		sys_its_multithrows.push_back(gadget_boolreader( pSys->Attribute("isMulthrows")));
+		sys_its_multifiles.push_back(gadget_boolreader(pSys->Attribute("isMulfiles")));
+
+//tokenize the following var, varnam
+		sys_vars.push_back(gadget_tokenlizer( pSys->Attribute("var")));
+		sys_vars_name.push_back(gadget_tokenlizer( pSys->Attribute("varnam")));
+
+		if(true){//print the contents out;
+			std::cout<<"\tDireciory :"<<sys_dir[n_sys]<<std::endl;
+			std::cout<<"\tFile :"<<sys_filename[n_sys]<<std::endl;
+			
+			for(size_t index = 0; index < sys_vars[n_sys].size(); ++index){
+				std::cout<<sys_vars[n_sys][index]<<", ";
+			}
+			std::cout<<std::endl;
+			for(size_t index = 0; index < sys_vars_name[n_sys].size(); ++index){
+				std::cout<<sys_vars_name[n_sys][index]<<", ";
+			}
+			std::cout<<std::endl;
+
+			std::cout<<std::setw(18)<<" Name tag "<<std::setw(12)<<" TTree ";
+			std::cout<<std::setw(7)<<" POT "<<std::setw(6)<<" throws ";
+			std::cout<<std::setw(5)<<" CV "<<std::setw(8)<<" Nthrows ";
+			std::cout<<std::setw(8)<<" Nfiles "<<std::endl;
+
+			std::cout<<std::setw(18)<<sys_tag[n_sys];
+			std::cout<<std::setw(12)<<sys_treename[n_sys];
+			std::cout<<std::setw(7)<<sys_pot[n_sys];
+			std::cout<<std::setw(6)<<sys_throws[n_sys];
+
+
+			std::vector< std::string > t_of_f = {" Yes ", " No "};
+			int toff_index = 1;
+			toff_index = (sys_its_CV[n_sys])? 0: 1;
+			std::cout<<std::setw(5)<<t_of_f[toff_index];
+
+			toff_index = (sys_its_multithrows[n_sys])? 0: 1;
+			std::cout<<std::setw(8)<<t_of_f[toff_index];
+
+			toff_index = (sys_its_multifiles[n_sys])? 0: 1;
+			std::cout<<std::setw(8)<<t_of_f[toff_index]<<std::endl;
+			
+		}
+        n_sys++;
+        pSys = pSys->NextSiblingElement("systematics");
+    }//end of systematics
 
 };
 

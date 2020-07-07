@@ -80,8 +80,26 @@ class MVALoader {
     std::vector<double> bdt_cuts;
 
     std::vector<std::string> recomc_names;
-    std::vector<std::string> recomc_defs;
-    std::vector<TColor*> recomc_cols;
+	std::vector<std::string> recomc_defs;
+	std::vector<TColor*> recomc_cols;
+
+	//these are for systematics;
+	int n_sys;//keep track with the number of systematics
+	std::vector< TString>  sys_tag;
+	std::vector< TString>  sys_dir;
+	std::vector< TString>  sys_filename;
+	std::vector< TString>  sys_treename;
+
+	std::vector< std::vector< TString >> sys_vars;
+	std::vector< std::vector< TString >> sys_vars_name;
+
+	std::vector< double> sys_pot;
+	std::vector< double> sys_throws;
+
+	std::vector< bool> sys_its_CV;
+	std::vector< bool> sys_its_multithrows;
+	std::vector< bool> sys_its_multifiles;
+
 
 };
 
