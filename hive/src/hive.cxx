@@ -37,7 +37,7 @@ void gadget_buildfolder( std::string name){
 	}
 	else{
 		std::cout<<"Overwrite "<<name<<"/ in 2 seconds, 1 seconds, ..."<<std::endl;
-		sleep(2);
+//CHECK		sleep(2);
 	}
 }
 
@@ -626,45 +626,45 @@ int main (int argc, char *argv[]){
 //        std::vector<bool> subv = {false,false,true};
 		
 		if(true){
-		//prepare input variables for the plotStacks function;
+			//prepare input variables for the plotStacks function;
 			bdt_datamc datamc(onbeam_data_file, histogram_stack, analysis_tag+"_datamc");//last element of histogram_stack is signal
 			std::vector<bdt_variable> tmp_vars;
 
-		if(number>-1){//a variable is specified
-			tmp_vars = {vars.at(number)};
+			if(number>-1){//a variable is specified
+				tmp_vars = {vars.at(number)};
 
-			if(true){//do systematics
+				if(true){//do systematics
 
-				std::string sys_root = analysis_tag + "systematics/roots";
-				std::string sys_draw = analysis_tag + "systematics/drawn";
-				gadget_buildfolder(analysis_tag + "systematics");
-				gadget_buildfolder(sys_root);
-				gadget_buildfolder(sys_draw);
-				std::vector<bdt_sys*> systematics;
-				for(int sys_index = 0; sys_index < XMLconfig.n_sys; ++sys_index){ 
-					systematics.push_back( new bdt_sys(sys_index, XMLconfig));
+					std::string sys_root = analysis_tag + "systematics/roots";
+					std::string sys_draw = analysis_tag + "systematics/drawn";
+					gadget_buildfolder(analysis_tag + "systematics");
+					gadget_buildfolder(sys_root);
+					gadget_buildfolder(sys_draw);
+					std::vector<bdt_sys*> systematics;
+					for(int sys_index = 0; sys_index < XMLconfig.n_sys; ++sys_index){ 
+						systematics.push_back( new bdt_sys(sys_index, XMLconfig));
 
+					}
+
+					InitSys2(tmp_vars[0], systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+				std::cout<<"CHECK memory!"<<std::endl;
+				sleep(10);
 				}
 
-				InitSys(tmp_vars[0], systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());
-			}
-
-		}else{
-			for(auto &v: vars){//load variables
-				if(which_group == -1 || which_group == v.cat){
-					tmp_vars.push_back(v);
+			}else{
+				for(auto &v: vars){//load variables
+					if(which_group == -1 || which_group == v.cat){
+						tmp_vars.push_back(v);
+					}
 				}
 			}
-		}
 
-		exit(0);
+			if(which_bdt>-1){//a bdt is specified
+				tmp_vars = bdt_infos[which_bdt].train_vars;
+			}
 
-		if(which_bdt>-1){//a bdt is specified
-			tmp_vars = bdt_infos[which_bdt].train_vars;
-		}
-
-		datamc.setPlotStage(which_stage);//set through -s option;
-		datamc.plotStacks(ftest, tmp_vars, fbdtcuts, bdt_infos);
+			datamc.setPlotStage(which_stage);//set through -s option;
+			datamc.plotStacks(ftest, tmp_vars, fbdtcuts, bdt_infos);
 		}
 
 

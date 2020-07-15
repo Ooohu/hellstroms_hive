@@ -434,6 +434,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
     }
 
     // NEW ONE
+	bool setmax = false;
 	double zmax = 60;
     double plot_pot=data_file->pot;
     if(stack_mode) plot_pot = stack_pot;
@@ -496,7 +497,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 					std::cout<<"Starting on variable "<<var1.name<<std::endl;
 
 					//make file for data
-					TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1700,1600);
+					TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
 					cobs->cd();
 
 					TPad *pad = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
@@ -510,7 +511,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 					pad->cd();
 
 					d0->Draw("COLZ");
-					d0->SetMaximum(zmax);
+					if(setmax) d0->SetMaximum(zmax);
 					d0->SetTitle((data_file->plot_name).c_str());
 //					d0->SetTitle((data_file->tag + ", stage " + std::to_string(s)).c_str());
 					d0->GetYaxis()->SetTitleSize(0.05);
@@ -564,7 +565,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 						//End of grouping
 
 						mc->Draw("COLZ");
-						mc->SetMaximum(zmax);
+						if(setmax)mc->SetMaximum(zmax);
 //						mc ->SetTitle((f->tag + ", stage " + std::to_string(s)).c_str());
 						mc ->SetTitle((f->plot_name).c_str());
 						mc->GetYaxis()->SetTitleSize(0.05);
@@ -593,7 +594,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 
 
 						grouped_2dhist->Draw("COLZ");
-						grouped_2dhist->SetMaximum(zmax);
+						if(setmax)grouped_2dhist->SetMaximum(zmax);
 						grouped_2dhist->SetTitle(tem_title.c_str());
 //						grouped_2dhist ->SetTitle((tem_title + ", stage " + std::to_string(s)).c_str());
 						grouped_2dhist->GetYaxis()->SetTitleSize(0.05);
@@ -626,8 +627,8 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 	bool print_message = true;
 	bool debug_message = true;
-	bool label_removal = true;//remove title and ratio portion;
-	bool disable_number = true;//remove number of events
+	bool label_removal = false;//remove title and ratio portion;
+	bool disable_number = false;//remove number of events
 
 	double plot_pot=data_file->pot;
 //	if(stack_mode) plot_pot = stack_pot;//always false for now;
@@ -785,7 +786,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				if(disable_number){
 					tsum_name = "All MC with Stats-Only Error ";
 				} else{
-				tsum_name = "All MC with Stats-Only Error "+ to_string_prec(total_MC_events,2);
+					tsum_name = "All MC with Stats-Only Error "+ to_string_prec(total_MC_events,2);
 				}
 				legend_style = "le";
 			}
@@ -1090,20 +1091,22 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 			//STEP 2.5 Additional Info.
 			if(print_message){
-				int gap=11;
+				int gap=13;
 				std::vector<TH1*> somehists((mc_stack->stack).size());
 				std::cout<<std::left<<std::setw(gap)<<"Bin#";
 				for(size_t lndex = 0; lndex < somehists.size(); ++lndex){
 					std::cout<<std::left<<std::setw(gap)<<mc_stack->stack[lndex]->tag;
+					std::cout<<std::left<<std::setw(gap+6)<<mc_stack->stack[lndex]->tag+"_statE";
 					somehists[lndex] = mc_stack->vec_hists[lndex];
 				}
-				std::cout<<"data"<<std::endl;
+				std::cout<<std::setw(5)<<"data"<<"data_E"<<std::endl;
 				for(int bin=1; bin< d0->GetNbinsX()+1; bin++){
 					std::cout<<std::setw(gap)<<bin;
 					for(size_t lndex = 0; lndex<somehists.size(); ++lndex){
 						std::cout<<std::left<<std::setw(gap)<<somehists[lndex]->GetBinContent(bin);
+						std::cout<<std::left<<std::setw(gap+6)<<somehists[lndex]->GetBinError(bin);
 					}
-					std::cout<<d0->GetBinContent(bin)<<std::endl;
+					std::cout<<std::setw(5)<<d0->GetBinContent(bin)<<d0->GetBinError(bin)<<std::endl;
 				}
 				std::cout<<std::endl;
 			}

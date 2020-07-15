@@ -26,7 +26,7 @@ struct bdt_variable{
 
 	public:
 		std::string name;//variable name
-		std::string mininame;
+		std::vector<TString> mininame;
         int id;
 		int cat;
         std::string safe_name;
@@ -140,7 +140,7 @@ struct bdt_variable{
 		//            cat = 0;
 	};
 	//overflow the constructor
-	        bdt_variable(std::string inname, std::string innamemini, std::string inbin, std::string inunit,bool intrack, std::string intype,int in_id) : 
+	        bdt_variable(std::string inname, std::vector<TString> innamemini, std::string inbin, std::string inunit,bool intrack, std::string intype,int in_id) : 
 			name(inname), 
 			mininame(innamemini),
 			binning(inbin),

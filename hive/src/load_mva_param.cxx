@@ -3,29 +3,40 @@
 		
 bool gadget_boolreader( const char* text){
 
-		if(text ==NULL){
-			return false;
-		}else if (strcmp(text ,"yes")==0||strcmp(text,"true")==0){
+	if (strcmp(text ,"yes")==0||strcmp(text,"true")==0){
 			return true;
-		}
+	}
+	return false;
 
 }
 
 std::vector< TString > gadget_tokenlizer( const char* text){
 	
 	bool debug = false;
+
 	if(debug)	std::cout<<"Tokenize input."<< std::endl;
 
 	std::vector< TString > tokens;
 
+
+	if(!text){ 
+		return {""};
+	}
+
 	std::stringstream acopy(text);
 	std::string temp_s;
+	bool no_comma = true;
 
 	while(getline(acopy, temp_s, ',')){
+		no_comma = false;
 		tokens.push_back(temp_s);
 		if(debug)std::cout<<temp_s<<std::endl;
 	}
 
+	if(no_comma){
+		getline(acopy, temp_s);
+		tokens.push_back(temp_s);
+	}
 //strcpy mess up the continuity of the char.. so fail!
 //	char copy_text[sizeof(text)];
 //	strcpy (copy_text, text);
@@ -608,9 +619,11 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         std::string var_def_unparsed = pVar->Attribute("def");
         std::string var_def = this->AliasParse(var_def_unparsed); 
 
-        std::string var_minidef_unparsed = var_def_unparsed;
-		 if(pVar->Attribute("minidef")!=NULL) var_minidef_unparsed =pVar->Attribute("minidef") ;
-        std::string var_minidef = this->AliasParse(var_minidef_unparsed); 
+//        std::string var_minidef_unparsed = var_def_unparsed;
+//		 if(pVar->Attribute("minidef")!=NULL) var_minidef_unparsed =pVar->Attribute("minidef") ;
+//        std::string var_minidef = this->AliasParse(var_minidef_unparsed); 
+
+		std::vector< TString > var_minidef = gadget_tokenlizer( pVar->Attribute("minidef"));
 
         std::string var_binning = pVar->Attribute("binning");
         std::string var_unit = pVar->Attribute("unit");
@@ -678,7 +691,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         t.cat = in_cat;
         if(has_covar){
             std::cout<<"Adding a covariance matrix "<<covar_name<<" from file "<<covar_file<<std::endl;
-            covar_file = covar_file+"/VID"+std::to_string(n_var)+".SBNcovar.root";
+            covar_file = covar_file;//+"/VID"+std::to_string(n_var)+".SBNcovar.root";
             t.addCovar(covar_name,covar_file);
             t.covar_legend_name = covar_leg; 
         }

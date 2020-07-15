@@ -339,7 +339,6 @@
 <precut def = "el.EnuQE<1250&amp;&amp;el.EnuQE>200" name = "EnuQE Cut"/>
 -->
 <precut def = "el.EnuQE<1250&amp;&amp;el.EnuQE>200" name = "EnuQE Cut"/>
-<precut def = "el.R<400" name = "R Cut"/>
 
 
 <alias key = "leptonP" value = "sqrt(pow(el.E,2)+el.E*0.511)"/>

@@ -9,7 +9,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 		int num_MC = MCfiles.size();
 		double is_bestfit_in = false;
 		bool do_pair_plot = true;
-		bool draw_estimator = false;
+		bool draw_estimator = true;
 		bool debug_message = true;
 
 		double yaxis_factor = 1.6;
@@ -52,7 +52,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 			//Prepare MC
 			std::vector<TH1*> MC(num_MC);
-			TH1* Ghost_MC;
+			TH1* AllBkg_MC;
 			bool first_hist = true;
 
 			for(size_t index = 0; index <num_MC; ++index){
@@ -80,10 +80,10 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				if(is_bestfit_in || !MCfiles[index]->is_signal ){ 
 
 					if(first_hist){ 
-						Ghost_MC = (TH1*) MC[index]->Clone("Ghostmc");
+						AllBkg_MC = (TH1*) MC[index]->Clone("AllBkgmc");
 						first_hist = false;
 					} else{
-						Ghost_MC->Add(MC[index],1.0);
+						AllBkg_MC->Add(MC[index],1.0);
 
 					}
 					std::cout<<" data - "<< MCfiles[index]->tag <<std::endl;
@@ -101,12 +101,10 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 			legend->AddEntry(data, (is_bestfit_in)? "Data - (BkgMC+Best Fit)": "Data - BkgMC","lp");	
 
 
-			//adjust errors
+			//No need to adjust errors
 			for(int ib=1; ib<v.n_bins+1; ib++){
-				double mc_wgt_err = Ghost_MC->GetBinError(ib);//This is sum of sqrt(wgt); after scaling;
-				double data_err = sqrt( pow( data->GetBinError(ib) ,2 )  + pow( mc_wgt_err ,2 ));
-				if(debug_message)std::cout<<" MC "<<ib<<" bin has "<<Ghost_MC->GetBinContent(ib)<< " with error "<<mc_wgt_err<<" and data Error "<<data->GetBinError(ib)<<" calculated "<<data_err<<std::endl; 
-				data->SetBinError(ib, data_err);
+				if(debug_message)std::cout<<" rescaled BkgMC "<<ib<<" bin has "<<AllBkg_MC->GetBinContent(ib)<< " with error "<<AllBkg_MC->GetBinError(ib)<<" and the excess Error "<<data->GetBinError(ib)<<std::endl; 
+//				data->SetBinError(ib, data_err);
 			}
 
 			data->Draw("E1");//black dot
@@ -212,7 +210,10 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 //						double curchi = pow(dav-mcv,2)/(pow(mc_stat_err,2)+pow(mc_wgt_err,2));
 						double curchi = pow(dav-mcv,2)/(pow(data_err,2)+pow(mc_wgt_err,2));
-						if(debug_message) std::cout<<"Chi2 Bin "<<ib<<", data "<<dav<<", err "<<data_err<<",MC "<<mcv<<",err "<<mc_wgt_err<<",scale factor "<<mc_scale_factor[index]<<std::endl;
+						if(debug_message) std::cout<<"Chi2 Bin "<<ib<<", data "<<dav<<", err "<<data_err<<",MC "<<mcv<<",err "<<mc_wgt_err<<",scale factor "<<mc_scale_factor[index]<<",chi2 "<<curchi<<std::endl;
+
+
+
 //						double curchi = pow(dav-mcv,2)/(dav);
 						mychi += curchi;
 					}
@@ -247,10 +248,38 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 					c_var->Print(("vars/"+std::to_string(nv)+"_"+v.safe_unit+"_"+MCfiles[index]->tag+"_stage_"+std::to_string(j)+".pdf").c_str(),"pdf");
 				}
+				if(debug_message){
+					std::cout<<"------------------- Summary -------------------"<<std::endl;
+					int gap=9;
+					std::cout<<std::left<<std::setw(5)<<"Bin#";
+					std::cout<<std::left<<std::setw(gap)<<"Excess";
+					std::cout<<std::left<<std::setw(gap+8)<<"(Excess+MC)_E";
+
+					for(size_t index = 0; index <num_MC; ++index){
+						std::cout<<std::left<<std::setw(gap)<<MCfiles[index]->tag;
+						std::cout<<std::left<<std::setw(gap+6)<<MCfiles[index]->tag+"_statE";
+						std::cout<<std::left<<std::setw(gap+6)<<"scale_factor";
+					}
+					std::cout<<std::endl;
+
+					for(int ib=1; ib<v.n_bins+1; ib++){
+						if(data->GetBinContent(ib) < 10e-20) continue;
+						std::cout<<std::left<<std::setw(5)<<ib;
+						std::cout<<std::left<<std::setw(gap)<<data->GetBinContent(ib);
+						std::cout<<std::left<<std::setw(gap+8)<<data->GetBinError(ib);
+						for(size_t index = 0; index <num_MC; ++index){
+							std::cout<<std::left<<std::setw(gap)<<MC[index]->GetBinContent(ib);
+							std::cout<<std::left<<std::setw(gap+6)<<MC[index]->GetBinError(ib);
+							std::cout<<std::left<<std::setw(gap+6)<<mc_scale_factor[index];
+						}
+						std::cout<<std::endl;
+					}
+				}
+
 			}
 			delete c_var;
 			nv++;
-		
+
 		}
 
     }
