@@ -27,51 +27,46 @@
 <bdtfile filename = "timing2.0_MC_nuebar_may07.root" tag = "other_numu" hist_style = "hist" dirs = "" col = "(163,143,163)" plot_name = "#bar{#nu}_{#mu}/#nu_{#mu}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
     <definition>
         <cut> backgroundType==11 </cut>
-        <cut> Entry$%2==0 </cut>
 		<cut> MCBEAM.ntp&gt;2</cut>
     </definition>
-	<fixPOT> 1.3953E22 </fixPOT>
+	<fixPOT> 2.7906e22 </fixPOT>
 </bdtfile>
 
 <bdtfile filename = "timing2.0_MC_nuebar_may07.root" tag = "other" hist_style = "hist" dirs = "" col = "(153,153,153)" plot_name = "Other" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
     <definition>
         <cut> backgroundType==11 </cut>
-        <cut> Entry$%2==0 </cut>
 		<cut> MCBEAM.ntp&lt;3</cut>
     </definition>
-	<fixPOT> 1.3953E22 </fixPOT>
+	<fixPOT> 2.7906e22 </fixPOT>
 </bdtfile>
 
 <bdtfile filename = "timing2.0_MC_nuebar_dirt_may07.root" tag = "dirt" hist_style = "hist" dirs = "" col = "(137,104,89)" plot_name = "dirt" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
     <definition>
-        <cut> Entry$%2==0 </cut>
+        <cut> 1 </cut>
     </definition>
-	<fixPOT> 6.781824e21 </fixPOT>
+	<fixPOT> 1.3563e22 </fixPOT>
 </bdtfile>
 
 <bdtfile filename = "timing2.0_MC_nuebar_may07.root" tag = "delta" hist_style = "hist" dirs = "" col = "(222,186,135)" plot_name = "#Delta#rightarrow N#gamma" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
     <definition>
         <cut> backgroundType==10 </cut>
-        <cut> Entry$%2==0 </cut>
     </definition>
-	<fixPOT> 1.3953E22 </fixPOT>
+	<fixPOT>2.7906e22 </fixPOT>
 </bdtfile>
 
 <bdtfile filename = "timing2.0_MC_nuebar_may07.root" tag = "pi0misid" hist_style = "hist" dirs = "" col = "(207,94,97)" plot_name = "#pi^{0} misid" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
     <definition>
         <cut> backgroundType==9 </cut>
-        <cut> Entry$%2==0 </cut>
     </definition>
-	<fixPOT> 1.3953E22 </fixPOT>
+	<fixPOT> 2.7906e22</fixPOT>
 </bdtfile>
 
 <bdtfile filename = "timing2.0_MC_nuebar_may07.root" tag = "intrinsicnue" hist_style = "hist" dirs = "" col = "(176,207,199)" plot_name = "Intrinsic #nu_{e}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
     <definition>
         <cut> (backgroundType&gt;0) </cut>
         <cut> (backgroundType&lt;6) </cut>
-        <cut> Entry$%2==0 </cut>
     </definition>
-	<fixPOT> 1.3953E22 </fixPOT>
+	<fixPOT> 2.7906e22 </fixPOT>
 </bdtfile>
 
 <!-- DATA!!!!-->

@@ -633,7 +633,7 @@ int main (int argc, char *argv[]){
 			if(number>-1){//a variable is specified
 				tmp_vars = {vars.at(number)};
 
-				if(true){//do systematics
+				if(false){//do systematics
 
 					std::string sys_root = analysis_tag + "systematics/roots";
 					std::string sys_draw = analysis_tag + "systematics/drawn";
@@ -647,8 +647,8 @@ int main (int argc, char *argv[]){
 					}
 
 					InitSys(tmp_vars[0], systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
-				std::cout<<"CHECK memory!"<<std::endl;
-				sleep(10);
+//				std::cout<<"CHECK memory!"<<std::endl;
+//				sleep(10);
 				}
 
 			}else{

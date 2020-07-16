@@ -193,7 +193,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 					//get chi_square
 					double mychi=0;
-					int ndof = v.n_bins;
+					int ndof = v.n_bins - 1;
 						
 					for(int ib=1; ib<v.n_bins+1; ib++){
 						double dav = data->GetBinContent(ib);//the excess
@@ -203,10 +203,10 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 						double mc_wgt_err = MC[index]->GetBinError(ib);//This is sum of sqrt(wgt); after scaling;
 						double data_err = data->GetBinError(ib);
 //					double mc_stat_err = sqrt(MC[index]->GetBinContent(ib)/mc_scale_factor[index]);
-						if(dav<1e-20){
-							ndof--;
-							continue;
-						}
+//						if(dav<1e-20){
+//							ndof--;
+//							continue;
+//						}
 
 //						double curchi = pow(dav-mcv,2)/(pow(mc_stat_err,2)+pow(mc_wgt_err,2));
 						double curchi = pow(dav-mcv,2)/(pow(data_err,2)+pow(mc_wgt_err,2));
@@ -263,7 +263,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 					std::cout<<std::endl;
 
 					for(int ib=1; ib<v.n_bins+1; ib++){
-						if(data->GetBinContent(ib) < 10e-20) continue;
+//						if(data->GetBinContent(ib) < 10e-20) continue;
 						std::cout<<std::left<<std::setw(5)<<ib;
 						std::cout<<std::left<<std::setw(gap)<<data->GetBinContent(ib);
 						std::cout<<std::left<<std::setw(gap+8)<<data->GetBinError(ib);

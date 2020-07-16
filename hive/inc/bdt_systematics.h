@@ -1,0 +1,71 @@
+#ifndef BDT_SYSTEMATICS_H
+#define BDT_SYSTEMATICS_H
+
+#include <iostream>
+
+#include "bdt_var.h"
+#include "bdt_file.h"
+#include "load_mva_param.h"
+
+#include "TStyle.h"
+#include "TSystem.h"
+
+struct bdt_sys{
+	public:
+		TString tag;// BkgMC, dirt | MCUnism, Multism,OpticalModel
+		TString dir;//for multi files, need to know the parent directory.
+		TString filename;
+		TString treename;
+
+
+		std::vector< TString > vars;
+		std::vector< TString > vars_name;
+
+
+		double pot;
+		double throws;
+		
+		bool its_CV;
+		bool its_multithrows;
+		bool its_multifiles;
+
+		//deduced elements
+		std::vector< std::vector<TH1F*> > hist;
+		std::vector< std::vector<TH2D*> > twodhist;
+		int num_vars;
+
+		//constructor
+		bdt_sys(int index, MVALoader XMLconfig);
+		~bdt_sys();
+};
+
+/*
+ * Initialize Systematics of given variable 1dhistogram of weights;
+ * This will add contents into syss;
+ */
+
+void InitSys(bdt_variable var, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn);
+//InitSys2 uses a different approach.
+void InitSys2(bdt_variable var, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn);
+
+/*
+ * make covariance matrix according to the histograms;
+ *
+ */
+
+void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn);
+
+/*
+ * make covaraince matrix according to input histograms, hist - weights and cv - cv;
+ *
+ */
+TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv);
+
+/*
+ * Make Covaraince matrix from 2d histograms
+ *
+ */
+
+TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv);
+
+#endif
