@@ -646,7 +646,7 @@ int main (int argc, char *argv[]){
 
 					}
 
-					InitSys(tmp_vars[0], systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+					InitSys2(tmp_vars[0], systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
 //				std::cout<<"CHECK memory!"<<std::endl;
 //				sleep(10);
 				}
