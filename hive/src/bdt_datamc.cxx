@@ -780,7 +780,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			NdatEvents = data_file->GetEntries()*(plot_pot/data_file->pot )*data_file->scale_data;
 
 			if(var.has_covar){//Determine Estimated Errors
-				tsum_name = var.covar_legend_name.c_str();
+				tsum_name = "Stats+MCUnisim+Multisims Error "+to_string_prec(total_MC_events,2);//var.covar_legend_name.c_str();
 				legend_style = "fl";
 			}else{
 				if(disable_number){
@@ -811,6 +811,25 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 					}
 				}
 			}else{//this variable has covariance matrix, so 
+
+				TFile *covar_f = new TFile(var.covar_file.c_str(),"read");
+				TMatrixD * covar_full = (TMatrixD*)covar_f->Get(var.covar_name.c_str());
+				covar_collapsed->Zero();//set all elements to 0;
+				std::cout<<"Reading a covariance matrix "<<var.covar_file.c_str()<<std::endl;
+				covar_collapsed = covar_full;//I think this is right, if the POT for systematic is considered.
+//				this->calcCollapsedCovariance(covar_full, covar_collapsed,var);
+
+				for(int c=0; c< tsum->GetNbinsX();c++){
+					double mc_stats_error = tsum->GetBinError(c+1);
+					double mc_sys_error = sqrt((*covar_collapsed)(c,c));
+					std::cout<<"Yarp: "<<mc_sys_error<<std::endl;
+					double tot_error = sqrt(mc_stats_error*mc_stats_error+mc_sys_error*mc_sys_error);
+					tsum->SetBinError(c+1, tot_error);
+					//And add on the systematic error that is MC stats
+					//               (*covar_collapsed)(c,c) += mc_stats_error*mc_stats_error;
+				}
+				covar_f->Close();
+
 				Double_t *determ_ptr;
 				for(int ib=0; ib<var.n_bins; ib++){
 					//                       (*covar_collapsed)(ib,ib) += d0->GetBinContent(ib+1);//sqrt(n*n)//This is Data stats error
@@ -821,11 +840,12 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				}
 				covar_collapsed->Invert(determ_ptr);
 
+				std::cout<<"Hi: ibin jbin MC_i data_i errorMatrix MC_j data_j curchi totalchi"<<std::endl;
 				for(int ib=0; ib<var.n_bins; ib++){
 					for(int jb=0; jb<var.n_bins; jb++){
 						double curchi   =  (tsum->GetBinContent(ib+1)-d0->GetBinContent(ib+1))*(*covar_collapsed)(ib,jb)*(tsum->GetBinContent(jb+1)-d0->GetBinContent(jb+1));
 						mychi += curchi;
-						//std::cout<<"Hi: "<<ib<<" "<<jb<<" "<<tsum->GetBinContent(ib+1)<<" "<<d0->GetBinContent(ib+1)<<" "<<(*covar_collapsed)(ib,ib)<<" "<<tsum->GetBinContent(jb+1)<<" "<<d0->GetBinContent(jb+1)<<" "<<curchi<<" "<<mychi<<std::endl;
+						std::cout<<"Hi: "<<ib<<" "<<jb<<" "<<tsum->GetBinContent(ib+1)<<" "<<d0->GetBinContent(ib+1)<<" "<<(*covar_collapsed)(ib,ib)<<" "<<tsum->GetBinContent(jb+1)<<" "<<d0->GetBinContent(jb+1)<<" "<<curchi<<" "<<mychi<<std::endl;
 					} 
 				}
 				ndof = var.n_bins;
@@ -868,24 +888,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			//STEP 2.2.C: Histograms
 			//STEP 2.2.C.1: Top Plot 
 				//stk [skip], tsum[adjust error bar, if systematic error is available], d0 [skip], l0[add contents]
-			if(var.has_covar){//For tsum, (systematic+stat) error; covariance matrix calculation.
-				TFile *covar_f = new TFile(var.covar_file.c_str(),"read");
-				TMatrixD * covar_full = (TMatrixD*)covar_f->Get(var.covar_name.c_str());
-				covar_collapsed->Zero();
-				std::cout<<"Reading this from a covariance matrix "<<var.covar_file.c_str()<<std::endl;
-				this->calcCollapsedCovariance(covar_full, covar_collapsed,var);
 
-				for(int c=0; c< tsum->GetNbinsX();c++){
-					double mc_stats_error = tsum->GetBinError(c+1);
-					double mc_sys_error = sqrt((*covar_collapsed)(c,c));
-					std::cout<<"Yarp: "<<mc_sys_error<<std::endl;
-					double tot_error = sqrt(mc_stats_error*mc_stats_error+mc_sys_error*mc_sys_error);
-					tsum->SetBinError(c+1, tot_error);
-					//And add on the systematic error that is MC stats
-					//               (*covar_collapsed)(c,c) += mc_stats_error*mc_stats_error;
-				}
-				covar_f->Close();
-			}
 			for(size_t jndex = 0; jndex < mc_stack->stack.size(); ++jndex){//For l0, set legend contents according to bdt_file members
 				bdt_file* f = mc_stack->stack[jndex];
 				double Nevents = f->GetEntries()*(plot_pot/f->pot)*f->scale_data;
@@ -1146,9 +1149,10 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 	return 0;
 }
 
+//frac_full is from the file, full_coll is empty;
 int bdt_datamc::calcCollapsedCovariance(TMatrixD * frac_full, TMatrixD *full_coll, bdt_variable & var){
 
-    std::vector<double> full_vec = mc_stack->getEntryFullVector(var);
+    std::vector<double> full_vec = mc_stack->getEntryFullVector(var);//each element is the number of events of {type1(bin1,bin2,...), type2(bin1,bin2,...),... };
     TMatrixD tmp_full(frac_full->GetNrows(), frac_full->GetNcols());
     tmp_full.Zero();
 
@@ -1164,24 +1168,24 @@ int bdt_datamc::calcCollapsedCovariance(TMatrixD * frac_full, TMatrixD *full_col
     }
 
     for(int i=0; i< frac_full->GetNrows();i++){
-        for(int j=0; j< frac_full->GetNrows();j++){
+        for(int j=0; j< frac_full->GetNrows();j++){//set contents of the matrix same dimension of the one from file;
 
             double pt = (*frac_full)(i,j);
-            if(pt!=pt || isinf(pt)){
+            if(pt!=pt || isinf(pt)){//the element is infinity;
                 if(full_vec[i] !=0 && full_vec[j]!=0){
                     //std::cout<<"We have a nan "<<pt<<" at "<<i<<" "<<j<<" "<<full_vec[i]<<" "<<full_vec[j]<<std::endl;
                 }
                 pt=0.0000;
             }
 
-            tmp_full(i,j) = pt*full_vec[i]*full_vec[j];
+            tmp_full(i,j) = pt*full_vec[i]*full_vec[j];//element*event#(type,bin)*event#(type,bin)*
             //std::cout<<"ARK: "<<i<<" "<<j<<" "<<full_vec[i]<<" "<<pt<<" "<<tmp_full(i,j)<<std::endl;
         }
     }
     std::cout<<"Done"<<std::endl;
     //Going to do collapsing here, but for now just do diagonal!
 
-    this->simpleCollapse(&tmp_full, full_coll, var);
+    this->simpleCollapse(&tmp_full, full_coll, var);//temp_full - calculated, full_coll - from file;
     //fast old way
     /*
        int n_stack = mc_stack->stack.size();
@@ -1276,6 +1280,7 @@ int bdt_datamc::plotEfficiency(std::vector<bdt_variable> vars, std::vector<doubl
 
 
 int bdt_datamc::simpleCollapse(TMatrixD * Min, TMatrixD * Mout, bdt_variable & var){
+	//Min - element*event#*event#; Mout - from file, which will be modified;
     //Ripped directly from...
     //void SBNchi::CollapseSubchannels(TMatrixT <double> & M, TMatrixT <double> & Mc)
     int num_channels = 1;
@@ -1296,7 +1301,7 @@ int bdt_datamc::simpleCollapse(TMatrixD * Min, TMatrixD * Mout, bdt_variable & v
     for(int ic = 0; ic < num_channels; ic++){ 	 //Loop over all rows
         for(int jc =0; jc < num_channels; jc++){ //Loop over all columns
 
-            for(int m=0; m < num_subchannels[ic]; m++){
+            for(int m=0; m < num_subchannels[ic]; m++){//# of types of files
                 for(int n=0; n< num_subchannels[jc]; n++){ //For each big block, loop over all subchannels summing toGether
                     Summed[ic][jc] +=  Min->GetSub(mrow+n*num_bins[jc] ,mrow + n*num_bins[jc]+num_bins[jc]-1, mcol + m*num_bins[ic], mcol+ m*num_bins[ic]+num_bins[ic]-1 );
                 }

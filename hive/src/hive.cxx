@@ -402,6 +402,18 @@ int main (int argc, char *argv[]){
 //        f->addFriend("track_tree",analysis_tag+"_"+f->tag+"_simtrack.root");
 
     }
+	
+	//prepare systematic enviroments;
+	std::string sys_root = analysis_tag + "systematics/roots";
+	std::string sys_draw = analysis_tag + "systematics/drawn";
+	gadget_buildfolder(analysis_tag + "systematics");
+	gadget_buildfolder(sys_root);
+	gadget_buildfolder(sys_draw);
+	std::vector<bdt_sys*> systematics;
+	for(int sys_index = 0; sys_index < XMLconfig.n_sys; ++sys_index){ 
+		systematics.push_back( new bdt_sys(sys_index, XMLconfig));
+
+	}
 
     std::cout<<"--------------------------------------------------------------------------"<<std::endl;
     std::cout<<"--------------------------------------------------------------------------"<<std::endl;
@@ -633,20 +645,10 @@ int main (int argc, char *argv[]){
 			if(number>-1){//a variable is specified
 				tmp_vars = {vars.at(number)};
 
-				if(false){//do systematics
+				if(true){//do systematics
 
-					std::string sys_root = analysis_tag + "systematics/roots";
-					std::string sys_draw = analysis_tag + "systematics/drawn";
-					gadget_buildfolder(analysis_tag + "systematics");
-					gadget_buildfolder(sys_root);
-					gadget_buildfolder(sys_draw);
-					std::vector<bdt_sys*> systematics;
-					for(int sys_index = 0; sys_index < XMLconfig.n_sys; ++sys_index){ 
-						systematics.push_back( new bdt_sys(sys_index, XMLconfig));
 
-					}
-
-					InitSys2(tmp_vars[0], systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+					InitSys({tmp_vars[0]}, systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
 //				std::cout<<"CHECK memory!"<<std::endl;
 //				sleep(10);
 				}
@@ -824,6 +826,13 @@ int main (int argc, char *argv[]){
         if (vector != ""){//if passed specific variables
             std::vector<bdt_variable> tmp_var =  real_datamc.GetSelectVars(vector, vars);
 
+			if(tmp_var.size() == 2){ 
+					if(true){ //do systematics
+					InitSys(tmp_var, systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+					}
+			} else{
+				std::cout<<"No systematics because there are not exact 2 variables as inputs "<<std::endl;
+			}
 			real_datamc.plot2D_DataMinusMC(ftest, tmp_var, fbdtcuts);
             real_datamc.plot2D(ftest, tmp_var, fbdtcuts);
         }else{

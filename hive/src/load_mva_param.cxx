@@ -623,7 +623,8 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 //		 if(pVar->Attribute("minidef")!=NULL) var_minidef_unparsed =pVar->Attribute("minidef") ;
 //        std::string var_minidef = this->AliasParse(var_minidef_unparsed); 
 
-		std::vector< TString > var_minidef = gadget_tokenlizer( pVar->Attribute("minidef"));
+		TString var_minidef = pVar->Attribute("minidef");
+//		std::vector< TString > var_minidef = gadget_tokenlizer( pVar->Attribute("minidef"));
 
         std::string var_binning = pVar->Attribute("binning");
         std::string var_unit = pVar->Attribute("unit");
@@ -868,8 +869,8 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 	
 		//boolean 
 		sys_its_CV.push_back(gadget_boolreader( pSys->Attribute("isCV")));
-		sys_its_multithrows.push_back(gadget_boolreader( pSys->Attribute("isMulthrows")));
-		sys_its_multifiles.push_back(gadget_boolreader(pSys->Attribute("isMulfiles")));
+		sys_its_multithrows.push_back(gadget_boolreader( pSys->Attribute("isMultithrows")));
+		sys_its_OpticalModel.push_back(gadget_boolreader(pSys->Attribute("isOpticalModelCV")));
 
 //tokenize the following var, varnam
 		sys_vars.push_back(gadget_tokenlizer( pSys->Attribute("var")));
@@ -907,7 +908,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 			toff_index = (sys_its_multithrows[n_sys])? 0: 1;
 			std::cout<<std::setw(8)<<t_of_f[toff_index];
 
-			toff_index = (sys_its_multifiles[n_sys])? 0: 1;
+			toff_index = (sys_its_OpticalModel[n_sys])? 0: 1;
 			std::cout<<std::setw(8)<<t_of_f[toff_index]<<std::endl;
 			
 		}

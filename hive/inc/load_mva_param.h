@@ -98,7 +98,7 @@ class MVALoader {
 
 	std::vector< bool> sys_its_CV;
 	std::vector< bool> sys_its_multithrows;
-	std::vector< bool> sys_its_multifiles;
+	std::vector< bool> sys_its_OpticalModel;
 
 
 };

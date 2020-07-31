@@ -27,7 +27,7 @@ struct bdt_sys{
 		
 		bool its_CV;
 		bool its_multithrows;
-		bool its_multifiles;
+		bool its_OM;
 
 		//deduced elements
 		std::vector< std::vector<TH1F*> > hist;
@@ -44,9 +44,7 @@ struct bdt_sys{
  * This will add contents into syss;
  */
 
-void InitSys(bdt_variable var, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn);
-//InitSys2 uses a different approach.
-void InitSys2(bdt_variable var, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn);
+void InitSys(std::vector<bdt_variable> var, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn);
 
 /*
  * make covariance matrix according to the histograms;
@@ -62,9 +60,15 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv);
 
 /*
+ * covariane matrix propagation, create a fractional covariance matrix;
+ */
+TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv, TH1F* newcv);
+
+/*
  * Make Covaraince matrix from 2d histograms
  *
  */
+
 
 TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv);
 
