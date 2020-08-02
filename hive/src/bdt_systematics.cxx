@@ -264,6 +264,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 	
 	if(message) std::cout<<"Making covariance matices."<<std::endl;
 	
+	TString unique_label = var.safe_name+ to_string_prec(var.n_bins+var.plot_min+var.plot_max,0)+"_";
 	//
 	//STEP 1 categorize hists; 
 	std::vector<TString> tags;
@@ -363,7 +364,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			//for ovarlaying all histograms
 			TH2D* all_hist = new TH2D(temp_histname, temp_histname, nb, nl,nh, nby, 0, nby);
 			//for summing up cov matrice
-			TH2D* covmatrices =  new TH2D(temp_covname+"_cov", temp_covname+"_cov",nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+			TH2D* covmatrices =  new TH2D(temp_covname+" Covariance Matrix", temp_covname+" Covaraince Matrix",nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 
 			//to record the cov matrix;
 			for(size_t jndex = 0; jndex < num_throws; ++jndex){//go through different throws
@@ -394,38 +395,44 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			cv_hist->SetLineColor(6);
 			cv_hist->SetLineWidth(2);
 			//Save the histogram
-			histCanvas->SaveAs( dir_drawn + "/hist_"+temp_histname+".pdf" ,"pdf");
+
+
+			histCanvas->SaveAs( dir_drawn + "/hist_"+unique_label+temp_histname+".pdf" ,"pdf");
 			
 			covCanvas->Clear();
 			covCanvas->cd();
-			covmatrices->SetStats(false);
-			covmatrices->Draw("COLZ");
-			covCanvas->SaveAs( dir_drawn + "/cov_"+temp_histname+".pdf" ,"pdf");
-			
-			finalcov->Add(covmatrices);
 
-			cov_root->cd();
-			covmatrices->Write();
 			 
-			if(sys2OMCVmap.count(tags[index]) > 0){//its a Optical Model CV, propagate the matrix to a fractional covariance matrix;
+			if(sys2OMCVmap.count(tags[index]) > 0){//its a Optical Model CV, propagate the matrix to a fractional covariance matrix; and add it to finalcov.
 				bdt_sys* tempsOMCV = sys2OMCVmap.find(tags[index])->second;//get the sys for a given tag;
 
 				if(message) std::cout<<"Making fractional covariance matrix for "<<tags[index]<<std::endl;
 				TH1F* OMCV = (TH1F*) (tempsCV->hist[0][0])->Clone();
 				TH2D* fracCov = MakeFracCov(temp_covname, covmatrices, cv_hist, OMCV);
 
-				covCanvas->Clear();
-				covCanvas->cd();
 				fracCov->SetStats(false);
 				fracCov->Draw("COLZ");
-				covCanvas->SaveAs( dir_drawn + "/cov_frac"+temp_histname+".pdf" ,"pdf");
+				fracCov->SetTitle("Propagated "+temp_covname + " Covaraince Matrix");
+				covCanvas->SaveAs( dir_drawn + "/cov_frac"+unique_label+temp_histname+".pdf" ,"pdf");
 
 				finalcov->Add(fracCov);
 
 				cov_root->cd();
 				fracCov->Write();
 
+			}else{//normally, add the cov matrix to the final total matrix; 
+
+				covmatrices->SetStats(false);
+				covmatrices->GetXaxis()->SetTitle((var.unit).c_str());
+				covmatrices->Draw("COLZ");
+				covCanvas->SaveAs( dir_drawn + "/cov_"+unique_label+temp_histname+".pdf" ,"pdf");
+
+
+				finalcov->Add(covmatrices);
+				cov_root->cd();
+				covmatrices->Write();
 			}
+
 
 		}//next sw covaraince matrix
 	}//next tag;
@@ -502,7 +509,7 @@ TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv, TH1F* newcv){
 	
 	TH2D* fractional_cov = (TH2D*) cov_temp->Clone("Fractional Covaraince Matrix "+name);
 
-	fractional_cov->Reset("ICESM");//clear contents;
+//	fractional_cov->Reset("ICESM");//clear contents;
 
 	for(int jndex = 1; jndex < nb+1; ++jndex){
 		for(int kndex = 1; kndex < nb+1; ++kndex){

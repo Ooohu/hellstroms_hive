@@ -780,7 +780,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			NdatEvents = data_file->GetEntries()*(plot_pot/data_file->pot )*data_file->scale_data;
 
 			if(var.has_covar){//Determine Estimated Errors
-				tsum_name = "Stats+MCUnisim+Multisims Error "+to_string_prec(total_MC_events,2);//var.covar_legend_name.c_str();
+				tsum_name = "Stat+Systematic Errors "+to_string_prec(total_MC_events,2);//var.covar_legend_name.c_str();
 				legend_style = "fl";
 			}else{
 				if(disable_number){
@@ -1114,7 +1114,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				std::cout<<std::endl;
 			}
 
-			cobs->Write();
+//			cobs->Write();
 
 			if(stack_mode){
 				cobs->SaveAs(("stack/"+tag+"_"+data_file->tag+"_"+var.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
