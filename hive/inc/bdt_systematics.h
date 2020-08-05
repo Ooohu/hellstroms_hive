@@ -33,6 +33,7 @@ struct bdt_sys{
 		std::vector< std::vector<TH1F*> > hist;
 		std::vector< std::vector<TH2D*> > twodhist;
 		int num_vars;
+		int start_with_weight = 0;//a label for which weight to start, this is for the case that the code was interrupted
 
 		//constructor
 		bdt_sys(int index, MVALoader XMLconfig);
@@ -45,6 +46,12 @@ struct bdt_sys{
  */
 
 void InitSys(std::vector<bdt_variable> var, std::vector<std::string> precuts, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn);
+
+/*
+ * Make 1d histograms;
+ */
+void Make1dhist(TFile* hist_root, bdt_variable* var, TString event_cuts, bdt_sys* temps, double plot_pot);
+
 
 /*
  * make covariance matrix according to the histograms;
