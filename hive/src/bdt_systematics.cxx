@@ -12,6 +12,18 @@ TString gadget_nameroot(TString plot_type, TString dir, bdt_variable var){
 	return file_name;
 }
 
+
+TString gadget_addindex(TString varname, int nth){
+
+	TString nam = varname;
+//	std::cout<<"before: "<<nam<<std::endl;	
+	TString lab = "[" + to_string_prec(nth,0)+"]";
+	
+	nam.ReplaceAll("[0]", lab);
+//	std::cout<<nam<<std::endl;	
+	return nam;
+
+}
 /*
  * Constructor for struct bdt_sys, CHECK
  *
@@ -41,9 +53,16 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig)
  *
  */
 
-void InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn){
+void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn){
 	
 	bool message = true;
+	
+	//make a string of precuts, CHECK, it will be more complicated when using BDT cuts;
+	std::string temp_cut("("+precuts[0]+")");
+	for(int index = 1; index < precuts.size(); ++index	){
+		temp_cut += "&&("+precuts[index] + ")";
+	}
+	TString applycuts = temp_cut.c_str();
 
 	//the histogram goes two ways: 1dhist or 2dhist
 	
@@ -68,6 +87,7 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss, double 
 		}
 		delete check_cov_root;
 	}
+
 {
 	TString outfile_name = gadget_nameroot("hist",dir_root, *var1);//, temps);
 
@@ -139,29 +159,9 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss, double 
 				Long64_t nentries = temptree->GetEntries();
 				if(message) std::cout<<" We have entries: "<<nentries<<std::endl;
 
-				//Get branches
-//				temptree->SetMakeClass(1);
-//
-//				temptree->SetBranchStatus("*",0);
-//
-//				std::vector< Float_t * > swvars(num_swvars); 
-//				std::vector< Float_t * > varvars(num_mininames); 
-//				//To load Float_t []: https://arduino.stackexchange.com/questions/3774/how-can-i-declare-an-array-of-variable-size-globally
-//				for(size_t kndex = 0; kndex < (temps->vars).size(); ++ kndex){//get sw branches
-//					swvars[kndex] = (Float_t*) malloc(nentries*sizeof(Float_t*)*num_throws);
-//					temptree->SetBranchStatus(temps->vars[kndex],1);
-//					temptree->SetBranchAddress(temps->vars[kndex], swvars[kndex]);
-//				}
-//
-//				for(size_t kndex = 0; kndex < (var.mininame).size(); ++ kndex){//get sw branches
-//					varvars[kndex] = (Float_t*) malloc(nentries*sizeof(Float_t*)*num_throws);
-//					temptree->SetBranchStatus(var.mininame[kndex],1);
-//					temptree->SetBranchAddress(var.mininame[kndex], varvars[kndex]);
-//				}
 				
 				//STEP 2.1 make empty histgrams to be filled.
 				std::vector<TH1F*> hist1d(num_throws);
-//				std::vector<TH2F*> hist2d(num_throws); //if num_mininames  == 2;
 
 				int count_hist = 0;
 				for(int kndex = 0; kndex <num_throws;++kndex){//throw in each weight;
@@ -179,7 +179,7 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss, double 
 					TString temp_wgt = temps->vars[jndex] + temp_label;
 					TString temp_wgtname = temps->vars_name[jndex]+std::to_string(kndex);
 
-					wgtforms[kndex] = new TTreeFormula(temp_wgtname, temp_wgt, temptree);//get the x-axis
+					wgtforms[kndex] = new TTreeFormula(temp_wgtname, temp_wgt+"*"+gadget_addindex(applycuts,kndex), temptree);//get the x-axis, with precuts;
 					wgtforms[kndex]->GetNdata();
 //					std::cout<< wgtforms[kndex]->EvalInstance()<<std::endl;
 //					if(kndex== 10) sleep(10);
@@ -190,20 +190,24 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss, double 
 					temptree->GetEntry(kentry);
 
 					for(int kndex = 0; kndex < num_throws; ++kndex){//loop through throws;
-					
-						TTreeFormula varformula(var1->unit.c_str(), var1->mininame+"["+std::to_string(kndex)+"]", temptree);//get the x-axis
+						
+						//CHECK, add continue statement for precuts;
+
+						TTreeFormula varformula(var1->unit.c_str(), gadget_addindex(var1->mininame, kndex), temptree);//get the x-axis
 						varformula.GetNdata();
 						double temp_value = varformula.EvalInstance();
 						double temp_weight = wgtforms[kndex]->EvalInstance()*plot_pot/temps->pot;
-					hist1d[kndex]->Fill(temp_value,temp_weight);//jndex - nth sw; kndex - nth throw
-					std::cout<<"\r\tLooping entries: "<<std::setw(5)<<kentry+1<<"/"<<std::setw(5)<<nentries;
-					std::cout<<" "<<var1->mininame+"["+std::to_string(kndex)+"] ";
-					std::cout<<temps->vars[jndex]+"["+std::to_string(kndex)+"] ";
-					std::cout<<" value: "<<std::setw(5)<<temp_value;
-					std::cout<<" with weight: "<<std::setw(5)<<temp_weight;
-					std::cout<<std::setw(4)<<kndex+1<<" throw sw name: "<<temps->vars_name[jndex];
-//					std::cout<<std::endl;
-//					if(kndex==10) exit(0);
+
+						hist1d[kndex]->Fill(temp_value,temp_weight);//jndex - nth sw; kndex - nth throw
+
+						std::cout<<"\r\tLooping entries: "<<std::setw(5)<<kentry+1<<"/"<<std::setw(5)<<nentries;
+						std::cout<<" "<<gadget_addindex(var1->mininame, kndex);
+						std::cout<<"="<<std::setw(5)<<temp_value;
+						std::cout<<" "<<temps->vars[jndex]<<"["<<kndex<<"]";
+						std::cout<<"="<<std::setw(5)<<temp_weight;
+						std::cout<<std::setw(4)<<kndex+1<<" throw sw name: "<<temps->vars_name[jndex];
+						//					std::cout<<std::endl;
+						//					if(kndex==10) exit(0);
 					}//next throw;
 				}
 
@@ -227,17 +231,7 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss, double 
 
 				std::cout<<"Save "<<num_throws;
 				std::cout<<" histograms to the file: "<<outfile_name<<" dir:"<<Tdir_name<<std::endl;
-				//				sleep(10);
-				//Tdir->DeleteAll();
-				//delete Tdir;
-				//free memory
-//				for(size_t kndex = 0; kndex < (temps->vars).size(); ++ kndex){//get sw branches
-//					free(swvars[kndex]); 
-//				}
-//
-//				for(size_t kndex = 0; kndex < (var.mininame).size(); ++ kndex){//get sw branches
-//					free(varvars[kndex]);
-//				}
+
 			}//next systematic weight 
 			infile->Close();
 		}//next systematic files
@@ -407,13 +401,14 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 				bdt_sys* tempsOMCV = sys2OMCVmap.find(tags[index])->second;//get the sys for a given tag;
 
 				if(message) std::cout<<"Making fractional covariance matrix for "<<tags[index]<<std::endl;
-				TH1F* OMCV = (TH1F*) (tempsCV->hist[0][0])->Clone();
+				TH1F* OMCV = (TH1F*) (tempsOMCV->hist[0][0])->Clone();
 				TH2D* fracCov = MakeFracCov(temp_covname, covmatrices, cv_hist, OMCV);
 
 				fracCov->SetStats(false);
 				fracCov->Draw("COLZ");
 				fracCov->SetTitle("Propagated "+temp_covname + " Covaraince Matrix");
 				covCanvas->SaveAs( dir_drawn + "/cov_frac"+unique_label+temp_histname+".pdf" ,"pdf");
+				if(message) std::cout<<"1,1 in the matrix "<< tags[index]<<" "<<fracCov->GetBinContent(1,1)<<std::endl;
 
 				finalcov->Add(fracCov);
 
@@ -427,6 +422,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 				covmatrices->Draw("COLZ");
 				covCanvas->SaveAs( dir_drawn + "/cov_"+unique_label+temp_histname+".pdf" ,"pdf");
 
+				if(message) std::cout<<"1,1 in the matrix "<< tags[index]<<" "<<covmatrices->GetBinContent(1,1)<<std::endl;
 
 				finalcov->Add(covmatrices);
 				cov_root->cd();
@@ -440,12 +436,16 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 	
 	//set axis and name for the final covaraince matrix;
 	finalcov->SetStats(false);
+
 	finalcov->SetTitle(" Total Covariance Matrix");
 	finalcov->GetXaxis()->SetTitle( (var.unit).c_str());
 
 	TCanvas *c1 = new TCanvas("c1","",900,400);
 	finalcov->Draw("COLZ");
-	c1->SaveAs(dir_drawn+"/Total_cov_"+var.safe_name+".pdf","pdf");
+
+	TString saved_root = gadget_nameroot("Total_cov",dir_root, var);//, temps);
+	c1->SaveAs(saved_root,"pdf");
+	if(message) std::cout<<"1,1 in the final matrix "<<finalcov->GetBinContent(1,1)<<std::endl;
 
 	finalcov_root->cd();
 	finalcov->Write();
@@ -507,7 +507,7 @@ TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv, TH1F* newcv){
 	int nl=newcv->GetBinLowEdge(1);
 	int nh=newcv->GetBinLowEdge(nb+1);
 	
-	TH2D* fractional_cov = (TH2D*) cov_temp->Clone("Fractional Covaraince Matrix "+name);
+	TH2D* fractional_cov = (TH2D*) cov_temp->Clone("Fractional_Covaraince_Matrix_"+name);
 
 //	fractional_cov->Reset("ICESM");//clear contents;
 

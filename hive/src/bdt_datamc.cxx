@@ -830,7 +830,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				}
 				covar_f->Close();
 
-				Double_t *determ_ptr;
+//				Double_t *determ_ptr;
 				for(int ib=0; ib<var.n_bins; ib++){
 					//                       (*covar_collapsed)(ib,ib) += d0->GetBinContent(ib+1);//sqrt(n*n)//This is Data stats error
 					(*covar_collapsed)(ib,ib) += tsum->GetBinContent(ib+1);//sqrt(n*n)//This is MC stats error
@@ -838,17 +838,22 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 						std::cout<<"WARNING a 0 in the matrix "<<ib<<std::endl;
 					}
 				}
-				covar_collapsed->Invert(determ_ptr);
+//				covar_collapsed->Invert(determ_ptr);
 
+				double total_err = 0;
 				std::cout<<"Hi: ibin jbin MC_i data_i errorMatrix MC_j data_j curchi totalchi"<<std::endl;
 				for(int ib=0; ib<var.n_bins; ib++){
 					for(int jb=0; jb<var.n_bins; jb++){
 						double curchi   =  (tsum->GetBinContent(ib+1)-d0->GetBinContent(ib+1))*(*covar_collapsed)(ib,jb)*(tsum->GetBinContent(jb+1)-d0->GetBinContent(jb+1));
 						mychi += curchi;
+						if(ib==jb){
 						std::cout<<"Hi: "<<ib<<" "<<jb<<" "<<tsum->GetBinContent(ib+1)<<" "<<d0->GetBinContent(ib+1)<<" "<<(*covar_collapsed)(ib,ib)<<" "<<tsum->GetBinContent(jb+1)<<" "<<d0->GetBinContent(jb+1)<<" "<<curchi<<" "<<mychi<<std::endl;
+						if((*covar_collapsed)(ib,ib)>0) total_err+=(*covar_collapsed)(ib,ib);
+						}
 					} 
 				}
 				ndof = var.n_bins;
+			std::cout<<"Total sys error:"<<sqrt(total_err)<<std::endl;
 			}
 			std::cout<<"MyChi: "<<var.name<<" "<<mychi<<" "<<std::endl;
 

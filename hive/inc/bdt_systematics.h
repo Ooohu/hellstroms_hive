@@ -44,7 +44,7 @@ struct bdt_sys{
  * This will add contents into syss;
  */
 
-void InitSys(std::vector<bdt_variable> var, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn);
+void InitSys(std::vector<bdt_variable> var, std::vector<std::string> precuts, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn);
 
 /*
  * make covariance matrix according to the histograms;

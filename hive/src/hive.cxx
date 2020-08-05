@@ -648,7 +648,7 @@ int main (int argc, char *argv[]){
 				if(true){//do systematics
 
 
-					InitSys({tmp_vars[0]}, systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+					InitSys({tmp_vars[0]}, vec_precuts, systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
 //				std::cout<<"CHECK memory!"<<std::endl;
 //				sleep(10);
 				}
@@ -828,7 +828,7 @@ int main (int argc, char *argv[]){
 
 			if(tmp_var.size() == 2){ 
 					if(true){ //do systematics
-					InitSys(tmp_var, systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+					InitSys(tmp_var,vec_precuts, systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
 					}
 			} else{
 				std::cout<<"No systematics because there are not exact 2 variables as inputs "<<std::endl;
