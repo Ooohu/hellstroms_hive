@@ -619,23 +619,32 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         std::string var_def_unparsed = pVar->Attribute("def");
         std::string var_def = this->AliasParse(var_def_unparsed); 
 
-//        std::string var_minidef_unparsed = var_def_unparsed;
-//		 if(pVar->Attribute("minidef")!=NULL) var_minidef_unparsed =pVar->Attribute("minidef") ;
-//        std::string var_minidef = this->AliasParse(var_minidef_unparsed); 
+        std::string var_unit = pVar->Attribute("unit");
+
+        std::cout<<"\nVariable Index "<<n_var<<" is "<<var_unit<<" with definiton: "<<var_def<<std::endl;
 
 		TString var_minidef = pVar->Attribute("minidef");
-//		std::vector< TString > var_minidef = gadget_tokenlizer( pVar->Attribute("minidef"));
 
         std::string var_binning = pVar->Attribute("binning");
-        std::string var_unit = pVar->Attribute("unit");
         std::string var_type = pVar->Attribute("type");
+
+
         const char * var_logplot = pVar->Attribute("logplot");
         bool var_logplot_bool = false;
 		if(var_logplot==NULL){
 			var_logplot_bool = false;
 		}else if (strcmp(var_logplot,"yes")==0||strcmp(var_logplot,"true")==0){
 			var_logplot_bool = true;
-			std::cout<<"is a logplot!"<<std::endl;
+			std::cout<<"It is a logplot!"<<std::endl;
+		}
+
+        const char * var_custombin = pVar->Attribute("custombin");
+        bool var_custombin_bool = false;
+		if(var_custombin==NULL){
+			var_custombin_bool = false;
+		}else if (strcmp(var_custombin,"yes")==0||strcmp(var_custombin,"true")==0){
+			var_custombin_bool = true;
+			std::cout<<"It uses customized binning!"<<std::endl;
 		}
 
         std::string covar_file;
@@ -670,9 +679,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
         const char* t_pmax = pVar->Attribute("pmax");
 
-        std::cout<<"Plotting Min/Max "<<pmin<<" "<<pmax<<std::endl;
-
-        
+//        std::cout<<"Plotting Min/Max "<<pmin<<" "<<pmax<<std::endl;
        
         int in_cat = 0; 
         const char * t_cat = pVar->Attribute("group");
@@ -684,12 +691,30 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         bool is_spec = false;
         //if(var_spectator=="true") is_spec = true;
 
-        bdt_variable t(var_def, var_minidef, var_binning,var_unit,"false",var_type,n_var);
-//        bdt_variable t(var_def,var_binning,var_unit,"false",var_type,n_var);
+//        bdt_variable t(var_def, var_minidef, var_binning,var_unit,"false",var_type,n_var);//initialize the bdt_variable;
+        bdt_variable t(var_def,var_binning,var_unit,"false",var_type,n_var);
         t.is_logplot = var_logplot_bool;
 //        t.plot_min = pmin;
 //        t.plot_max = pmax;
         t.cat = in_cat;
+
+		//following two modify the bdt_variable t
+		t.is_custombin = var_custombin_bool;
+		t.mininame = var_minidef;
+
+		if(var_custombin_bool){
+			t.plot_min = t.edges[0];
+			t.plot_max = (t.edges).back();
+			
+			double min_gap = (t.plot_max-t.plot_min);
+			for(int temp_index = 1; temp_index< t.edges.size(); temp_index++){
+				min_gap = std::min(t.edges[temp_index] - t.edges[temp_index-1], min_gap);
+			}
+
+			t.n_bins = std::ceil((t.plot_max-t.plot_min)/min_gap);//do so, then the rebin wont  give gaps;
+			std::cout<<"Customized binning starting from: "<<t.n_bins<<" "<<t.plot_min<<" "<<t.plot_max<<std::endl;
+		}
+
         if(has_covar){
             std::cout<<"Adding a covariance matrix "<<covar_name<<" from file "<<covar_file<<std::endl;
             covar_file = covar_file;//+"/VID"+std::to_string(n_var)+".SBNcovar.root";
@@ -697,11 +722,6 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
             t.covar_legend_name = covar_leg; 
         }
 
-
-
-
-
-        std::cout<<"Variable Number "<<n_var<<" is "<<var_unit<<" with definiton: "<<var_def<<std::endl;
 
         bdt_all_vars.push_back(t);
 
@@ -715,7 +735,9 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
         std::string var_train_string = pVar->Attribute("training");
         std::vector<int> var_train_int;
-        std::cout<<" -- Variable training string is "<<var_train_string<<std::endl;
+		if(var_train_string.length()>0){
+			std::cout<<" -- Variable training string is "<<var_train_string<<std::endl;
+		}
         for (auto && c : var_train_string) {
             var_train_int.push_back((int)c - '0');
         }
@@ -748,7 +770,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
         n_var++;
         pVar = pVar->NextSiblingElement("var");
-    }
+    }//Next variable;
 
 
     for(auto &v: vec_methods){
@@ -877,26 +899,26 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		sys_vars_name.push_back(gadget_tokenlizer( pSys->Attribute("varnam")));
 
 		if(true){//print the contents out;
-			std::cout<<"\tDireciory :"<<sys_dir[n_sys]<<std::endl;
-			std::cout<<"\tFile :"<<sys_filename[n_sys]<<std::endl;
-			
+			std::cout<<"\nDireciory: "<<sys_dir[n_sys]<<std::endl;
+			std::cout<<"File: "<<sys_filename[n_sys]<<std::endl;
+			std::cout<<"Variables: ";	
 			for(size_t index = 0; index < sys_vars[n_sys].size(); ++index){
-				std::cout<<sys_vars[n_sys][index]<<", ";
+				std::cout<<sys_vars[n_sys][index]<<" ";
 			}
-			std::cout<<std::endl;
+			std::cout<<"\t Names: ";
 			for(size_t index = 0; index < sys_vars_name[n_sys].size(); ++index){
-				std::cout<<sys_vars_name[n_sys][index]<<", ";
+				std::cout<<sys_vars_name[n_sys][index]<<" ";
 			}
 			std::cout<<std::endl;
 
-			std::cout<<std::setw(18)<<" Name tag "<<std::setw(12)<<" TTree ";
-			std::cout<<std::setw(7)<<" POT "<<std::setw(6)<<" throws ";
-			std::cout<<std::setw(5)<<" CV "<<std::setw(8)<<" Nthrows ";
-			std::cout<<std::setw(8)<<" Nfiles "<<std::endl;
+			std::cout<<std::setw(18)<<std::left<<"Tag "<<std::setw(9)<<"TTree ";
+			std::cout<<std::setw(12)<<"POT "<<std::setw(6)<<"throws ";
+			std::cout<<std::setw(5)<<"CV "<<std::setw(8)<<"Nthrows ";
+			std::cout<<std::setw(8)<<"Nfiles "<<std::endl;
 
 			std::cout<<std::setw(18)<<sys_tag[n_sys];
-			std::cout<<std::setw(12)<<sys_treename[n_sys];
-			std::cout<<std::setw(7)<<sys_pot[n_sys];
+			std::cout<<std::setw(9)<<sys_treename[n_sys];
+			std::cout<<std::setw(12)<<sys_pot[n_sys];
 			std::cout<<std::setw(6)<<sys_throws[n_sys];
 
 
@@ -915,7 +937,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         n_sys++;
         pSys = pSys->NextSiblingElement("systematics");
     }//end of systematics
-
+	std::cout<<std::endl;
 };
 
 

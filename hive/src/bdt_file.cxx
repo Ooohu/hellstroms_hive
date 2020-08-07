@@ -709,14 +709,19 @@ TH2* bdt_file::getTH2(bdt_variable varx,bdt_variable vary, std::string cuts, std
 TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT, int rebin){
 
 
-    std::string in_bins = "("+var.name+"<"+std::to_string(var.edges[2]) +"&&"+var.name+">"+std::to_string(var.edges[1])+")";
+    std::string in_bins = "("+var.name+"<"+std::to_string(var.plot_max) +"&&"+var.name+">"+std::to_string(var.plot_min)+")";
 
     //std::cout<<"Starting to get for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
     TCanvas *ctmp = new TCanvas();
    // this->CheckWeights();
-    this->tvertex->Draw((var.name+">>"+nam+ var.binning).c_str() , ("("+cuts+"&&"+in_bins+")*"+this->weight_branch).c_str(),"goff");
+	std::string tem_binning = "("+to_string_prec(var.n_bins,0)+","+to_string_prec(var.plot_min,0)+","+to_string_prec(var.plot_max,0)+")";
+//	std::cout<<var.name+">>"+nam+ tem_binning<<std::endl;
+//	std::cout<<"("+cuts+"&&"+in_bins+")*"+this->weight_branch<<std::endl;
+
+    this->tvertex->Draw((var.name+">>"+nam+ tem_binning).c_str() , ("("+cuts+"&&"+in_bins+")*"+this->weight_branch).c_str(),"goff");
     //std::cout<<"Done with Draw for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
     TH1* th1 = (TH1*)gDirectory->Get(nam.c_str()) ;
+
 	gSystem->RedirectOutput("/dev/null");//no warning, shut up!
     th1->Sumw2();//the error will be [sum of sqrt(weights)]
 	gSystem->RedirectOutput(0,0);
@@ -735,6 +740,15 @@ TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, doubl
     th1->GetYaxis()->SetTitle("Events");
     th1->SetDirectory(0);	
 
+//	std::cout<<" Get bin content "<<var.n_bins<<var.edges[0]<<var.edges[11]<<std::endl;
+//	std::cout<<th1->GetBinContent(0)<<" "<<th1->GetBinContent(1)<<" "<<th1->GetBinContent(2)<<std::endl;
+	if(var.is_custombin){ 
+		TH1* newth;
+		newth = (TH1*)th1->Rebin(var.edges.size()-1, (nam+"2").c_str(), &(var.edges).front());
+		return newth;
+	}
+//	std::cout<<th1->GetBinContent(0)<<" "<<th1->GetBinContent(1)<<" "<<th1->GetBinContent(2)<<std::endl;
+//	std::cout<<newth->GetBinContent(0)<<" "<<newth->GetBinContent(1)<<" "<<newth->GetBinContent(2)<<std::endl;
     //delete ctmp;
     return th1;
 }

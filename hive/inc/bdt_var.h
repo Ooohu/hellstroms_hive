@@ -43,9 +43,12 @@ struct bdt_variable{
 
         double plot_min;
         double plot_max;
-
+		
         int n_bins;
         std::vector<double> edges;
+
+		bool is_custombin;
+		
 
         int addCovar(std::string name, std::string file){
             has_covar=true;
@@ -64,7 +67,7 @@ struct bdt_variable{
 			type(intype),
             id(in_id),
             is_logplot(false)
-	{
+	{//WARNING!! This is the orignal version, use the overflow one below!
 		plot_min =-999;
 		plot_max =-999;
 		safe_name = name;
@@ -135,95 +138,13 @@ struct bdt_variable{
 			edges.push_back(std::stod(token));
 			bins.erase(0, pos + delim.length());
 		}
-		edges.push_back(std::stod(bins));
+
+		//edges.push_back(std::stod(bins));
 
 		//            cat = 0;
 	};
-	//overflow the constructor
-	        bdt_variable(std::string inname, TString innamemini, std::string inbin, std::string inunit,bool intrack, std::string intype,int in_id) : 
-			name(inname), 
-			mininame(innamemini),
-			binning(inbin),
-			unit(inunit),
-			is_track(intrack),
-			type(intype),
-            id(in_id),
-            is_logplot(false)
-	{
-		plot_min =-999;
-		plot_max =-999;
-		safe_name = name;
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '('), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ')'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '\\'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '/'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '['), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ']'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '+'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '-'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '*'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '.'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ' '), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ','), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '|'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ':'), safe_name.end());
-
-		safe_unit = unit;
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), ' '), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '('), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), ')'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '\\'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '/'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '['), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), ']'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '+'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '-'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '*'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '|'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), ':'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '#'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '^'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '{'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '}'), safe_unit.end());
-
-		has_covar = false;
-
-		std::string bins = binning;
-		edges.clear();
 
 
-		bins.erase(std::remove(bins.begin(), bins.end(), '('), bins.end());
-		bins.erase(std::remove(bins.begin(), bins.end(), ')'), bins.end());
-
-		size_t pos = 0;
-		std::string delim = ",";
-		bins = bins + delim+"0";//Keng yea, need this to read the plot_max below
-		std::string token;
-		n_bins = -1;
-
-		int ith_number = 1;
-		while ((pos = bins.find(delim)) != std::string::npos) {
-			token = bins.substr(0, pos);
-//			if(n_bins<0) n_bins = (int)std::stod(token);//Keng commented this
-			switch(ith_number++){
-				case 1:
-					n_bins = (int)std::stod(token);
-					break;
-				case 2:
-					plot_min = (int)std::stod(token);
-					break;
-				case 3:
-					plot_max = (int)std::stod(token);
-					break;
-			}
-
-			edges.push_back(std::stod(token));
-			bins.erase(0, pos + delim.length());
-		}
-		edges.push_back(std::stod(bins));
-
-		//            cat = 0;
-	};
 
 		bdt_variable(){};
 

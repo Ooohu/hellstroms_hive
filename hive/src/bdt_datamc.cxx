@@ -706,8 +706,8 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 
 			std::cout<<"Starting on variable "<<var.name<<std::endl;
 			if(print_message){
-				if(var.is_logplot){std::cout<<"MAKEING A LOG PLOT"<<std::endl;}
-				else{std::cout<<"NOT MAKEING A LOG PLOT"<<std::endl;}
+				if(var.is_logplot){std::cout<<"MAKING A LOG PLOT"<<std::endl;}
+				else{std::cout<<"NOT MAKING A LOG PLOT"<<std::endl;}
 			}
 
 		//STEP 2.1: Prepare ROOT objects

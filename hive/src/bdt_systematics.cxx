@@ -146,6 +146,7 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 						}
 
 						(temps->hist[jndex]).push_back( (TH1F*) temp_th1->Clone() );// each bdt_sys now contains all hist;
+//						std::cout<<"Throw "<<kndex<<" "<<temp_th1->Integral()<<std::endl;
 						if(message) std::cout<<"\r\tLoad histogram "<<hist_nam;
 					}//next throws
 					if(message) std::cout<<std::endl;
@@ -227,7 +228,11 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, TString event_cuts, bdt_sys
 		int count_hist = 0;
 		for(int kndex = 0; kndex <num_throws;++kndex){//throw in each weight;
 			TString hist_name = (its_multithrows)? temps->vars_name[jndex]+std::to_string(kndex+1) :temps->vars_name[jndex];
-			hist1d[kndex] = new TH1F(hist_name,hist_name, var->n_bins, var->plot_min, var->plot_max);
+			if(var->is_custombin){
+				hist1d[kndex] = new TH1F(hist_name,hist_name, var->n_bins -1, &(var->edges).front() );
+			} else{
+				hist1d[kndex] = new TH1F(hist_name,hist_name, var->n_bins, var->plot_min, var->plot_max);
+			}
 			count_hist++;
 		}
 		if(message) std::cout<<"Creating "<<count_hist<<" histograms "<<std::endl;
@@ -258,6 +263,7 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, TString event_cuts, bdt_sys
 				varformula.GetNdata();
 				double temp_value = varformula.EvalInstance();
 				double temp_weight = wgtforms[kndex]->EvalInstance()*plot_pot/temps->pot;
+//				std::cout<<"CHECK! "<<kndex<<" throws "<<wgtforms[kndex]->EvalInstance()<<" "<<plot_pot<<" "<<temps->pot<<std::endl;
 
 				hist1d[kndex]->Fill(temp_value,temp_weight);//jndex - nth sw; kndex - nth throw
 
@@ -358,8 +364,16 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 	int nh=var.plot_max;//cv_hist->GetBinLowEdge(nb+1);//upper bound
 	
 	TString finalcov_name = (var.safe_name).c_str();
-	TH2D* finalcov =  new TH2D(finalcov_name, finalcov_name ,nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
-	
+	TH2D* finalcov;
+	if(var.is_custombin){
+		finalcov =  new TH2D(finalcov_name, finalcov_name ,nb-1, &(var.edges).front(),nb-1,&(var.edges).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+	} else{
+		finalcov =  new TH2D(finalcov_name, finalcov_name ,nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+	}
+
+
+	TCanvas *histCanvas = new TCanvas("histCanvas", "", 900, 400);
+	TCanvas *covCanvas = new TCanvas("covCanvas","",900,400);
 
 	for(size_t index = 0; index < tags.size(); ++index){//each tag means one group of covariance matices;
 		//prepare cov matrix here;
@@ -391,10 +405,6 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 		//STEP 2.2 calculate covariance matrix and draw histograms;
 		//note cv_hist is one histogram, sw_name2throws->second are different sw with N throws of histograms each;
 
-		TCanvas *histCanvas = new TCanvas("histCanvas", "", 900, 400);
-		TCanvas *covCanvas = new TCanvas("covCanvas","",900,400);
-
-
 		int nby = 1.5*cv_hist->GetBinContent(cv_hist->GetMaximumBin());//histogram height
 
 		for( std::_Rb_tree_iterator<std::pair<const TString, std::vector<TH1F*> > >  itr = sw_name2throws.begin();  itr!=sw_name2throws.end(); itr++){//loop over differenct covariance matrix, according to # of systematic weights;
@@ -408,9 +418,17 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			int num_throws = temp_swhist.size();
 
 			//for ovarlaying all histograms
-			TH2D* all_hist = new TH2D(temp_histname, temp_histname, nb, nl,nh, nby, 0, nby);
+			TH2D* all_hist; 
 			//for summing up cov matrice
-			TH2D* covmatrices =  new TH2D(temp_covname+"_Covariance_Matrix", temp_covname+"_Covaraince_Matrix",nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+			TH2D* covmatrices; 
+			if(var.is_custombin){
+
+				all_hist = new TH2D(temp_histname, temp_histname, nb-1, &(var.edges).front(), nby, 0, nby);
+				covmatrices =  new TH2D(temp_covname+"_Covariance_Matrix", temp_covname+"_Covaraince_Matrix",nb-1, &(var.edges).front(),nb-1,&(var.edges).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+			} else{
+				all_hist = new TH2D(temp_histname, temp_histname, nb, nl,nh, nby, 0, nby);
+				covmatrices =  new TH2D(temp_covname+"_Covariance_Matrix", temp_covname+"_Covaraince_Matrix",nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+			}
 
 			//to record the cov matrix;
 			for(size_t jndex = 0; jndex < num_throws; ++jndex){//go through different throws
@@ -460,7 +478,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 				fracCov->Draw("COLZ");
 				fracCov->SetTitle("Propagated "+temp_covname + " Covaraince Matrix");
 				covCanvas->SaveAs( dir_drawn +  "/"+gadget_labelroot("covfrac",var)+temp_covname+".pdf" ,"pdf");
-//				if(message) std::cout<<"1,1 in the matrix "<< tags[index]<<" "<<fracCov->GetBinContent(1,1)<<std::endl;
+				if(message) std::cout<<"1,1 in the matrix "<< tags[index]<<" "<<fracCov->GetBinContent(1,1)<<std::endl;
 
 				finalcov->Add(fracCov);
 
@@ -474,7 +492,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 				covmatrices->Draw("COLZ");
 				covCanvas->SaveAs( dir_drawn +  "/"+gadget_labelroot("cov",var)+temp_covname+".pdf" ,"pdf");
 
-//				if(message) std::cout<<"1,1 in the matrix "<< tags[index]<<" "<<covmatrices->GetBinContent(1,1)<<std::endl;
+				if(message) std::cout<<"1,1 in the matrix "<< tags[index]<<" "<<covmatrices->GetBinContent(1,1)<<std::endl;
 
 				finalcov->Add(covmatrices);
 				cov_root->cd();
