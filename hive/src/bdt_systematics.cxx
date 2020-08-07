@@ -228,8 +228,9 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, TString event_cuts, bdt_sys
 		int count_hist = 0;
 		for(int kndex = 0; kndex <num_throws;++kndex){//throw in each weight;
 			TString hist_name = (its_multithrows)? temps->vars_name[jndex]+std::to_string(kndex+1) :temps->vars_name[jndex];
+
 			if(var->is_custombin){
-				hist1d[kndex] = new TH1F(hist_name,hist_name, var->n_bins -1, &(var->edges).front() );
+				hist1d[kndex] = new TH1F(hist_name,hist_name, (var->edges).size() -1, &(var->edges).front() );
 			} else{
 				hist1d[kndex] = new TH1F(hist_name,hist_name, var->n_bins, var->plot_min, var->plot_max);
 			}
@@ -359,14 +360,14 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 	TFile *finalcov_root = (TFile*) TFile::Open(final_covroot_name,"RECREATE"); //one var one hist root;
 
 
-	int nb=var.n_bins;//cv_hist->GetNbinsX();//# of bins
+	int nb=(var.edges).size()-1;//cv_hist->GetNbinsX();//# of bins
 	int nl=var.plot_min;//cv_hist->GetBinLowEdge(1);//lower bound
 	int nh=var.plot_max;//cv_hist->GetBinLowEdge(nb+1);//upper bound
 	
 	TString finalcov_name = (var.safe_name).c_str();
 	TH2D* finalcov;
 	if(var.is_custombin){
-		finalcov =  new TH2D(finalcov_name, finalcov_name ,nb-1, &(var.edges).front(),nb-1,&(var.edges).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+		finalcov =  new TH2D(finalcov_name, finalcov_name ,nb, &(var.edges).front(),nb,&(var.edges).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 	} else{
 		finalcov =  new TH2D(finalcov_name, finalcov_name ,nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 	}
@@ -423,8 +424,8 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			TH2D* covmatrices; 
 			if(var.is_custombin){
 
-				all_hist = new TH2D(temp_histname, temp_histname, nb-1, &(var.edges).front(), nby, 0, nby);
-				covmatrices =  new TH2D(temp_covname+"_Covariance_Matrix", temp_covname+"_Covaraince_Matrix",nb-1, &(var.edges).front(),nb-1,&(var.edges).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+				all_hist = new TH2D(temp_histname, temp_histname, nb, &(var.edges).front(), nby, 0, nby);
+				covmatrices =  new TH2D(temp_covname+"_Covariance_Matrix", temp_covname+"_Covaraince_Matrix",nb, &(var.edges).front(),nb,&(var.edges).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 			} else{
 				all_hist = new TH2D(temp_histname, temp_histname, nb, nl,nh, nby, 0, nby);
 				covmatrices =  new TH2D(temp_covname+"_Covariance_Matrix", temp_covname+"_Covaraince_Matrix",nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
@@ -543,17 +544,23 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv){
 
 	int nb=hist->GetNbinsX();
-	int nl=hist->GetBinLowEdge(1);
-	int nh=hist->GetBinLowEdge(nb+1);
+//	int nl=hist->GetBinLowEdge(1);
+//	int nh=hist->GetBinLowEdge(nb+1);
+//in case of customized binnings; use vector..
+	std::vector<double> bins;
+	for( int index = 1; index < nb+2; index++){
+
+		bins.push_back(hist->GetBinLowEdge(index));
+	}
 //	cout<<"Bin config # bins: "<<nb<<" low "<<nl<<" high "<<nh<<" entries:"<<hist->Integral()<<endl;
 
 //	cout<<"Total events in (MakeCov) "<<hist->Integral()<<endl;
 	int counter = 0;
-	if(nb!=cv->GetNbinsX() || nl !=cv->GetBinLowEdge(1)||nh!=cv->GetBinLowEdge(nb+1) ){
+	if(nb!=cv->GetNbinsX() || hist->GetBinLowEdge(1) !=cv->GetBinLowEdge(1)||hist->GetBinLowEdge(nb+1)!=cv->GetBinLowEdge(nb+1) ){
 		std::cerr<<" Histograms don't match to the CV histogram. No Covariance matrix is calculated."<<std::endl;
 		exit(EXIT_FAILURE);
 	}
-	TH2D* covmatrix =  new TH2D(name,name,nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+	TH2D* covmatrix =  new TH2D(name,name,nb, &(bins.front()),nb, &(bins.front()) );//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 	for(int index = 1; index<nb+1; ++index){
 		for(int jndex = 1; jndex<nb+1; ++jndex){
 		double entry = (hist->GetBinContent(index)-cv->GetBinContent(index) )*(hist->GetBinContent(jndex)-cv->GetBinContent(jndex) );

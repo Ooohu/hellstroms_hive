@@ -839,7 +839,8 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				covar_f->Close();
 
 				Double_t *determ_ptr;
-				for(int ib=0; ib<var.n_bins; ib++){
+				int var_binning  = (var.is_custombin)? (var.edges).size()-1 : var.n_bins;
+				for(int ib=0; ib<var_binning; ib++){
 					//                       (*covar_collapsed)(ib,ib) += d0->GetBinContent(ib+1);//sqrt(n*n)//This is Data stats error
 					(*covar_collapsed)(ib,ib) += tsum->GetBinContent(ib+1);//sqrt(n*n)//This is MC stats error
 					if((*covar_collapsed)(ib,ib)==0){
@@ -849,8 +850,8 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				covar_collapsed->Invert(determ_ptr);
 
 				std::cout<<"Hi: ibin jbin MC_i data_i errorMatrix MC_j data_j curchi totalchi"<<std::endl;
-				for(int ib=0; ib<var.n_bins; ib++){
-					for(int jb=0; jb<var.n_bins; jb++){
+				for(int ib=0; ib<var_binning; ib++){
+					for(int jb=0; jb<var_binning; jb++){
 						double curchi   =  (tsum->GetBinContent(ib+1)-d0->GetBinContent(ib+1))*(*covar_collapsed)(ib,jb)*(tsum->GetBinContent(jb+1)-d0->GetBinContent(jb+1));
 						if(!isfinite((*covar_collapsed)(ib,jb)) ) curchi = 0;
 						mychi += curchi;
@@ -859,7 +860,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 						}
 					} 
 				}
-				ndof = var.n_bins;
+				ndof = var_binning;
 			}
 			std::cout<<"MyChi: "<<var.name<<" "<<mychi<<" "<<std::endl;
 
