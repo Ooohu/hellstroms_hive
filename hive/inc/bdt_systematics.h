@@ -58,7 +58,7 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, TString event_cuts, bdt_sys
  *
  */
 
-void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn);
+void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn, double plot_pot);
 
 /*
  * make covaraince matrix according to input histograms, hist - weights and cv - cv;

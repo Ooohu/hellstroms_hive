@@ -63,6 +63,8 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig)
 
 void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn){
 	
+	bool check = true;
+
 	bool message = true;
 	
 	//make a string of precuts, CHECK, it will be more complicated when using BDT cuts;
@@ -104,12 +106,12 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 	TString rootlabel = gadget_labelroot("hist", *var1);
 	TString outfile_name = dir_root+"/"+rootlabel+".root";
 
-	if(!skip_process){//no covariance matix available, so produce it;
+	if(check || !skip_process){//no covariance matix available, so produce it;
 		TFile *hist_root = (TFile*) TFile::Open(outfile_name,"READ"); //one var one hist root;
 
 		size_t index = 0;// yes, define index here, because we need it later;
 
-		if(hist_root!=NULL ){ //quick check of existing files; 
+		if(!check && hist_root!=NULL ){ //quick check of existing files; 
 			std::cout<<outfile_name<<" exist, might not need to generate it."<<std::endl;
 
 			while( index < syss.size()){
@@ -171,7 +173,7 @@ now_make_hist:
 		//
 		//Part II: Overlay histograms & draw covaraicne matrix;
 		//
-		hist2cov( *var1, syss, dir_root, dir_drawn);
+		hist2cov( *var1, syss, dir_root, dir_drawn, plot_pot);
 		hist_root->Close();
 	}
 
@@ -263,7 +265,7 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, TString event_cuts, bdt_sys
 				TTreeFormula varformula(var->unit.c_str(), gadget_addindex(var->mininame, kndex), temptree);//get the x-axis
 				varformula.GetNdata();
 				double temp_value = varformula.EvalInstance();
-				double temp_weight = wgtforms[kndex]->EvalInstance()*plot_pot/temps->pot;
+				double temp_weight = wgtforms[kndex]->EvalInstance();//*plot_pot/temps->pot; do this when making cov matrix
 //				std::cout<<"CHECK! "<<kndex<<" throws "<<wgtforms[kndex]->EvalInstance()<<" "<<plot_pot<<" "<<temps->pot<<std::endl;
 
 				hist1d[kndex]->Fill(temp_value,temp_weight);//jndex - nth sw; kndex - nth throw
@@ -309,7 +311,7 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, TString event_cuts, bdt_sys
  * Build covariance matrices based on histograms;
  */
 
-void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn){
+void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn, double plot_pot){
 		
 	bool message = true;
 	
@@ -360,7 +362,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 	TFile *finalcov_root = (TFile*) TFile::Open(final_covroot_name,"RECREATE"); //one var one hist root;
 
 
-	int nb=(var.edges).size()-1;//cv_hist->GetNbinsX();//# of bins
+	int nb=(var.is_custombin)? (var.edges).size()-1 : var.n_bins;//cv_hist->GetNbinsX();//# of bins
 	int nl=var.plot_min;//cv_hist->GetBinLowEdge(1);//lower bound
 	int nh=var.plot_max;//cv_hist->GetBinLowEdge(nb+1);//upper bound
 	
@@ -385,6 +387,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 
 
 		TH1F* cv_hist = (TH1F*) (tempsCV->hist[0][0])->Clone();
+		cv_hist->Scale(plot_pot/tempsCV->pot);//scale hist to data POT
 
 		//STEP 2.1.2 Load SW;
 		std::map< TString, std::vector<TH1F*> > sw_name2throws;//one sw - many_throws TH1F*
@@ -393,10 +396,15 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 		for( std::_Rb_tree_iterator<std::pair<const TString, bdt_sys*> >  itr = sys2SWmap.begin();  itr!=sys2SWmap.end(); itr++){
 			//go through each tag;
 			if(itr->first == cur_tag){//find the tag, then check the corresponding bdt_sys;
-				for( size_t jndex = 0; jndex < (itr->second)->hist.size(); ++jndex){
+				for( size_t jndex = 0; jndex < (itr->second)->hist.size(); ++jndex){//loop over throws;
 					//go through each SW(with many throws) of a bdt_sys
 					TString temp_sw_name  = (itr->second)->tag+"_"+(itr->second)->vars_name[jndex];
 					std::vector<TH1F*> temp_sw_hists = (itr->second)->hist[jndex] ;
+
+					for(size_t kndex = 0; kndex< temp_sw_hists.size(); kndex++){
+						temp_sw_hists[kndex]->Scale(plot_pot/(itr->second)->pot);//Scale the histogram
+					}
+
 					sw_name2throws.insert(std::make_pair( temp_sw_name, temp_sw_hists) );
 				}//next sw (with nthrows)
 			}//next systematics
@@ -408,7 +416,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 
 		int nby = 1.5*cv_hist->GetBinContent(cv_hist->GetMaximumBin());//histogram height
 
-		for( std::_Rb_tree_iterator<std::pair<const TString, std::vector<TH1F*> > >  itr = sw_name2throws.begin();  itr!=sw_name2throws.end(); itr++){//loop over differenct covariance matrix, according to # of systematic weights;
+		for( std::_Rb_tree_iterator<std::pair<const TString, std::vector<TH1F*> > >  itr = sw_name2throws.begin();  itr!=sw_name2throws.end(); itr++){//loop over # of systematic weights;
 			
 			//STEP 2.2.1 prepare covariance matrices and histograms;
 			//work through the map< TString, std::vector<TH1F*> > sw_name2throws;
@@ -433,14 +441,14 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 
 			//to record the cov matrix;
 			for(size_t jndex = 0; jndex < num_throws; ++jndex){//go through different throws
-
 				//for overlay hsitograms
+
 				for(int kndex = 1; kndex < nb+1; ++kndex){//get everything from a single histogram;
 					all_hist->Fill(temp_swhist[jndex]->GetBinLowEdge(kndex) , temp_swhist[jndex]->GetBinContent(kndex) );
 				}//next bin
 
 				//for cov matrices
-				TH2D* cov_temp =MakeCov("cov"+temp_covname+std::to_string(jndex), temp_swhist[jndex], cv_hist);
+				TH2D* cov_temp = MakeCov("cov"+temp_covname+std::to_string(jndex), temp_swhist[jndex], cv_hist);
 				cov_temp->Scale(1.0/(double) num_throws);
 				covmatrices->Add(cov_temp);
 
@@ -473,6 +481,8 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 
 				if(message) std::cout<<"Making fractional covariance matrix for "<<tags[index]<<std::endl;
 				TH1F* OMCV = (TH1F*) (tempsOMCV->hist[0][0])->Clone();
+				OMCV->Scale(plot_pot/tempsOMCV->pot);//scale hist to data POT
+
 				TH2D* fracCov = MakeFracCov(temp_covname, covmatrices, cv_hist, OMCV);
 
 				fracCov->SetStats(false);
