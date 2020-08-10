@@ -9,6 +9,9 @@
 
 #include "TStyle.h"
 #include "TSystem.h"
+#include "TMatrixD.h"
+#include "TVectorD.h"
+#include "TDecompLU.h"
 
 struct bdt_sys{
 	public:
@@ -72,11 +75,14 @@ TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv);
 TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv, TH1F* newcv);
 
 /*
+ * Smooth the matrix
+ */
+void SmoothSW(TH1F* sw, TH1F* cv);
+
+/*
  * Make Covaraince matrix from 2d histograms
  *
  */
-
-
 TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv);
 
 #endif

@@ -63,7 +63,7 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig)
 
 void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, std::vector<bdt_sys*> syss, double plot_pot, TString dir_root, TString dir_drawn){
 	
-	bool check = true;
+	bool check = false;
 
 	bool message = true;
 	
@@ -106,7 +106,7 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 	TString rootlabel = gadget_labelroot("hist", *var1);
 	TString outfile_name = dir_root+"/"+rootlabel+".root";
 
-	if(check || !skip_process){//no covariance matix available, so produce it;
+	if(true||check || !skip_process){//no covariance matix available, so produce it;
 		TFile *hist_root = (TFile*) TFile::Open(outfile_name,"READ"); //one var one hist root;
 
 		size_t index = 0;// yes, define index here, because we need it later;
@@ -314,6 +314,7 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, TString event_cuts, bdt_sys
 void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn, double plot_pot){
 		
 	bool message = true;
+	bool smooth_matrix = true;
 	
 	if(message) std::cout<<"Making covariance matices."<<std::endl;
 	
@@ -447,6 +448,9 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 					all_hist->Fill(temp_swhist[jndex]->GetBinLowEdge(kndex) , temp_swhist[jndex]->GetBinContent(kndex) );
 				}//next bin
 
+				//smooth the matrix!
+				SmoothSW(temp_swhist[jndex], cv_hist);
+
 				//for cov matrices
 				TH2D* cov_temp = MakeCov("cov"+temp_covname+std::to_string(jndex), temp_swhist[jndex], cv_hist);
 				cov_temp->Scale(1.0/(double) num_throws);
@@ -554,17 +558,17 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv){
 
 	int nb=hist->GetNbinsX();
-//	int nl=hist->GetBinLowEdge(1);
-//	int nh=hist->GetBinLowEdge(nb+1);
-//in case of customized binnings; use vector..
+	//	int nl=hist->GetBinLowEdge(1);
+	//	int nh=hist->GetBinLowEdge(nb+1);
+	//in case of customized binnings; use vector..
 	std::vector<double> bins;
 	for( int index = 1; index < nb+2; index++){
 
 		bins.push_back(hist->GetBinLowEdge(index));
 	}
-//	cout<<"Bin config # bins: "<<nb<<" low "<<nl<<" high "<<nh<<" entries:"<<hist->Integral()<<endl;
+	//	cout<<"Bin config # bins: "<<nb<<" low "<<nl<<" high "<<nh<<" entries:"<<hist->Integral()<<endl;
 
-//	cout<<"Total events in (MakeCov) "<<hist->Integral()<<endl;
+	//	cout<<"Total events in (MakeCov) "<<hist->Integral()<<endl;
 	int counter = 0;
 	if(nb!=cv->GetNbinsX() || hist->GetBinLowEdge(1) !=cv->GetBinLowEdge(1)||hist->GetBinLowEdge(nb+1)!=cv->GetBinLowEdge(nb+1) ){
 		std::cerr<<" Histograms don't match to the CV histogram. No Covariance matrix is calculated."<<std::endl;
@@ -573,12 +577,12 @@ TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv){
 	TH2D* covmatrix =  new TH2D(name,name,nb, &(bins.front()),nb, &(bins.front()) );//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 	for(int index = 1; index<nb+1; ++index){
 		for(int jndex = 1; jndex<nb+1; ++jndex){
-		double entry = (hist->GetBinContent(index)-cv->GetBinContent(index) )*(hist->GetBinContent(jndex)-cv->GetBinContent(jndex) );
-//		covmatrix->Fill(index,jndex,entry);//Fill goes by values
-		covmatrix->SetBinContent(index,jndex,entry);
+			double entry = (hist->GetBinContent(index)-cv->GetBinContent(index) )*(hist->GetBinContent(jndex)-cv->GetBinContent(jndex) );
+			//		covmatrix->Fill(index,jndex,entry);//Fill goes by values
+			covmatrix->SetBinContent(index,jndex,entry);
 
-//		cout<<"\r Fill in "<<name<<" "<<index<<","<<jndex<<" with "<<entry;
-//		if(entry!=0) cout<<" # of good entry   --->"<<counter++;
+			//		cout<<"\r Fill in "<<name<<" "<<index<<","<<jndex<<" with "<<entry;
+			//		if(entry!=0) cout<<" # of good entry   --->"<<counter++;
 		}
 	}
 
@@ -612,6 +616,73 @@ TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv, TH1F* newcv){
 	}
 
 	return fractional_cov;
+}
+
+/*
+ * Smooth the matrix
+ */
+void SmoothSW(TH1F* sw, TH1F* cv){
+
+	Int_t nb=sw->GetNbinsX();
+	Int_t degree = 5;
+
+//	std::vector< Double_t >					vectorA(degree+1, 0.0);
+//	std::vector< std::vector<Double_t> >	matrixA(degree+1, 
+//							(std::vector<Double_t>)(degree+1, 0.0));
+
+	TVectorD vectorA(degree+1);
+	TMatrixD matrixA(degree+1, degree+1);
+
+	for (Int_t j=0;j<degree+1;j++) {
+		vectorA[j] = 0.;//initialize the vector;
+//		std::cout<<"Initialize vector A "<<vectorA[j]<<std::endl;
+		for (Int_t k=0;k<degree+1;k++) {
+			matrixA[j][k] = 0.;//initialize the matrix;
+
+			for (Int_t bini=0; bini<nb; bini++) {
+				if(k==0){// do it once for each j;
+					Double_t temp_cv = cv->GetBinContent(bini+1);
+					if(temp_cv < 10e-20){//in case of divide by 0;
+						temp_cv = sw->GetBinContent(bini+1);
+					}
+					if(temp_cv > 10e-20){
+						//calculate vectorA
+//						std::cout<<"Check vector A "<<vectorA[j]<<std::endl;
+						vectorA[j] += pow( bini+1, j) * sw->GetBinContent(bini+1)/temp_cv;
+//						std::cout<<"Vector A, before calculation "<<pow( bini+1, j)<<" "<<sw->GetBinContent(bini+1)<<" "<<temp_cv<<" "<<vectorA[j]<<std::endl;
+					}
+				}
+				//calculate matrixA
+				matrixA[j][k] += pow(bini+1,j)* pow(bini+1,k);
+			}
+		}
+	}
+
+	TVectorD vectorB(degree+1);
+	TDecompLU lu(matrixA);
+	lu.Decompose();
+	Bool_t ok;
+
+	vectorB = lu.Solve(vectorA,ok);
+	if(ok){
+		for (Int_t bini = 0; bini<nb; bini++){
+			Double_t num = 0.;
+			for(Int_t j=0; j<degree+1; j++){
+//			std::cout<<" vector A"<<vectorA[j]<<std::endl;
+				num+=vectorB[j]*pow(bini+1, j)*cv->GetBinContent(bini+1);
+			}
+			std::cout<<"Smooth "<<bini+1<<"\t"<<sw->GetBinContent(bini+1)<<" to "<<num<<std::endl;
+			sw->SetBinContent(bini+1 , num);
+		}
+	} else{
+		std::cout<<"Cant smooth this one"<<std::endl;
+	}
+	//step 1 take ratio;
+
+	//Modify ratio
+
+	//Recover SW
+
 }
 
 /*
