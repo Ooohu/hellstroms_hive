@@ -90,6 +90,7 @@ class MVALoader {
 	std::vector< TString>  sys_filename;
 	std::vector< TString>  sys_treename;
 
+	std::vector< std::vector< TString >> sys_for_files;
 	std::vector< std::vector< TString >> sys_vars;
 	std::vector< std::vector< TString >> sys_vars_name;
 

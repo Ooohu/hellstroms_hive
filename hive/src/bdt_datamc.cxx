@@ -30,53 +30,6 @@ std::vector<bdt_variable> bdt_datamc::GetSelectVars(std::string vector, std::vec
 }
 
 
-//int bdt_datamc::plotStacks(TFile *ftest, bdt_variable var,double c1, double c2){
-//   
-//	std::cout<<"Obselete See "<<__FILE__<<__LINE__<<std::endl;
-//	return 0;
-//
-//    is_bdt_variable = false;
-//    bdt_info nullinfo;
-//    return this->plotStacks(ftest, var, c1,c2,nullinfo);
-//}
-
-//int bdt_datamc::plotBDTStacks(TFile *ftest, bdt_info whichbdt,double c1, double c2){
-//	std::cout<<"Obselete See "<<__FILE__<<__LINE__<<std::endl;
-//	return 0;
-//
-//    is_bdt_variable = true;
-//
-//    double tmin =9999;
-//    double tmax = -9999;
-//
-//    /*
-//       for(auto &f: mc_stack->stack){
-//       std::cout<<"TAG: "<<f->tag<<" "<<tmax<<" "<<tmin<<std::endl;
-//
-//       TH1 * tmp = f->getTH1((f->tag +"_"+whichbdt.identifier+ ".mva") ,(f->tag +"_"+whichbdt.identifier+ ".mva > 0")  , "tmpBDtstack_"+data_file->tag+"_"+whichbdt.name,1,0);
-//
-//       tmax = std::max( tmax, f->tvertex->GetMaximum( (f->tag +"_"+whichbdt.identifier+ ".mva").c_str()   ));
-//       if(f->tag!="NCDeltaRadCosmics") tmin = std::min( tmin, tmp->GetBinCenter(tmp->FindFirstBinAbove(0.05)));
-//       std::cout<<"TAG: "<<f->tag<<" "<<tmax<<" "<<tmin<<std::endl;
-//       delete tmp;
-//       }
-//
-//       std::string  binning = "(20,"+std::to_string(tmin*0.975)+","+std::to_string(tmax*1.025)+")";
-//       */
-//    std::string  binning = whichbdt.binning;
-//
-//    bdt_variable dvar = data_file->getBDTVariable(whichbdt, binning);
-////    dvar.is_logplot = true;
-//
-//    /*std::vector<bdt_variable> tmp_v = {dvar};
-//
-//      return this->plotStacks(ftest, tmp_v ,c1,c2);
-//      */
-//
-//    //run on old one
-//    return this->plotStacks(ftest, dvar,c1,c2,whichbdt);
-//}
-
 int bdt_datamc::printPassingDataEvents(std::string outfilename, int stage, std::vector<double> cuts){
 
     //data_file->calcCosmicBDTEntryList(c1, c2);
@@ -185,13 +138,6 @@ int bdt_datamc::printPassingDataEvents(std::string outfilename, int stage, doubl
     return 0;
 }
 
-
-//int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, double c1, double c2){
-//	std::cout<<"Obselete See "<<__FILE__<<__LINE__<<std::endl;
-//	return 0;
-//
-////    return this->plotStacks(ftest,vars,{c1,c2});
-//}
 
 
 
@@ -1009,6 +955,12 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			}
 
 			stk->Draw("hist");
+
+			if(var.is_custombin){//plot event/MeV
+				d0->            Scale(1,"width");
+				tsum->            Scale(1,"width");
+			}
+
 			if(!label_removal) tsum->DrawCopy("Same E2");//the statistic error;
 			d0->Draw("same E1 E0");
 			l0->Draw();
@@ -1037,6 +989,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			stk->GetYaxis()->SetTitleSize(0.05);
 			stk->GetYaxis()->SetTitleOffset(0.9);
 			stk->SetMaximum( std::max(tsum->GetBinContent(tsum->GetMaximumBin()), d0->GetMaximum())*max_modifier);
+
 			if(!label_removal) stk->SetMinimum(min_val);
 
 			tsum->SetMarkerSize(0);
@@ -1131,6 +1084,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 			}
 
 //			cobs->Write();
+
 
 			if(stack_mode){
 				cobs->SaveAs(("stack/"+tag+"_"+data_file->tag+"_"+var.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");

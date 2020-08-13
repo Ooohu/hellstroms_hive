@@ -238,6 +238,14 @@ int main (int argc, char *argv[]){
     std::map<std::string, bdt_file*> tagToFileMap;
     std::map<bdt_file*,bool> plotOnTopMap;
 
+	//systematic files; its follows each bdt_file;
+	std::vector<bdt_sys*> systematics;
+
+	std::string sys_root = analysis_tag + "systematics/roots";
+	std::string sys_draw = analysis_tag + "systematics/drawn";
+	gadget_buildfolder(analysis_tag + "systematics");
+	gadget_buildfolder(sys_root);
+	gadget_buildfolder(sys_draw);
 
     std::cout<<"================================================================================"<<std::endl;
     std::cout<<"=============== Loading all BDT files for this analysis ========================"<<std::endl;
@@ -345,17 +353,30 @@ int main (int argc, char *argv[]){
 
 	if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-4,4,"Numu")==0){ 
 			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Numu_3_weights_1499.root");
+	}
+	//        bdt_files.back()->calcPOT();
+	//std::string r1 = "run_number>=5121 && run_number <=5946";
+	//bdt_files.back()->scale( bdt_files.back()->tvertex->GetEntries(r1.c_str())/(double)bdt_files.back()->tvertex->GetEntries() );
+
+
+	//        if(incl_in_stack) stack_bdt_files.push_back(bdt_files.back());
+
+		if(XMLconfig.bdt_is_validate_file[f]) validate_files.push_back(bdt_files.back());//Mark validate files
+
+		//prepare systematic enviroments;
+		for(int sys_index = 0; sys_index < XMLconfig.n_sys;sys_index ++){
+			std::vector<TString > temp_s = XMLconfig.sys_for_files[sys_index];
+			TString this_s = XMLconfig.bdt_tags[f];
+			if( std::find( temp_s.begin(), temp_s.end(), XMLconfig.bdt_tags[f]) != temp_s.end() ){//we want this systematics
+			std::cout<<this_s<<std::endl;
+				systematics.push_back( new bdt_sys(sys_index, XMLconfig, f, analysis_flow));
+				(systematics.back())->setPlotStage(which_stage);
+
+			}
 		}
-//        bdt_files.back()->calcPOT();
-        //std::string r1 = "run_number>=5121 && run_number <=5946";
-        //bdt_files.back()->scale( bdt_files.back()->tvertex->GetEntries(r1.c_str())/(double)bdt_files.back()->tvertex->GetEntries() );
-
-
-//        if(incl_in_stack) stack_bdt_files.push_back(bdt_files.back());
-
-        if(XMLconfig.bdt_is_validate_file[f]) validate_files.push_back(bdt_files.back());//Mark validate files
 
     }
+
     std::vector<bdt_file*> stack_bdt_files(bkg_bdt_files);
 	stack_bdt_files.insert(stack_bdt_files.end(),signal_bdt_files.begin(),signal_bdt_files.end());//bkg go first, because we want signal on top; Check, specific for MiniBooNE
 			std::cout<<"# of signal files "<<signal_bdt_files.size()<<std::endl;
@@ -403,17 +424,6 @@ int main (int argc, char *argv[]){
 
     }
 	
-	//prepare systematic enviroments;
-	std::string sys_root = analysis_tag + "systematics/roots";
-	std::string sys_draw = analysis_tag + "systematics/drawn";
-	gadget_buildfolder(analysis_tag + "systematics");
-	gadget_buildfolder(sys_root);
-	gadget_buildfolder(sys_draw);
-	std::vector<bdt_sys*> systematics;
-	for(int sys_index = 0; sys_index < XMLconfig.n_sys; ++sys_index){ 
-		systematics.push_back( new bdt_sys(sys_index, XMLconfig));
-
-	}
 
     std::cout<<"--------------------------------------------------------------------------"<<std::endl;
     std::cout<<"--------------------------------------------------------------------------"<<std::endl;
@@ -645,10 +655,10 @@ int main (int argc, char *argv[]){
 			if(number>-1){//a variable is specified
 				tmp_vars = {vars.at(number)};
 
-				if(true){//do systematics
+				if(false){//do systematics
 
 
-					InitSys({tmp_vars[0]}, vec_precuts, systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+					InitSys({tmp_vars[0]}, vec_precuts, systematics, onbeam_data_file->pot, fbdtcuts, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
 //				std::cout<<"CHECK memory!"<<std::endl;
 //				sleep(10);
 				}
@@ -717,30 +727,6 @@ int main (int argc, char *argv[]){
         bdt_stack *histogram_stack = new bdt_stack(analysis_tag+"_superdatamc");
         histogram_stack->plot_pot = onbeam_data_file->pot;
 
-        /*
-           for(size_t f =0; f< stack_bdt_files.size(); ++f){
-           if(stack_bdt_files[f]->is_data) continue;
-           if(!plotOnTopMap[stack_bdt_files[f]] ){
-           histogram_stack->addToStack(stack_bdt_files[f]);
-           std::cout<<"adding to stack ON BOTTOM: "<<stack_bdt_files[f]->tag<<std::endl;
-           }
-           }
-
-           for(size_t f =0; f< stack_bdt_files.size(); ++f){
-           if(stack_bdt_files[f]->is_data) continue;
-           if(plotOnTopMap[stack_bdt_files[f]] ){
-           histogram_stack->addToStack(stack_bdt_files[f],true);
-           std::cout<<"adding to stack ON BOTTOM: "<<stack_bdt_files[f]->tag<<std::endl;
-           }
-           }
-
-           int ip=0;
-
-           bdt_datamc datamc(onbeam_data_file, histogram_stack, analysis_tag+"_datamc");	
-           datamc.setPlotStage(which_stage);                
-           std::vector<bdt_variable> tmp_var = {vars.at(number)};
-           datamc.plotStacks(ftest,  tmp_var , fbdtcuts);
-           */           
     }
     // Added by A. Mogan 1/13/20 for normalization fits
     // Similar to datamc, but iteratively scales signal histogram and
@@ -828,7 +814,7 @@ int main (int argc, char *argv[]){
 
 			if(tmp_var.size() == 2){ 
 					if(true){ //do systematics
-					InitSys(tmp_var,vec_precuts, systematics, onbeam_data_file->pot, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+					InitSys(tmp_var,vec_precuts, systematics, onbeam_data_file->pot, fbdtcuts, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
 					}
 			} else{
 				std::cout<<"No systematics because there are not exact 2 variables as inputs "<<std::endl;

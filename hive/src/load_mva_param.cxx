@@ -703,16 +703,11 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		t.mininame = var_minidef;
 
 		if(var_custombin_bool){
-			t.plot_min = t.edges[0];
+			t.plot_min = t.edges[1];
 			t.plot_max = (t.edges).back();
-			
-			double min_gap = (t.plot_max-t.plot_min);
-			for(int temp_index = 1; temp_index< t.edges.size(); temp_index++){
-				min_gap = std::min(t.edges[temp_index] - t.edges[temp_index-1], min_gap);
-			}
 
-			t.n_bins = std::ceil((t.plot_max-t.plot_min)/min_gap);//do so, then the rebin wont  give gaps;
-			std::cout<<"Customized binning starting from: "<<t.n_bins<<" "<<t.plot_min<<" "<<t.plot_max<<std::endl;
+			t.n_bins = std::ceil((t.plot_max-t.plot_min)/t.edges[0]);//do so, then the rebin wont  give gaps;
+			std::cout<<"Customized binning with common factor: "<<t.edges[0]<<" with binning "<<t.n_bins<<" "<<t.plot_min<<" "<<t.plot_max<<std::endl;
 		}
 
         if(has_covar){
@@ -894,14 +889,21 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		sys_its_multithrows.push_back(gadget_boolreader( pSys->Attribute("isMultithrows")));
 		sys_its_OpticalModel.push_back(gadget_boolreader(pSys->Attribute("isOpticalModelCV")));
 
-//tokenize the following var, varnam
+//tokenize the following var, varnam, bdtfiles
+		sys_for_files.push_back(gadget_tokenlizer( pSys->Attribute("bdtfiles")));
 		sys_vars.push_back(gadget_tokenlizer( pSys->Attribute("var")));
 		sys_vars_name.push_back(gadget_tokenlizer( pSys->Attribute("varnam")));
 
 		if(true){//print the contents out;
 			std::cout<<"\nDireciory: "<<sys_dir[n_sys]<<std::endl;
 			std::cout<<"File: "<<sys_filename[n_sys]<<std::endl;
-			std::cout<<"Variables: ";	
+
+			std::cout<<"For bdtfiles: ";
+			for(size_t index = 0; index < sys_vars[n_sys].size(); ++index){
+				std::cout<<sys_for_files[n_sys][index]<<" ";
+			}
+
+			std::cout<<"\nVariables: ";	
 			for(size_t index = 0; index < sys_vars[n_sys].size(); ++index){
 				std::cout<<sys_vars[n_sys][index]<<" ";
 			}

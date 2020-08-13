@@ -708,6 +708,7 @@ TH2* bdt_file::getTH2(bdt_variable varx,bdt_variable vary, std::string cuts, std
 
 TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT, int rebin){
 
+	bool message = false;
 
     std::string in_bins = "("+var.name+"<"+std::to_string(var.plot_max) +"&&"+var.name+">"+std::to_string(var.plot_min)+")";
 
@@ -740,15 +741,36 @@ TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, doubl
     th1->GetYaxis()->SetTitle("Events");
     th1->SetDirectory(0);	
 
-//	std::cout<<" Get bin content "<<var.n_bins<<var.edges[0]<<var.edges[11]<<std::endl;
-//	std::cout<<th1->GetBinContent(0)<<" "<<th1->GetBinContent(1)<<" "<<th1->GetBinContent(2)<<std::endl;
+	if(message){
+		std::cout<<" Get bin content: "<<std::endl;
+		for(size_t index = 1; index < var.n_bins; index++){
+			std::cout<<th1->GetBinLowEdge(index)<<" ";
+		}
+		std::cout<<std::endl;
+		for(size_t index = 1; index < var.n_bins; index++){
+			std::cout<<th1->GetBinContent(index)<<" ";
+		}
+		std::cout<<std::endl;
+	}
+
 	if(var.is_custombin){ 
 		TH1* newth;
-		newth = (TH1*)th1->Rebin(var.edges.size()-1, (nam+"2").c_str(), &(var.edges).front());
+		newth = (TH1*)th1->Rebin(var.edges.size()-2, (nam+"2").c_str(), &(var.edges).front()+1);
+
+		if(message){
+			std::cout<<" Get rebin content: "<<std::endl;
+			for(size_t index = 1; index < var.edges.size(); index++){
+				std::cout<<newth->GetBinLowEdge(index)<<" ";
+			}
+			std::cout<<std::endl;
+			for(size_t index = 1; index < var.edges.size(); index++){
+				std::cout<<newth->GetBinContent(index)<<" ";
+			}	
+			std::cout<<std::endl;
+		}
+
 		return newth;
 	}
-//	std::cout<<th1->GetBinContent(0)<<" "<<th1->GetBinContent(1)<<" "<<th1->GetBinContent(2)<<std::endl;
-//	std::cout<<newth->GetBinContent(0)<<" "<<newth->GetBinContent(1)<<" "<<newth->GetBinContent(2)<<std::endl;
     //delete ctmp;
     return th1;
 }
@@ -923,6 +945,38 @@ std::string bdt_file::getStageCuts(int stage, std::vector<double> bdt_cuts){
 }
 
 
+TString bdt_file::getStageCutsPlus(int stage, std::vector<double> bdt_cuts, int vec_index){
+    //modern
+    bool verbose = false;
+
+    std::string ans;
+
+    if(stage==-1){
+        ans = flow.definition_cuts;//flow.topological_cuts; stage -1 is now "pre topo"
+    }else if(stage==0){
+        ans = flow.base_cuts;
+    }else if(stage ==1){
+        ans = flow.base_cuts + "&&"+ flow.pre_cuts;
+        if(verbose)std::cout << "Stage 1 cuts: " << ans << std::endl;
+    }else if(stage > 1){
+        ans = flow.base_cuts + "&&" + flow.pre_cuts;
+        for(int i=0; i< stage-1; i++){
+            bdt_variable stagevar = this->getBDTVariable(flow.bdt_vector[i]);		
+            ans += "&& "+stagevar.name +">"+std::to_string(bdt_cuts[i]);
+            //ans += "&& "+stagevar.name +"> 0.52" +"&&"+ stagevar.name + "< 0.56";
+        }
+    }
+
+//The following will adjust the index [0] to vec_index;
+	TString nam = "("+ans+")";
+//	std::cout<<"before: "<<nam<<std::endl;	
+	TString lab = "[" + to_string_prec(vec_index,0)+"]";
+	
+	nam.ReplaceAll("[0]", lab);
+//	std::cout<<nam<<std::endl;	
+	return nam;
+
+}
 
 std::string bdt_file::getStageCuts(int stage, double bdtvar1, double bdtvar2){
 

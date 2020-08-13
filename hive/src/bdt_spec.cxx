@@ -286,6 +286,11 @@ THStack* bdt_stack::getEntryStack(bdt_variable var, int level){
         hist->GetXaxis()->SetTitle(var.unit.c_str());
         hist->GetYaxis()->SetTitle("Events");
 
+
+		if(var.is_custombin){ hist->Scale(1,"width");
+		hist->GetYaxis()->SetTitle("Events/MeV");
+		
+		}
         std::cout<<"Stack "<<stack.at(t)->tag<<" level "<<t<< " group "<< stack.at(t)->group<<" with events: "<<vec_hists.back()->Integral()<<std::endl;
 //        to_sort.push_back(hist);
 //        integral_sorter.push_back(hist->GetSumOfWeights());
