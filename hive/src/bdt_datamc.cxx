@@ -770,8 +770,8 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				for(int c=0; c< tsum->GetNbinsX();c++){
 					double mc_stats_error = tsum->GetBinError(c+1);
 					double mc_sys_error = sqrt((*covar_collapsed)(c,c));
-					std::cout<<"Yarp: "<<mc_sys_error<<std::endl;
 					double tot_error = sqrt(mc_stats_error*mc_stats_error+mc_sys_error*mc_sys_error);
+					std::cout<<"Yarp: "<<mc_sys_error<<"; and BkgMC: "<<mc_stats_error<<" total: "<<tot_error<<std::endl;
 					tsum->SetBinError(c+1, tot_error);
 					//And add on the systematic error that is MC stats
 					//               (*covar_collapsed)(c,c) += mc_stats_error*mc_stats_error;

@@ -655,7 +655,7 @@ int main (int argc, char *argv[]){
 			if(number>-1){//a variable is specified
 				tmp_vars = {vars.at(number)};
 
-				if(false){//do systematics
+				if(true){//do systematics
 
 
 					InitSys({tmp_vars[0]}, vec_precuts, systematics, onbeam_data_file->pot, fbdtcuts, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics

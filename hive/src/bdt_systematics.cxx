@@ -151,11 +151,12 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 							hist_root->Close();
 							std::cout<<"\nFind a broken directory, reproduce histograms now."<<std::endl;
 							goto now_make_hist;//do partial generation, index determines which systematic file to start;
-						}
+						} else{
 
-						(temps->hist[jndex]).push_back( (TH1F*) temp_th1->Clone() );// each bdt_sys now contains all hist;
-//						std::cout<<"Throw "<<kndex<<" "<<temp_th1->Integral()<<std::endl;
-						if(message) std::cout<<"\r\tLoad histogram "<<hist_nam;
+							(temps->hist[jndex]).push_back( (TH1F*) temp_th1->Clone() );// each bdt_sys now contains all hist;
+							//						std::cout<<"Throw "<<kndex<<" "<<temp_th1->Integral()<<std::endl;
+							if(message) std::cout<<"\r\tLoad histogram "<<hist_nam;
+						}
 					}//next throws
 					if(message) std::cout<<std::endl;
 				}//next systematic weights;
@@ -216,6 +217,13 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot
 		//First, if the directory exists, skip;
 		TString weights_nam = temps->vars_name[jndex];//name of key for the histogram in root;
 		TString Tdir_name = temps->tag+"_"+weights_nam;
+
+
+		//CHECK diretory
+		TDirectory* temp_dir = (TDirectory*) hist_root->Get(Tdir_name);
+		if(temp_dir !=NULL){ 
+			continue; //directory exist
+		} 
 
 		TDirectory *Tdir = hist_root->mkdir(Tdir_name);
 		Tdir->cd();
@@ -504,7 +512,11 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 					TString cur_tag = tags[index];
 					//STEP 2.1.1 CV first
 					bdt_sys* tempsCV = sys2CVmap.find(tags[index])->second;//get the sys for a given tag;
+					bool do_smooth =  ((tempsCV->systag).Contains("Multism"));
 
+					if(do_smooth){
+						std::cout<<tempsCV->systag<<" might need to be smoothed"<<std::endl;
+					}
 
 					TH1F* cv_hist = (TH1F*) (tempsCV->hist[0][0])->Clone();
 					cv_hist->Scale(plot_pot/tempsCV->pot);//scale hist to data POT
@@ -566,7 +578,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 							}//next bin
 
 							//smooth the matrix!
-							if(nb>1) SmoothSW(temp_swhist[jndex], cv_hist);
+							if(nb>1&& do_smooth )SmoothSW(temp_swhist[jndex], cv_hist);
 
 							//for cov matrices
 							TH2D* cov_temp = MakeCov("cov"+temp_covname+std::to_string(jndex), temp_swhist[jndex], cv_hist);

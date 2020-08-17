@@ -14,7 +14,7 @@ std::vector< TString > gadget_tokenlizer( const char* text){
 	
 	bool debug = false;
 
-	if(debug)	std::cout<<"Tokenize input."<< std::endl;
+	if(debug)	std::cout<<"Tokenize input: "<<text<< "."<<std::endl;
 
 	std::vector< TString > tokens;
 
@@ -890,7 +890,12 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		sys_its_OpticalModel.push_back(gadget_boolreader(pSys->Attribute("isOpticalModelCV")));
 
 //tokenize the following var, varnam, bdtfiles
-		sys_for_files.push_back(gadget_tokenlizer( pSys->Attribute("bdtfiles")));
+//
+
+        std::string bdtfiles_need_alias = pSys->Attribute("bdtfiles");
+        std::string aliased_bdtfiles = this->AliasParse(bdtfiles_need_alias); 
+		sys_for_files.push_back(gadget_tokenlizer( aliased_bdtfiles.c_str()));
+
 		sys_vars.push_back(gadget_tokenlizer( pSys->Attribute("var")));
 		sys_vars_name.push_back(gadget_tokenlizer( pSys->Attribute("varnam")));
 
@@ -898,9 +903,9 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 			std::cout<<"\nDireciory: "<<sys_dir[n_sys]<<std::endl;
 			std::cout<<"File: "<<sys_filename[n_sys]<<std::endl;
 
-			std::cout<<"For bdtfiles: ";
-			for(size_t index = 0; index < sys_vars[n_sys].size(); ++index){
-				std::cout<<sys_for_files[n_sys][index]<<" ";
+			std::cout<<"For "<<sys_for_files[n_sys].size()<<" bdtfiles: ";
+			for(size_t index = 0; index < sys_for_files[n_sys].size(); ++index){
+				std::cout<<sys_for_files[n_sys][index]<<" "<<std::endl;
 			}
 
 			std::cout<<"\nVariables: ";	
