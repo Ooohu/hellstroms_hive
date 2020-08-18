@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 
 <!-- Some basic information, a tag that defines uniquely this analysis, and a topology that also defines it -->
-<topology tag="testfullmc" name ="#nu_{e}" def = "1" bdtcut = "( 0.5, 0, 0, 0, 0, 0)"/> 
+<topology tag="fullmc" name ="#nu_{e}" def = "1" bdtcut = "( 0.5, 0, 0, 0, 0, 0)"/> 
 <filedir>/scratch/condor-tmp/klin/data_timing_root</filedir>
 
 <!-- ================================================== BDT FILES [First the ones that we stack in things]==================================================== -->
