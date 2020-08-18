@@ -702,12 +702,27 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		t.is_custombin = var_custombin_bool;
 		t.mininame = var_minidef;
 
+		//update binnings, define int_n_bins;
 		if(var_custombin_bool){
 			t.plot_min = t.edges[1];
 			t.plot_max = (t.edges).back();
 
-			t.n_bins = std::ceil((t.plot_max-t.plot_min)/t.edges[0]);//do so, then the rebin wont  give gaps;
-			std::cout<<"Customized binning with common factor: "<<t.edges[0]<<" with binning "<<t.n_bins<<" "<<t.plot_min<<" "<<t.plot_max<<std::endl;
+			t.n_bins = (t.edges).size() - 2;//keep this for plotting purpose. - edge - GCD (first element);
+
+			double temp_numbins = (t.plot_max-t.plot_min)/t.edges[0];//bins# according to the GCD, then the rebin wont  give gaps;
+
+			std::cout<<"Initialize variable binning with greatest common divisor(GCD): "<<t.edges[0];
+			std::cout<<" binning = ("<<temp_numbins<<","<<t.plot_min<<","<<t.plot_max<<")"<<std::endl;
+			if( std::floor(temp_numbins)!= temp_numbins){
+				std::cout<<"ERROR first number of the variable binnings needs to be a dividen for equal binnings"<<std::endl;
+				std::cout<<"CHECK "<<n_var<<" variable: "<<var_unit<<std::endl;
+				exit(EXIT_FAILURE);
+			}
+
+			t.int_n_bins = (int) temp_numbins;
+		}else{
+			t.int_n_bins = t.n_bins;//for normal binning, the int_n_bins is same as n_bins;
+
 		}
 
         if(has_covar){
@@ -899,7 +914,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		sys_vars.push_back(gadget_tokenlizer( pSys->Attribute("var")));
 		sys_vars_name.push_back(gadget_tokenlizer( pSys->Attribute("varnam")));
 
-		if(true){//print the contents out;
+		if(true){//print the systemati files information out;
 			std::cout<<"\nDireciory: "<<sys_dir[n_sys]<<std::endl;
 			std::cout<<"File: "<<sys_filename[n_sys]<<std::endl;
 

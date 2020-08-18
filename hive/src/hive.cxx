@@ -370,7 +370,7 @@ int main (int argc, char *argv[]){
 			if( std::find( temp_s.begin(), temp_s.end(), XMLconfig.bdt_tags[f]) != temp_s.end() ){//we want this systematics
 			std::cout<<this_s<<std::endl;
 				systematics.push_back( new bdt_sys(sys_index, XMLconfig, f, analysis_flow));
-				(systematics.back())->setPlotStage(which_stage);
+				(systematics.back())->setCutStage(which_stage);
 
 			}
 		}

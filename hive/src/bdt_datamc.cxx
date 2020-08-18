@@ -785,7 +785,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				covar_f->Close();
 
 				Double_t *determ_ptr;
-				int var_binning  = (var.is_custombin)? (var.edges).size()-1 : var.n_bins;
+				int var_binning  = var.n_bins;
 				for(int ib=0; ib<var_binning; ib++){
 					//                       (*covar_collapsed)(ib,ib) += d0->GetBinContent(ib+1);//sqrt(n*n)//This is Data stats error
 					(*covar_collapsed)(ib,ib) += tsum->GetBinContent(ib+1);//sqrt(n*n)//This is MC stats error

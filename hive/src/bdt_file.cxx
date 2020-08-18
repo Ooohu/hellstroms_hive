@@ -715,7 +715,7 @@ TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, doubl
     //std::cout<<"Starting to get for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
     TCanvas *ctmp = new TCanvas();
    // this->CheckWeights();
-	std::string tem_binning = "("+to_string_prec(var.n_bins,0)+","+to_string_prec(var.plot_min,0)+","+to_string_prec(var.plot_max,0)+")";
+	std::string tem_binning = "("+to_string_prec(var.int_n_bins,0)+","+to_string_prec(var.plot_min,0)+","+to_string_prec(var.plot_max,0)+")";
 //	std::cout<<var.name+">>"+nam+ tem_binning<<std::endl;
 //	std::cout<<"("+cuts+"&&"+in_bins+")*"+this->weight_branch<<std::endl;
 
@@ -743,15 +743,16 @@ TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, doubl
 
 	if(message){
 		std::cout<<" Get bin content: "<<std::endl;
-		for(size_t index = 1; index < var.n_bins; index++){
+		for(size_t index = 1; index < var.int_n_bins; index++){
 			std::cout<<th1->GetBinLowEdge(index)<<" ";
 		}
 		std::cout<<std::endl;
-		for(size_t index = 1; index < var.n_bins; index++){
+		for(size_t index = 1; index < var.int_n_bins; index++){
 			std::cout<<th1->GetBinContent(index)<<" ";
 		}
 		std::cout<<std::endl;
 	}
+
 
 	if(var.is_custombin){ 
 		TH1* newth;
@@ -759,18 +760,19 @@ TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, doubl
 
 		if(message){
 			std::cout<<" Get rebin content: "<<std::endl;
-			for(size_t index = 1; index < var.edges.size(); index++){
+			for(size_t index = 1; index < var.n_bins; index++){
 				std::cout<<newth->GetBinLowEdge(index)<<" ";
 			}
 			std::cout<<std::endl;
-			for(size_t index = 1; index < var.edges.size(); index++){
+			for(size_t index = 1; index < var.n_bins; index++){
 				std::cout<<newth->GetBinContent(index)<<" ";
 			}	
 			std::cout<<std::endl;
 		}
 
 		return newth;
-	}
+	} 
+
     //delete ctmp;
     return th1;
 }

@@ -45,6 +45,8 @@ struct bdt_variable{
         double plot_max;
 		
         int n_bins;
+		int int_n_bins;//use this as initial bin# when using variable binning;
+
         std::vector<double> edges;
 
 		bool is_custombin;

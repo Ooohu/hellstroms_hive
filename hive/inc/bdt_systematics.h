@@ -27,6 +27,7 @@ class bdt_sys : public bdt_file{
 	public:
 		TString tag;// BkgMC, dirt | MCUnism, Multism,OpticalModel _ dirt, pi0misd, delta..
 		TString systag;//BkgMC, dirt | MCUnism, Multism,OpticalModel
+
 		TString dir;//for multi files, need to know the parent directory.
 		TString filename;
 		TString treename;
@@ -55,7 +56,7 @@ class bdt_sys : public bdt_file{
 		bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inflow);
 		~bdt_sys();
 
-        int setPlotStage(int s){
+        int setCutStage(int s){
             stage =s;
             return s;
         }
@@ -80,7 +81,7 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot
  *
  */
 
-void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn, double plot_pot);
+void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn, double plot_pot, unsigned long hashdraw);
 
 /*
  * make covaraince matrix according to input histograms, hist - weights and cv - cv;
@@ -91,7 +92,14 @@ TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv);
 /*
  * covariane matrix propagation, create a fractional covariance matrix;
  */
-TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv, TH1F* newcv);
+TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv);
+
+/*
+ * Propagate matrix
+ */
+TH2D* PropagateCov(TString name,TH2D* frac_cov, TH1F* newcv);
+
+
 
 /*
  * Smooth the matrix
