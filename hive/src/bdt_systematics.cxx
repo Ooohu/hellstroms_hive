@@ -79,8 +79,8 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inf
 
 void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, std::vector<bdt_sys*> syss, double plot_pot, std::vector<double> bdt_cuts, TString dir_root, TString dir_drawn){
 	
-	bool do_cov = true; //true - generate covariance matrix everytime, no matter what; false -this boolean is not functioning
-	bool do_hist = true;//true - generate hist, no matter what; false -this boolean is not functioning
+	bool do_cov = false; //true - generate covariance matrix everytime, no matter what; false -this boolean is not functioning
+	bool do_hist = false;//true - generate hist, no matter what; false -this boolean is not functioning
 
 	bool message = true;
 	
@@ -273,11 +273,7 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot
 			//histogram of a throw
 			TString hist_name = (its_multithrows)? temps->vars_name[jndex]+std::to_string(kndex+1) :temps->vars_name[jndex];
 
-//			if(var->is_custombin){
-//				hist1d[kndex] = new TH1F(hist_name,hist_name, (var->edges).size() -1, &(var->edges).front() );
-//			} else{
 				hist1d[kndex] = new TH1F(hist_name,hist_name, var->int_n_bins, var->plot_min, var->plot_max);//Will be rebinned later for variable binning;
-//			}
 			count_hist++;
 
 
@@ -458,12 +454,12 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 		//Got the CV! Now Rebin and Scale with POT;
 		TH1F* cv_hist = (TH1F*) (tempsCV->hist[0][0])->Clone();
 
+		cv_hist->Scale(plot_pot/tempsCV->pot);//scale hist to data POT
 		if(var.is_custombin){ 
 			cv_hist->Rebin(nb, cur_tag+"CV",&(cur_binning).front());//tags[index]+"CV" is just some name, can be anything;
 			cv_hist = (TH1F*) gDirectory->Get(cur_tag+"CV");
 		}
 
-		cv_hist->Scale(plot_pot/tempsCV->pot);//scale hist to data POT
 
 		//STEP 3.2 Load SW and draw histograms, covariance matrix only the flight;
 		int nby = 1.5*cv_hist->GetBinContent(cv_hist->GetMaximumBin());//set histogram height
@@ -480,7 +476,6 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 				TH2D* covmatrices =  new TH2D(cur_tag+"_CovarianceMatrix", cur_tag+"_CovarainceMatrix",nb,nl,nh,nb,nl,nh);//to store covariance matrix, equal width;
 
 				int numSW = (tempsSW->hist).size();//hist is a 2d vector w dimension numSW x throws;
-
 				for(int jndex = 0; jndex < numSW; ++jndex){//go through different SW under same bdt_sys
 					TString temp_sw_name  = cur_tag+"_"+tempsSW->vars_name[jndex];
 
@@ -489,14 +484,20 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 
 						///scale, smooth, rebin;
 						sw_hist->Scale(plot_pot/tempsSW->pot);
-						if(nb>1&& do_smooth ){ 
+						if(var.int_n_bins>1&& do_smooth ){ 
 							std::cout<<"\r Smoothing a sw histogram";
-							SmoothSW(sw_hist, cv_hist);
+							SmoothSW(sw_hist, tempsCV->hist[0][0]);
 						}
 						if(var.is_custombin){ 
-							sw_hist->Rebin(nb, cur_tag+"sw",&(cur_binning).front());
-							sw_hist = (TH1F*) gDirectory->Get(cur_tag+"sw");
+							TString rebin_label =  cur_tag+"sw"+to_string_prec(kndex,0);
+							sw_hist->Rebin(nb,rebin_label,&(cur_binning).front());//repeat label will get the previous histogram
+							sw_hist = (TH1F*) gDirectory->Get(rebin_label);
 						}
+//						std::cout<<" CHECK "<<sw_hist->GetNbinsX()<<" ";
+//						for(int temdex = 0; temdex  <sw_hist->GetNbinsX(); temdex++){
+//						std::cout<<sw_hist->GetBinContent(temdex+1)<<" ";
+//						}
+//						std::cout<<std::endl;
 
 						//STEP 3.2.2 make histograms & covriance matrix;
 						for(int lndex = 1; lndex < nb+1; ++lndex){//fill sw_hist to all_hist bins by bins;
