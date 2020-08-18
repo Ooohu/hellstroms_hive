@@ -212,7 +212,7 @@
 <var def = "el.X" binning="(20,-600,600)" unit = "X [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
 <var def = "el.Y" binning="(20,-600,600)" unit = "Y [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
 <var def = "el.Z" binning="(20,-600,600)" unit = "Z [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
-<var def = "el.EnuQE" binning="(50,100,1300)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "testfullmcsystematics/finalcov_elEnuQE_24_100_1300_s1_h8370887144987459802.root" covarname = "elEnuQEmatrix" custombin = "true"/>
+<var def = "el.EnuQE" binning="(50,100,1300)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "fullmcsystematics/finalcov_elEnuQE_24_100_1300_s1_h8370887144987459802.root" covarname = "elEnuQEmatrix" custombin = "true"/>
 
 <!--5-->
 <var def = "sqrt(2*939.57*( #Enu# - el.E)+pow(939.57,2)-#Qsquare#)" binning="(25,0,1500)" unit = "MECness W" type = "d" logplot = "false"  training = "" group = "1"/>
