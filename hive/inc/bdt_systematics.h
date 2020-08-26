@@ -12,6 +12,7 @@
 #include "TMatrixD.h"
 #include "TVectorD.h"
 #include "TDecompLU.h"
+#include "TF1.h"
 
 //NOTE, train/app part of the hive.cxx  need to be updated, such that the BDT cuts can be used on systematics;
 
@@ -104,7 +105,7 @@ TH2D* PropagateCov(TString name,TH2D* frac_cov, TH1F* newcv);
 /*
  * Smooth the matrix
  */
-void SmoothSW(TH1F* sw, TH1F* cv);
+void SmoothSW(TH1F* sw, TH1F* cv, bool);
 
 /*
  * Make Covaraince matrix from 2d histograms

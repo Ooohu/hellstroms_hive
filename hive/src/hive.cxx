@@ -644,8 +644,6 @@ int main (int argc, char *argv[]){
             }
         }
 
-//        int ip=0;
-//        std::vector<bool> subv = {false,false,true};
 		
 		if(true){
 			//prepare input variables for the plotStacks function;
@@ -655,7 +653,7 @@ int main (int argc, char *argv[]){
 			if(number>-1){//a variable is specified
 				tmp_vars = {vars.at(number)};
 
-				if(true){//do systematics
+				if(true&&tmp_vars[0].has_covar){//do systematics
 
 
 					InitSys({tmp_vars[0]}, vec_precuts, systematics, onbeam_data_file->pot, fbdtcuts, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics

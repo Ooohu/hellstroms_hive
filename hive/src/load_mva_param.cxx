@@ -915,12 +915,12 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		sys_vars_name.push_back(gadget_tokenlizer( pSys->Attribute("varnam")));
 
 		if(true){//print the systemati files information out;
-			std::cout<<"\nDireciory: "<<sys_dir[n_sys]<<std::endl;
+			std::cout<<"\nDirectory: "<<sys_dir[n_sys]<<std::endl;
 			std::cout<<"File: "<<sys_filename[n_sys]<<std::endl;
 
 			std::cout<<"For "<<sys_for_files[n_sys].size()<<" bdtfiles: ";
 			for(size_t index = 0; index < sys_for_files[n_sys].size(); ++index){
-				std::cout<<sys_for_files[n_sys][index]<<" "<<std::endl;
+				std::cout<<sys_for_files[n_sys][index]<<" ";
 			}
 
 			std::cout<<"\nVariables: ";	
