@@ -93,7 +93,7 @@ TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv);
 /*
  * covariane matrix propagation, create a fractional covariance matrix;
  */
-TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv);
+TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv, bool, TH2D*);
 
 /*
  * Propagate matrix

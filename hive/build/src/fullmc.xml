@@ -206,7 +206,7 @@
 <!--
 <alias key = "regular" value = "data,other,pi0misid,intrinsicnue,delta"/>
 -->
-<alias key = "regular" value = "data"/>
+<alias key = "regular" value = "pi0misid"/>
 <!-- ============================================== Variables, BDT training and otherwise ====================================== -->
 <!--group 0: observable; group1: special; group 3: BDT-->
 
@@ -214,6 +214,7 @@
 <var def = "el.X" binning="(20,-600,600)" unit = "X [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
 <var def = "el.Y" binning="(20,-600,600)" unit = "Y [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
 <var def = "el.Z" binning="(20,-600,600)" unit = "Z [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
+<!--4-->
 <var def = "el.EnuQE" binning="(50,100,1300)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "fullmcsystematics/finalcov_elEnuQE_24_100_1300_s1_h8370887144987459802.root" covarname = "elEnuQEmatrix" custombin = "true"/>
 <!--5-->
 <var def = "el.EnuQE" binning="(24,100,1300)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "fullmcsystematics/finalcov_elEnuQE_24_100_1300_s1_h8370887144987459802.root" covarname = "elEnuQEmatrix" custombin = "false"/>
@@ -243,10 +244,11 @@
 <var def = "el.RtoWallF" binning="(20,0,1000)" unit = "R to Wall forward[cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
 
 <!-- ==================================== Add systematics ====================================-->
-<!--
+<!--dirt
 <systematics tag = "DirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "07Dirt.root" tree = "TTiming" var = "Dirt" varnam = "Dirt" pot = "51.76e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
 
 <systematics tag = "DirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "07Dirt.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "51.76e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
+-->
 <systematics tag = "BkgMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "07DetBkgMC.root" tree = "TTiming" var = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield" varnam = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
 
 <systematics tag = "BkgMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "07DetBkgMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
@@ -257,7 +259,7 @@
 <systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "07QTCORRBkgMC.root" tree = "TTiming" var = "CV" varnam = "QtcorrXsecxFluxWgt" pot = "41.13e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "false" />
 
 <systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "07DetBkgMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
--->
+
 <systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "07DetBkgMC.root" tree = "TTiming" var = "CV" varnam = "newCV" pot = "41.08e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "true" />
 
 <systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "06OM_BkgMC.root" tree = "TTiming" var = "CV" varnam = "XsecxFluxWgt" pot = "6.58848e20" throws = "66"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />

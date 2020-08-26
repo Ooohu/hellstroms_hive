@@ -457,8 +457,9 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 
 		//STEP 3.1 Find the bdt_sys syss that gives the CV; then do SW, OMCV on the flight;
 		bdt_sys* tempsCV = sys2CVmap.find(cur_tag)->second;//bdt_sys that gives CV - tempsCV
-
-		bool do_smooth = smooth_matrix && ((tempsCV->systag).Contains("Unisim")||(tempsCV->systag).Contains("OpticalModel"));
+		
+		bool special_smoothing = (tempsCV->systag).Contains("OpticalModel");
+		bool do_smooth = smooth_matrix && ((tempsCV->systag).Contains("Unisim")||special_smoothing);
 		std::cout<<"\nWorking on "<<tempsCV->systag<<std::endl;
 		if(do_smooth) std::cout<<tempsCV->systag<<" might need smoothing (if nbins>1)"<<std::endl;
 
@@ -506,27 +507,24 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 		for(int jndex = 0; jndex < numSW; ++jndex){//go through different SW under same bdt_sys
 			//USE THIS LABEL!
 			TString temp_sw_name  = cur_tag+"_"+tempsSW->vars_name[jndex];
+
 			TH2D* all_hist = new TH2D(temp_sw_name, temp_sw_name, nb, &(cur_binning).front(), nby, 0, nby);//to store many throws SW
 			TH2D* covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix", temp_sw_name+"_CovarainceMatrix",nb,nl,nh,nb,nl,nh);//to store covariance matrix, equal width;
+			TH2D* ori_covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix_original", temp_sw_name+"_CovarainceMatrix_original",nb,nl,nh,nb,nl,nh);//to store covariance matrix, equal width;
 
 			for(int kndex = 0; kndex < tempsSW->throws; kndex++){//go through different throws
-				TH1F* sw_hist = (TH1F*) (tempsSW->hist[jndex][kndex])->Clone(tempsSW->vars_name[jndex]);
+				TH1F* sw_hist = (TH1F*) (tempsSW->hist[jndex][kndex])->Clone("copy"+tempsSW->vars_name[jndex]);
 				///scale, smooth, rebin;
 				sw_hist->Scale(plot_pot/tempsSW->pot);
 				if(var.int_n_bins>1&& do_smooth ){ 
 					std::cout<<"\r Smoothing a sw histogram";
-					SmoothSW(sw_hist, smoothRef_hist, (tempsCV->systag).Contains("OpticalModel"));
+					SmoothSW(sw_hist, smoothRef_hist, special_smoothing);
 				}
 				if(var.is_custombin){ 
 					TString rebin_label =  cur_tag+"_"+tempsSW->vars_name[jndex]+"sw"+to_string_prec(kndex,0);
 					sw_hist->Rebin(nb,rebin_label,&(cur_binning).front());//repeat label will get the previous histogram
 					sw_hist = (TH1F*) gDirectory->Get(rebin_label);
 				}
-				//	std::cout<<" CHECK "<<sw_hist->GetNbinsX()<<" ";
-				//	for(int temdex = 0; temdex  <sw_hist->GetNbinsX(); temdex++){
-				//	std::cout<<sw_hist->GetBinContent(temdex+1)<<" ";
-				//	}
-				//	std::cout<<std::endl;
 
 				//STEP 3.2.2 make histograms & covriance matrix;
 				for(int lndex = 1; lndex < nb+1; ++lndex){//fill sw_hist to all_hist bins by bins;
@@ -535,6 +533,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 
 				//Make cov matrices
 				TH2D* cov_temp = MakeCov("cov"+cur_tag+"_"+tempsSW->vars_name[jndex]+std::to_string(kndex), sw_hist, cv_hist);
+
 				double scale_factor = 1.0;
 				if(tempsSW->vars_name[jndex].Contains("KpProd") ) scale_factor = 1.5;//from Zarko's MaktrixMaker.cxx
 				cov_temp->Scale(scale_factor/(double) total_throws);
@@ -547,6 +546,33 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 					tempsSW = to_plot_list[0];
 					std::cout<<"\nWait! More throws to append: "<<tempsSW->vars_name[0]<<std::endl;
 				}
+
+				//fill ori_covmatrices, no matter  smoothing or not;
+				if(special_smoothing){
+					TH1F* originsw_hist = (TH1F*) (tempsSW->hist[jndex][kndex])->Clone("ori"+tempsSW->vars_name[jndex]);
+					///scale, smooth, rebin;
+					originsw_hist->Scale(plot_pot/tempsSW->pot);
+					if(var.is_custombin){ 
+						TString rebin_label =  "org"+cur_tag+"_"+tempsSW->vars_name[jndex]+"sw"+to_string_prec(kndex,0);
+						originsw_hist->Rebin(nb,rebin_label,&(cur_binning).front());//repeat label will get the previous histogram
+						originsw_hist = (TH1F*) gDirectory->Get(rebin_label);
+					}
+
+					//STEP 3.2.2 make histograms & covriance matrix;
+					for(int lndex = 1; lndex < nb+1; ++lndex){//fill originsw_hist to all_hist bins by bins;
+						all_hist->Fill(originsw_hist->GetBinLowEdge(lndex) , originsw_hist->GetBinContent(lndex) );
+					}//next bin
+
+					//Make cov matrices
+					TH2D* ori_cov_temp = MakeCov("ori_cov"+cur_tag+"_"+tempsSW->vars_name[jndex]+std::to_string(kndex), originsw_hist, cv_hist);
+
+					double scale_factor = 1.0;
+					if(tempsSW->vars_name[jndex].Contains("KpProd") ) scale_factor = 1.5;//from Zarko's MaktrixMaker.cxx
+					ori_cov_temp->Scale(scale_factor/(double) total_throws);
+
+					ori_covmatrices->Add(ori_cov_temp);
+				}
+
 			}//next throws;
 			std::cout<<std::endl;
 
@@ -569,7 +595,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			//check for OpticalModel
 
 			//make fractional covariance matrix, but this does not added to final covariance matrix;
-			TH2D* fracCov = MakeFracCov(temp_sw_name, covmatrices, cv_hist);
+			TH2D* fracCov = MakeFracCov(temp_sw_name, covmatrices, cv_hist, special_smoothing, ori_covmatrices);//special_smoothing - false, then the last argument is useless.
 			fracCov->SetStats(false);
 			fracCov->Draw("COLZ");
 			fracCov->SetTitle("Fractional "+temp_sw_name + " Covaraince Matrix");
@@ -590,7 +616,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			if(sys2OMCVmap.count(tags[index]) > 0){//its a Optical Model CV, propagate the matrix to a fractional covariance matrix; and add it to finalcov.
 				bdt_sys* tempsOMCV = (sys2OMCVmap.find(cur_tag))->second;//get the sys for a given tag;
 
-				if(message) std::cout<<"Making fractional covariance matrix for "<<cur_tag<<std::endl;
+				if(message) std::cout<<"\nPropagating covariance matrix for "<<cur_tag<<std::endl;
 				TH1F* omcv_hist = (TH1F*) (tempsOMCV->hist[0][0])->Clone();
 
 				//rebin, scale
@@ -709,7 +735,7 @@ TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv){
 /*
  * Create a fractional covariance matrix;
  */
-TH2D* MakeFracCov(TString name,TH2D* inputcov, TH1F* oldcv){
+TH2D* MakeFracCov(TString name,TH2D* inputcov, TH1F* oldcv, bool ec_smoothing, TH2D* origin_cov){
 
 	int nb=oldcv->GetNbinsX();
 	int nl=oldcv->GetBinLowEdge(1);
@@ -722,7 +748,14 @@ TH2D* MakeFracCov(TString name,TH2D* inputcov, TH1F* oldcv){
 		for(int kndex = 1; kndex < nb+1; ++kndex){
 			double cvj = oldcv->GetBinContent(jndex);
 			double cvk = oldcv->GetBinContent(kndex);
-			double fjk = inputcov->GetBinContent(jndex,kndex)/(cvj*cvk);//not divide by nb;
+			double covjk = inputcov->GetBinContent(jndex,kndex);
+			double fjk = (ec_smoothing && jndex==kndex)? (covjk+cvj)/(cvj*cvk): covjk/(cvj*cvk);//not divide by nb;
+
+			if(ec_smoothing&&jndex==kndex && fjk > origin_cov->GetBinContent(jndex,kndex)/(cvj*cvk) ){
+				std::cout<<"\nAdjust matrix element to a smaller value: "<<jndex<<" "<<kndex<<": "<<fjk<<" to ";
+				fjk = origin_cov->GetBinContent(jndex,kndex)/(cvj*cvk);
+				std::cout<<fjk<<std::endl;
+			}
 
 			fractional_cov->SetBinContent(jndex,kndex,fjk);
 		}
@@ -790,7 +823,7 @@ void SmoothSW(TH1F* sw, TH1F* cv, bool ec_smoothing){//fit each bin with polynom
 	  gSystem->RedirectOutput(0,0);//this let ROOT warns
 
 	  sw->Reset();
-	  for (Int_t bin=1;bin<Nbins+1;bin++) {
+	  for (Int_t bin=1;bin<Nbins+1;bin++) {//Here modify the sw
 		  sw->SetBinContent(bin, cv->GetBinContent(bin) * smoothFitter->Eval(sw->GetBinCenter(bin)));
 	  }
 
