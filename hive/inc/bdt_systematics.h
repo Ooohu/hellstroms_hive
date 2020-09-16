@@ -74,7 +74,7 @@ void InitSys(std::vector<bdt_variable> var, std::vector<std::string> precuts, st
 /*
  * Make 1d histograms;
  */
-void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot_pot,std::vector<double> bdt_cuts);
+void Make1dhist(TString histfilename, bdt_variable* var, bdt_sys* temps, double plot_pot,std::vector<double> bdt_cuts);
 
 
 /*

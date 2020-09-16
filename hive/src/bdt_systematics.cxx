@@ -7,10 +7,10 @@ TString gadget_labelroot(TString plot_type, bdt_variable var, int stage, unsigne
 
 //	TString binning_text = "_"+to_string_prec(var.n_bins,0)+"_"+to_string_prec(var.plot_min,0)+"_"+to_string_prec(var.plot_max,0);
 	
-	TString binning_text = to_string_prec(var.int_n_bins,0)+"_"+to_string_prec(var.plot_min,0)+"_"+to_string_prec(var.plot_max,0);
+	TString binning_text = to_string_prec((var.plot_max-var.plot_min)/var.int_n_bins,0);//to_string_prec(var.int_n_bins,0)+"_"+to_string_prec(var.plot_min,0)+"_"+to_string_prec(var.plot_max,0);
 
 	//<type>_<var>_<bins, min, max>
-	TString file_name = plot_type+"_"+var.safe_name + "_"+ binning_text + "_s" + to_string_prec(stage,0) + "_h"+to_string_prec(hash,0);
+	TString file_name = plot_type+"_"+var.safe_name + "_bgap"+ binning_text + "_s" + to_string_prec(stage,0) + "_h"+to_string_prec(hash,0);
 
 	return file_name;
 	//for variable binng that can be derived from this binnings, use these root files;
@@ -74,13 +74,13 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inf
 
 /*
  * Main code, initialize systematics;
- *
+ * Check if the histograms exist, if yes, then can save some works.
  */
 
 void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, std::vector<bdt_sys*> syss, double plot_pot, std::vector<double> bdt_cuts, TString dir_root, TString dir_drawn){
 	
 	bool do_cov = true; //true - generate covariance matrix everytime, no matter what; false -this boolean is not functioning
-	bool do_hist = false;//true - generate hist, no matter what; false -this boolean is not functioning
+	bool do_hist = true;//true - generate hist, no matter what; false -this boolean is not functioning
 
 	bool message = true;
 	
@@ -95,7 +95,9 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 		precut_for_hashing += "&&("+precuts[index] + ")";
 	}
 
+
 	unsigned long hashlabel = gadget_jenkins_hash(precut_for_hashing);
+
 
 	//the histogram goes two ways: 1dhist or 2dhist; 1dhist for now;
 	bool its_1dhist = (vars.size()<2)? true: false;
@@ -109,7 +111,8 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 	
 	bool skip_sysEvaluation = false;//true - do nothing;
 
-	if(message) std::cout<<"\n ---- Initialize systematics for "<<var1->unit<<std::endl;
+	std::cout<<"\n ---- Initialize systematics for "<<var1->unit;
+	std::cout<<"\tSystematic files tag: s"<<stage<<"_h"<<hashlabel<<std::endl;
 
 	//check 1) for the covariance matrix;
 	TString check_covroot_name = var1->covar_file.c_str();//dir_root+"/../"+gadget_labelroot("finalcov", *var1, stage, hashlabel)+".root";
@@ -127,15 +130,16 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 	delete check_cov_root;
 
 
-	TString readfile_method = "RECREATE";//create file by default, if exist, update the current file;
+//	TString readfile_method = "RECREATE";//create file by default, if exist, update the current file;
 	TString histfilename = dir_root+"/"+gadget_labelroot("hist", *var1, stage, hashlabel)+".root";
 
-	if(do_hist || !skip_sysEvaluation){//no root fiels for the covariance matix, so going to generate it.
+	if(do_hist || !skip_sysEvaluation){//no root files for the covariance matix, so going to generate it.
+		std::cout<<"\nLooking into histograms generation"<<std::endl;
 		TFile *hist_root = (TFile*) TFile::Open(histfilename,"READ");//one var one hist root;
 
 		size_t index = 0;//index for syss, determine where we left over last time the code break;
 
-		if(hist_root!=NULL ){ //quick check of existing files; 
+		if(hist_root!=NULL && !do_hist ){ //quick check of existing files; 
 			std::cout<<histfilename<<" exist! Now check what is inside."<<std::endl;
 
 			bool found_corrupted_hist = false;
@@ -155,14 +159,11 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 						TString hist_nam = weights_nam + hist_nam_label;
 						TH1F* temp_th1 =  (TH1F*) hist_root->Get(Tdir_name+"/"+hist_nam);
 						if(temp_th1 == NULL){//oops, some histograms are missing, label it and redo the previous one and the rest;
-							temps->start_with_weight = jndex;
-//							rmdir(temps->tag+"_"+weights_nam[jndex]);
+//							temps->start_with_weight = jndex;
 
-							readfile_method = "UPDATE";
-
+//							readfile_method = "UPDATE";
 							hist_root->Close();
-
-							std::cout<<"\n>> Find a broken directory, reproduce histograms.starting from "<<syss[index]->tag<<std::endl;
+							std::cout<<"\n>> Find a broken directory, when looking at "<<syss[index]->tag<<". Update it now."<<std::endl;
 
 							goto now_make_hist;//do partial generation, index determines which systematic file to start;
 						} else{
@@ -181,17 +182,25 @@ void InitSys(std::vector<bdt_variable> vars, std::vector<std::string> precuts, s
 			std::cout<<histfilename<<" does not exist. Create it now."<<std::endl;
 
 now_make_hist://start ith syss (index), jth weight(start_with_weight), from the given index; 
-			hist_root = (TFile*) TFile::Open(histfilename,readfile_method); //one var one hist root;
-
-			std::cout<<"Working on "<<histfilename<<std::endl;
+//			hist_root = (TFile*) TFile::Open(histfilename,readfile_method); //one var one hist root;
+			
+//			if(readfile_method == "UPDATE"){ 
+//				hist_root->Recover();//when use update, its better to recover the file first.
+//				hist_root->mkdir("TRASH");
+//				hist_root->Delete("TRASH;*");//make a directory and delete it, then no recovery is needed.
+//				hist_root->Write();
+//				hist_root->Close();
+//				hist_root = (TFile*) TFile::Open(histfilename,readfile_method); //one var one hist root;
+//			}
+//			std::cout<<"Working on "<<histfilename<<std::endl;
 
 			while( index < syss.size()){//Histogram making is here!! 
-				Make1dhist(hist_root, var1, syss[index], plot_pot, bdt_cuts);
+				Make1dhist(histfilename, var1, syss[index], plot_pot, bdt_cuts);
 				index++;
 			}//next systematic files
 		}
 
-		std::cout<<"Finish making systematic histograms, and save them to >>>> "<<histfilename<<std::endl;
+		std::cout<<"Finish making systematic histograms, and save them to\n>>>> "<<histfilename<<std::endl;
 		//
 		//Part II: Overlay histograms & draw covaraicne matrix;
 		//
@@ -199,7 +208,7 @@ now_make_hist://start ith syss (index), jth weight(start_with_weight), from the 
 		hist_root->Close();
 	}
 
-	std::cout<<"Finish making covariance matrix, see >>>>  "<<check_covroot_name<<std::endl;
+	std::cout<<"Finish making covariance matrix, see \n>>>>  "<<check_covroot_name<<std::endl;
 	std::cout<<"\n ----------------------------- \n"<<std::endl;
 }
 
@@ -208,16 +217,20 @@ now_make_hist://start ith syss (index), jth weight(start_with_weight), from the 
  * Prepare 1d histograms here;
  * No POT weighting, nor variable binning (in this case, use equal binning then rebin later;
  */
-void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot_pot, std::vector<double> bdt_cuts){
+void Make1dhist(TString histfilename, bdt_variable* var, bdt_sys* temps, double plot_pot, std::vector<double> bdt_cuts){
 
 	bool message = true;
 	
-	std::cout<<"Making systematic histograms for "<<temps->tag<<" with "<<temps->num_vars<<" variables."<<std::endl;	
-
+	std::cout<<"\nMaking systematic histograms for "<<temps->tag<<" with "<<temps->num_vars<<" variables."<<std::endl;	
 
 	//configure what type of histograms to make;
-	bool its_multithrows = temps->its_multithrows;//multi weights or optical model
+	int nbins =  var->int_n_bins;
+	int lowbinedge = var->plot_min;
+	int highbinedge = var->plot_max;
 
+	bool its_multithrows = temps->its_multithrows;//multi weights or optical model
+	const int num_throws = temps->throws;
+	const int num_swvars = temps->num_vars;
 
 	//STEP 1 Load files, prepare input TTree
 	gSystem->RedirectOutput("/dev/null");//no warning, shut up! thanks https://root-forum.cern.ch/t/suppress-all-root-info-warning-error-output/30766
@@ -232,15 +245,13 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot
 	TTree* temptree = (TTree*) infile->Get(temps->treename);//temptree is from the systematic weights file;
 
 	//STEP 2 prepare TH1F
-	bool prev_bad_dir = true;//previous directory must be corrupted;
-	for(int jndex = temps->start_with_weight; jndex < temps->num_vars; ++jndex){//loop through weights
+//	for(int jndex = temps->start_with_weight; jndex < temps->num_vars; ++jndex){//loop through weights}
+	for(int jndex = 0 ; jndex < temps->num_vars; ++jndex){//loop through weights
+		TFile* hist_root = (TFile*) TFile::Open(histfilename,"UPDATE"); //Frequent Open and Close, hope this help prevent corrupted links;
 		//subdirectory in root for each systematic weighs; start_with_weight labels which weight to start, i.e. jndex;
-		
 		//STEP 2.1
 		//second check of directory, because there might be some leftover from previous run;
 		
-		const int num_throws = temps->throws;
-		const int num_swvars = temps->num_vars;
 
 		TString weights_nam = temps->vars_name[jndex];//name of key for the histogram in root;
 		TString Tdir_name = temps->tag+"_"+weights_nam;
@@ -248,29 +259,30 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot
 		TDirectory* Tdir = hist_root->GetDirectory(Tdir_name);
 
 		if(Tdir !=NULL){ 
-			std::cout<<Tdir_name<<" exists, and it is properly a good leftover;"<<std::endl; 
+			std::cout<<"\tDirectory "<<Tdir_name<<" exists; is it a good leftover?"<<std::endl; 
 
 			TString hist_name = (its_multithrows)? temps->vars_name[jndex]+std::to_string(num_throws) :temps->vars_name[jndex];
 
-			TH1F* check_temp_th1 =  (TH1F*) gDirectory->Get(hist_name);
+			TH1F* check_temp_th1 =  (TH1F*) hist_root->Get(Tdir_name+"/"+hist_name);
 
-			if(check_temp_th1 !=NULL){//good we have the file,
-				hist_root->cd();
-				std::cout<<"\t  Proceed to next directory."<<std::endl;
+			if(check_temp_th1 !=NULL){//good we have the file, load it up;
+				std::cout<<"\tYes, proceed to next directory."<<std::endl;
+				hist_root->Close();
 				continue;
 			}else{//no we don't have the histogram; then remove the direcory
-				std::cout<<"\t Reproduce histograms in current directory "<<Tdir_name<<std::endl;
-				Tdir->Delete(Tdir_name + ";*");//might not functioning correctly :( CHECK
+				std::cout<<"\tNo, reproduce histograms in current directory "<<Tdir_name<<std::endl;
+				Tdir->Delete(Tdir_name + ";*");
 			}
 
 		} else{//No such directory, create it;
+			std::cout<<"\tCreate directory "<<Tdir_name<<std::endl;
 			Tdir = hist_root->mkdir(Tdir_name);
 		}
 		Tdir->cd();
 
 		//STEP 2.2 prepare TH1F
 		Long64_t nentries = temptree->GetEntries();
-		if(message) std::cout<<" We have entries: "<<nentries<<std::endl;
+		if(message) std::cout<<" We have entries: "<<nentries<<"   ";
 
 		//STEP 2.2.1 prepare empty histgrams to be filled, each histogram with corresponding weight[kndex] (Note, not POT reweighting).
 		std::vector<TH1F*> hist1d(num_throws);//hist
@@ -282,7 +294,7 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot
 			//histogram of a throw
 			TString hist_name = (its_multithrows)? temps->vars_name[jndex]+std::to_string(kndex+1) :temps->vars_name[jndex];
 
-				hist1d[kndex] = new TH1F(hist_name,hist_name, var->int_n_bins, var->plot_min, var->plot_max);//Will be rebinned later for variable binning;
+			hist1d[kndex] = new TH1F(hist_name,hist_name, nbins, lowbinedge, highbinedge);//Will be rebinned later for variable binning;
 			count_hist++;
 
 
@@ -327,13 +339,11 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot
 //				std::cout<<temps->getStageCutsPlus(temps->stage,bdt_cuts, kndex);
 				std::cout<<std::setw(4)<<kndex+1<<" throw sw name: "<<temps->vars_name[jndex];
 
-				//					std::cout<<std::endl;
-				//					if(kndex==10) exit(0);
 				}
 			}//next throw;
 		}
 
-		std::cout<<"\n Finish filling "<<num_swvars<<" histograms"<<std::endl;
+		std::cout<<"\n Finish filling "<<num_swvars<<" systematic weights."<<std::endl;
 
 		//write hisograms to the diretory
 		for(int kndex = 0; kndex <num_throws;++kndex){//throw in each weight;
@@ -347,42 +357,94 @@ void Make1dhist(TFile* hist_root, bdt_variable* var, bdt_sys* temps, double plot
 			Tdir->cd();
 			hist1d[kndex]->Write(hist_name);
 			//This is important for making covariance matrix using hist2cov();
-			(temps->hist[jndex]).push_back( (TH1F*) hist1d[kndex]->Clone());// each bdt_sys now contains all hist;
+//			(temps->hist[jndex]).push_back( (TH1F*) hist1d[kndex]->Clone());// each bdt_sys now contains all hist;
+			std::cout<<"Push back hist "<<hist_name<<std::endl;
+
 			hist1d[kndex]->Delete();
 		}
 
 		std::cout<<"Save "<<num_throws;
 		std::cout<<" histograms to the dir: "<<Tdir_name<<std::endl;
 
+		hist_root->Close();
 	}//next systematic weight 
 	infile->Close();
+			
+
+	std::cout<<"\t  Now, load histograms for tag "<<temps->tag<<std::endl;
+	TFile* temp_hist_root = (TFile*) TFile::Open(histfilename,"UPDATE"); //Frequent Open and Close, hope this help prevent corrupted links;
+	for(int jndex = 0; jndex < temps->num_vars; ++jndex){//loop through weights
+		TString weights_nam = temps->vars_name[jndex];//name of key for the histogram in root;
+		TString Tdir_name = temps->tag+"_"+weights_nam;
+
+		for(int kndex = 0; kndex < num_throws; ++kndex){//loop through throws;
+			TString hist_nam_label = (its_multithrows)? std::to_string(kndex+1) : "";
+			TString hist_nam = weights_nam + hist_nam_label;
+			TH1F* temp_th1 =  (TH1F*) temp_hist_root->Get(Tdir_name+"/"+hist_nam);
+			if(temp_th1 == NULL){//oops, some histograms are missing, label it and redo the previous one and the rest;
+				std::cout<<"Broken hist?? No way! See"<<__LINE__<<std::endl;
+				exit(EXIT_FAILURE);
+			} else{
+
+				(temps->hist[jndex]).push_back( (TH1F*) temp_th1->Clone() );// each bdt_sys now contains all hist;
+				(temps->hist[jndex]).back()->SetDirectory(0);//prevent the histogram from being deleted when file is closed. https://root-forum.cern.ch/t/use-of-th1-clone/11234/3
+				if(message) std::cout<<"\r\tLoading histogram "<<hist_nam<<" from dir: "<<Tdir_name;
+			}
+		}//next throws
+		if(message) std::cout<<std::endl;
+	}//next systematic weights;
+	temp_hist_root->Close();
 
 }
 
 /*
  * Build covariance matrices based on histograms;
+ * syss contains all the 1d histograms;
  */
 
 void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, TString dir_drawn, double plot_pot, unsigned long hashdraw){
 		
 	bool message = true;
 	bool smooth_matrix = true;
+	bool checkbins = true;
 
+	//STEP 0 Configuration
 	int stage = syss[0]->stage;
-	
-	if(message) std::cout<<"\tMaking covariance matices."<<std::endl;
+
+	int nb = var.n_bins;//n_bins is the target binning;
+	int nl = var.plot_min;
+	int nh = var.plot_max;
+	bool do_rebin = var.is_custombin;
+
+	std::vector<double> uw_statErrsq(nb,0);//unwated statistical error;
+
+	//Set binnings for output histograms/covariance marix;
+	std::vector<double> cur_binning;
+	if(do_rebin){
+		cur_binning = var.edges;
+		cur_binning.erase(cur_binning.begin());//remove the first element, then we get the binning;
+	} else{
+		double bin_left = nl; 
+		double bingap = (nh-nl)/nb;
+
+		for(int jndex = 0; jndex < nb+1; jndex++){
+			cur_binning.push_back(bin_left);
+			bin_left+=bingap;
+		}
+
+	}
+
+	if(message) std::cout<<"\n\nMaking covariance matices."<<std::endl;
 	
 	//STEP 1 group systematic hists for evaluating covariance matrices;
-	std::vector<TString> tags;
-	std::vector<TString> systags;
-	std::vector<TString> bdtftags;
+	std::vector<TString> tags;//tags = systags[?]+"_"+bdtftags[?];
+	std::vector<TString> systags;//systematic type; not used yet.
+	std::vector<TString> bdtftags;//data, dirt, pi0misd, etc. Not used yet.
 	std::multimap< TString, bdt_sys* > sys2SWmap;
 	std::map< TString, bdt_sys* > sys2CVmap;
 	std::map< TString, bdt_sys* > sys2OMCVmap;
 
-//	bool only_one_cv = true;
 	for(size_t index = 0; index < syss.size(); ++index){//first classify what tags are available, then group them next;
-
 		bdt_sys* temps = syss[index];
 
 		TString temptag = temps->tag;
@@ -391,16 +453,16 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 		systags	.push_back(temps->systag);//for multi-cov; will contain duplicated
 		bdtftags.push_back(temps->bdt_file::tag);//for multi-cov; will contain duplicated
 
-		if(message) std::cout<< "Looking at "<<temptag<<" ";	
+		if(message) std::cout<< "Looking at "<<temptag;
 		if(temps->its_CV){//save CV to map;
 			sys2CVmap.insert(std::make_pair (temptag, temps));
-			if(message)std::cout<<" it is CV!";
+			if(message)std::cout<<", CV!";
 		}else if(temps->its_OM){//Optical model has another CV
 			sys2OMCVmap.insert(std::make_pair (temptag, temps));
-			if(message)std::cout<<" it is a OMCV!";
+			if(message)std::cout<<", OMCV!";
 		} else{
 			sys2SWmap.insert(std::make_pair (temptag, temps));
-			if(message)std::cout<<" it is Systematic weights!";
+			if(message)std::cout<<", Systematic weights!";
 		}//save SW to map
 		if(message)std::cout<<std::endl;
 	}
@@ -413,66 +475,87 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 	//STEP 2 pair up SW/CV to make covariance matrix;
 	
 	//STEP 2.1 prepare root file to store  covariance matrix and configure TH2D*;
-	TString covroot_name = dir_root+"/"+gadget_labelroot("cov",var, stage, hashdraw)+".root";//the root to save following covariance marices;
-	TFile *cov_root = (TFile*) TFile::Open(covroot_name,"RECREATE"); //Collection of individual covariance matrices;
+
+	TFile *cov_root = (TFile*) TFile::Open(dir_root+"/"+gadget_labelroot("cov",var, stage, hashdraw)+".root","RECREATE"); //Collection of resulting covariance matrices;
 
 	TString final_covroot_name = dir_root+"/../"+gadget_labelroot("finalcov", var, stage, hashdraw)+".root";
-	TFile *finalcov_root = (TFile*) TFile::Open(final_covroot_name,"RECREATE"); //one var one hist root;
+	TFile *finalcov_root = (TFile*) TFile::Open(final_covroot_name,"RECREATE");//one final covariance matrix output for plotting;
 
-
-	int nb = var.n_bins;//n_bins also for rebinned binning for variable binning;
-	int nl = var.plot_min;
-	int nh = var.plot_max;
 	
-	TString finalcov_name = (var.safe_name).c_str();
-
-	TH2D* finalcov =  new TH2D(finalcov_name, finalcov_name ,nb,nl,nh,nb,nl,nh);//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+	//final covariance matrix that sums up all systematics;
+	TH2D* finalcov =  new TH2D((var.safe_name).c_str(), (var.safe_name).c_str() ,nb,&(cur_binning).front(),nb,&(cur_binning).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 
 	TCanvas *histCanvas = new TCanvas("histCanvas", "", 600, 400);//Cavans to draw;
 	TCanvas *covCanvas = new TCanvas("covCanvas","",600,400);
 
 	//STEP 3 Get histograms, rebin (if is_custombin is true) and rescale with POT; then make covariance matrices;
+	int binchecker = 0;//monitor if there are difference between var binning and histogram binning;
 	for(size_t index = 0; index < tags.size(); ++index){//each tag means one group of covariance matices;
 		TString cur_tag = tags[index];
-		std::cout<<"Working on tag "<<cur_tag<<std::endl;
-
-		//Set binnings;
-		std::vector<double> cur_binning;
-
-		if(var.is_custombin){
-			cur_binning = var.edges;
-			cur_binning.erase(cur_binning.begin());//remove the first element;
-		} else{
-			double bin_left = nl; 
-			double step = (nh-nl)/nb;
-
-			//			std::cout<<"CHECK, binning:";
-			for(int jndex = 0; jndex < nb+1; jndex++){
-				cur_binning.push_back(bin_left);
-				//				std::cout<<bin_left<<" "<<std::endl;
-				bin_left+=step;
-			}
-
-		}
+		std::cout<<"\n-->Working on tag "<<cur_tag<<std::endl;
 
 		//STEP 3.1 Find the bdt_sys syss that gives the CV; then do SW, OMCV on the flight;
 		bdt_sys* tempsCV = sys2CVmap.find(cur_tag)->second;//bdt_sys that gives CV - tempsCV
-		
-		bool special_smoothing = (tempsCV->systag).Contains("OpticalModel");
-		bool do_smooth = smooth_matrix && ((tempsCV->systag).Contains("Unisim")||special_smoothing);
-		std::cout<<"\nWorking on "<<tempsCV->systag<<std::endl;
-		if(do_smooth) std::cout<<tempsCV->systag<<" might need smoothing (if nbins>1)"<<std::endl;
+		std::cout<<__LINE__<<tempsCV->tag<<" has hist "<<tempsCV->hist[0].size()<<std::endl;
 
-		//Got the CV! Now Rebin and Scale with POT;
+		bool omhistogram = (tempsCV->systag).Contains("OpticalModel");
+		bool do_smooth = smooth_matrix && ((tempsCV->systag).Contains("Unisim"));//||omhistogram);
+
+//		std::cout<<"\nWorking on "<<tempsCV->systag<<std::endl;
+		if(do_smooth) std::cout<<tempsCV->systag<<" might need smoothing as long as  nbins>1"<<std::endl;
+
+		std::cout<<"CHECK "<<tempsCV->hist[0][0]->GetBinContent(2)<<std::endl;
+		//Got the CV! 
 		TH1F* cv_hist = (TH1F*) (tempsCV->hist[0][0])->Clone();
 
-		cv_hist->Scale(plot_pot/tempsCV->pot);//scale hist to data POT
+		if(checkbins&&false){//check syss's hisogram bin edges; see if it matches var's binning;
+			//case 1 - non-rebinable
+			//case 2 - rebinable, but need to merge "dynamically"
+			//case 3 - rebinable, perfect;
+			int initial_bindex = 1;
+			for(double binedge : cur_binning){
+			//exp: (20,50,70) , the target binning;
+			//test1: (20,30,51), cv_hist binning;
+			//test2: (20,25,30,50,70)
+			//test3: (20,50,70)
+				for(int bindex = initial_bindex; bindex < cv_hist->GetNbinsX()+1; ++bindex){
+					std::cout<<cv_hist->GetBinLowEdge(bindex)<<" vs "<<binedge<<std::endl;
+					if(cv_hist->GetBinLowEdge(bindex) - binedge < 10e-20){//edge matches;
+						binchecker++;
+						continue;
+					}
+				}
+				initial_bindex++;
+			}
+			checkbins = false;//only need to check once.
+		}
+		if(binchecker != nb){
+			std::cout<<"Need to adjust binning "<<binchecker<<" vs. "<<nb<<std::endl;
+		}
+		//Update cv_hist, if the binning are not exactly what we want;
+//		TH1F* cv_hist = new TH1F(tempsCV->vars_name[0]+"copy",tempsCV->vars_name[0]+"copy",nb,nl,nh);//(tempsCV->hist[0][0])->Clone();
+//		int set_1st_bin = 1;
+//		tempsCV->hist[0][0]->Rebin(2);
+//		for(int bindex = 1; bindex < tempsCV->hist[0][0]->GetNbinsX()+1; ++bindex){
+//			if(tempsCV->hist[0][0]->GetBinLowEdge(bindex+1)>nl||tempsCV->hist[0][0]->GetBinLowEdge(bindex-1)<nh){//select some bins in between;
+//				cv_hist->SetBinContent(set_1st_bin++,tempsCV->hist[0][0]->GetBinContent(bindex));
+//			}
+//		}
+
 		TH1F* smoothRef_hist = (TH1F*) cv_hist->Clone();
-		if(var.is_custombin){ 
+		if(do_rebin){ 
 			cv_hist->Rebin(nb, cur_tag+"CV",&(cur_binning).front());//tags[index]+"CV" is just some name, can be anything;
 			cv_hist = (TH1F*) gDirectory->Get(cur_tag+"CV");
 		}
 
+		if(omhistogram){//capture statistical error for OpticalModel
+			for(int lndex = 0; lndex < nb; ++lndex){//fill cv_hist to all_hist bins by bins;
+				uw_statErrsq[lndex] = pow(cv_hist->GetBinError(lndex+1),2);
+				std::cout<<"Set Err:"<<uw_statErrsq[lndex]<<" for events "<<cv_hist->GetBinContent(lndex+1)<<std::endl;
+			}
+		};
+
+		cv_hist->Scale(plot_pot/tempsCV->pot);//scale hist to data POT
 
 		//STEP 3.2 Load SW and draw histograms, covariance matrix only the flight;
 		int nby = 1.5*cv_hist->GetBinContent(cv_hist->GetMaximumBin());//set histogram height
@@ -495,50 +578,84 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 		if(to_plot_list.size()> 1) std::cout<<to_plot_list.size()<<" bdt_sys's are added under the tag "<<cur_tag<<std::endl;
 
 
-
 		//STEP 3.2.1 prepare SW of throws;
 		//				bdt_sys* tempsSW = itr->second;//tempSW may contains  manySW x throws;
 
 		bdt_sys* tempsSW = to_plot_list[0];
-
+		//
 		//for Unisims, there will be two elements 
-
 		int numSW = (tempsSW->hist).size();//hist is a 2d vector w dimension numSW x throws;
 		for(int jndex = 0; jndex < numSW; ++jndex){//go through different SW under same bdt_sys
 			//USE THIS LABEL!
 			TString temp_sw_name  = cur_tag+"_"+tempsSW->vars_name[jndex];
 
 			TH2D* all_hist = new TH2D(temp_sw_name, temp_sw_name, nb, &(cur_binning).front(), nby, 0, nby);//to store many throws SW
-			TH2D* covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix", temp_sw_name+"_CovarainceMatrix",nb,nl,nh,nb,nl,nh);//to store covariance matrix, equal width;
-			TH2D* ori_covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix_original", temp_sw_name+"_CovarainceMatrix_original",nb,nl,nh,nb,nl,nh);//to store covariance matrix, equal width;
+			TH2D* covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix", temp_sw_name+"_CovarainceMatrix",nb,&(cur_binning).front(), nb,&(cur_binning).front());//to store covariance matrix, equal width;
+			TH2D* ori_covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix_original", temp_sw_name+"_CovarainceMatrix_original",nb,&(cur_binning).front(), nb,&(cur_binning).front());//to store covariance matrix, equal width;
 
+			double temp_covcal = 0;
 			for(int kndex = 0; kndex < tempsSW->throws; kndex++){//go through different throws
 				TH1F* sw_hist = (TH1F*) (tempsSW->hist[jndex][kndex])->Clone("copy"+tempsSW->vars_name[jndex]);
+//				TString hist_name = (tempsSW->its_multithrows)? tempsSW->vars_name[jndex]+std::to_string(kndex) :tempsSW->vars_name[jndex];
+//				TH1F* sw_hist = new TH1F(hist_name+"copy",hist_name+"copy",nb,nl,nh);//(tempsCV->hist[0][0])->Clone();
+//				int set_1stsw_bin = 1;
+//				tempsSW->hist[jndex][kndex]->Rebin(2);
+//				for(int bindex = 1; bindex < tempsSW->hist[jndex][kndex]->GetNbinsX()+1; ++bindex){
+//					if(tempsSW->hist[jndex][kndex]->GetBinLowEdge(bindex+1)>nl||tempsSW->hist[jndex][kndex]->GetBinLowEdge(bindex-1)<nh){//select some bins in between;
+//						sw_hist->SetBinContent(set_1stsw_bin++, tempsSW->hist[jndex][kndex]->GetBinContent(bindex));
+////						std::cout<<"CHECK "<<tempsSW->hist[jndex][kndex]->GetBinLowEdge(bindex)<<" "<<tempsSW->hist[jndex][kndex]->GetBinContent(bindex)<<std::endl;
+//					}
+//				}
 				///scale, smooth, rebin;
-				sw_hist->Scale(plot_pot/tempsSW->pot);
-				if(var.int_n_bins>1&& do_smooth ){ 
-					std::cout<<"\r Smoothing a sw histogram";
-					SmoothSW(sw_hist, smoothRef_hist, special_smoothing);
-				}
-				if(var.is_custombin){ 
+
+//				if(var.int_n_bins>1&& do_smooth ){ 
+//					std::cout<<"\r Smoothing a sw histogram";
+//					SmoothSW(sw_hist, smoothRef_hist, omhistogram);
+//				}
+				if(do_rebin){ 
 					TString rebin_label =  cur_tag+"_"+tempsSW->vars_name[jndex]+"sw"+to_string_prec(kndex,0);
 					sw_hist->Rebin(nb,rebin_label,&(cur_binning).front());//repeat label will get the previous histogram
 					sw_hist = (TH1F*) gDirectory->Get(rebin_label);
 				}
 
+				sw_hist->Scale(plot_pot/tempsSW->pot);
+
+				if(nb>1&& do_smooth ){ 
+					std::cout<<"\r Smoothing a sw histogram";
+					SmoothSW(sw_hist, cv_hist, false);//omhistogram);
+				}
+
 				//STEP 3.2.2 make histograms & covriance matrix;
+				double temp_sw=0;//save first 14 bin contents;
+				double temp_cv=0;
 				for(int lndex = 1; lndex < nb+1; ++lndex){//fill sw_hist to all_hist bins by bins;
 					all_hist->Fill(sw_hist->GetBinLowEdge(lndex) , sw_hist->GetBinContent(lndex) );
+					if(lndex<14){
+				//	std::cout<<"\rGet bin up to "<<sw_hist->GetBinLowEdge(lndex+1);
+					temp_sw += sw_hist->GetBinContent(lndex);
+					temp_cv += cv_hist->GetBinContent(lndex);
+					}
 				}//next bin
+				temp_covcal+=pow(temp_sw-temp_cv,2)/(double) total_throws;
 
 				//Make cov matrices
 				TH2D* cov_temp = MakeCov("cov"+cur_tag+"_"+tempsSW->vars_name[jndex]+std::to_string(kndex), sw_hist, cv_hist);
 
 				double scale_factor = 1.0;
 				if(tempsSW->vars_name[jndex].Contains("KpProd") ) scale_factor = 1.5;//from Zarko's MaktrixMaker.cxx
+
+				if(omhistogram){//now substract the stat error, before scaling the covariance matrix;
+					for(int lndex = 0; lndex < nb; ++lndex){//fill cv_hist to all_hist bins by bins;
+						double temp_covvalue = cov_temp->GetBinContent(lndex+1,lndex+1);
+						cov_temp->SetBinContent(lndex+1,lndex+1, temp_covvalue - uw_statErrsq[lndex]+cv_hist->GetBinContent(lndex+1));
+						std::cout<<"Remove statError from Cov "<<temp_covvalue<<"->"<<temp_covvalue - uw_statErrsq[lndex] +cv_hist->GetBinContent(lndex+1)<<",  uwstatErr: "<<uw_statErrsq[lndex]<<", cv_hist:"<<cv_hist->GetBinContent(lndex+1)<<std::endl;
+					}
+				}
 				cov_temp->Scale(scale_factor/(double) total_throws);
 
 				covmatrices->Add(cov_temp);
+//				std::cout<<covmatrices->GetNbinsX()<<" vs. "<<cov_temp->GetNbinsX()<<std::endl;
+//				exit(0);
 
 				if(kndex == tempsSW->throws-1 && to_plot_list.size()>1){//wait, one more throw! Reset
 					to_plot_list.erase(to_plot_list.begin());
@@ -548,7 +665,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 				}
 
 				//fill ori_covmatrices, no matter  smoothing or not;
-				if(special_smoothing){
+				if(omhistogram){
 					TH1F* originsw_hist = (TH1F*) (tempsSW->hist[jndex][kndex])->Clone("ori"+tempsSW->vars_name[jndex]);
 					///scale, smooth, rebin;
 					originsw_hist->Scale(plot_pot/tempsSW->pot);
@@ -576,9 +693,16 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			}//next throws;
 			std::cout<<std::endl;
 
+			if(false){//do one bin analysis here..
+				std::cout<<"\nOne-Bin Analysis "<< temp_covcal<<std::endl;
+			}
+
+
+
 			//STEP 3.2.3 all_hist & covmatrices are filled; now draw them;
 			gStyle->SetPalette(kRainBow);//this change colz colors;
 
+	gSystem->RedirectOutput("/dev/null");//no warning, shut up! thanks https://root-forum.cern.ch/t/suppress-all-root-info-warning-error-output/30766
 			//Histograms;
 			histCanvas->Clear();
 			histCanvas->cd();
@@ -595,13 +719,14 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			//check for OpticalModel
 
 			//make fractional covariance matrix, but this does not added to final covariance matrix;
-			TH2D* fracCov = MakeFracCov(temp_sw_name, covmatrices, cv_hist, special_smoothing, ori_covmatrices);//special_smoothing - false, then the last argument is useless.
+			TH2D* fracCov = MakeFracCov(temp_sw_name, covmatrices, cv_hist, false, ori_covmatrices);//omhistogram, ori_covmatrices);//omhistogram - false, then the last argument is useless.
 			fracCov->SetStats(false);
 			fracCov->Draw("COLZ");
 			fracCov->SetTitle("Fractional "+temp_sw_name + " Covaraince Matrix");
 			covCanvas->SaveAs( dir_drawn +  "/"+gadget_labelroot("covFrac",var, stage, hashdraw)+"_"+temp_sw_name+".pdf" ,"pdf");
 
-			if(message){ 
+	  gSystem->RedirectOutput(0,0);//this let ROOT warns
+			if(message&& false){ 
 				std::cout<<"The Fractional matrix diagonal element "<< temp_sw_name<<": "<<std::endl;;
 				for(int bindex = 1; bindex<nb+1; ++bindex){
 					std::cout<<" "<<fracCov->GetBinContent(bindex,bindex)<<",";
@@ -616,7 +741,7 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 			if(sys2OMCVmap.count(tags[index]) > 0){//its a Optical Model CV, propagate the matrix to a fractional covariance matrix; and add it to finalcov.
 				bdt_sys* tempsOMCV = (sys2OMCVmap.find(cur_tag))->second;//get the sys for a given tag;
 
-				if(message) std::cout<<"\nPropagating covariance matrix for "<<cur_tag<<std::endl;
+				if(message) std::cout<<"Propagating covariance matrix for "<<cur_tag<<std::endl;
 				TH1F* omcv_hist = (TH1F*) (tempsOMCV->hist[0][0])->Clone();
 
 				//rebin, scale
@@ -631,14 +756,20 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 				ProCov->SetStats(false);
 				ProCov->Draw("COLZ");
 				ProCov->SetTitle("Propagated "+temp_sw_name + " Covaraince Matrix");
+
+				gSystem->RedirectOutput("/dev/null");//no warning, shut up! thanks https://root-forum.cern.ch/t/suppress-all-root-info-warning-error-output/30766
 				covCanvas->SaveAs( dir_drawn +  "/"+gadget_labelroot("covProp",var, stage, hashdraw)+"_"+temp_sw_name+".pdf" ,"pdf");
+				gSystem->RedirectOutput(0,0);//this let ROOT warns
 
 				if(message){ 
-					std::cout<<"The matrix diagonal element "<< temp_sw_name<<": "<<std::endl;;
+					std::cout<<"\t"<< temp_sw_name<<" matrix diagonal element: "<<std::endl;;
+					double temp_calcul = 0;
 					for(int bindex = 1; bindex<nb+1; ++bindex){
 						std::cout<<" "<<ProCov->GetBinContent(bindex,bindex)<<",";
+						if(ProCov->GetBinContent(bindex,bindex)>0&&bindex<14) temp_calcul+=ProCov->GetBinContent(bindex,bindex);
 					}
 					std::cout<<std::endl;
+//					std::cout<<"Quadrature sum: "<<temp_calcul<<std::endl;
 				}
 
 				finalcov->Add(ProCov);
@@ -651,16 +782,21 @@ void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss, TString dir_root, T
 				covmatrices->SetStats(false);
 				covmatrices->GetXaxis()->SetTitle((var.unit).c_str());
 				covmatrices->Draw("COLZ");
+				gSystem->RedirectOutput("/dev/null");//no warning, shut up! thanks https://root-forum.cern.ch/t/suppress-all-root-info-warning-error-output/30766
 				covCanvas->SaveAs( dir_drawn + "/"+gadget_labelroot("cov",var, stage, hashdraw)+"_"+temp_sw_name+".pdf" ,"pdf");
+				gSystem->RedirectOutput(0,0);//this let ROOT warns
 
 				if(message){ 
 					std::cout<<"The matrix diagonal element "<<temp_sw_name<<": "<<std::endl;
+					double temp_calcul = 0;
 					for(int bindex = 1; bindex<nb+1; ++bindex){
 						std::cout<<" "<<covmatrices->GetBinContent(bindex,bindex)<<",";
+						if(covmatrices->GetBinContent(bindex,bindex)>0&&bindex<14) temp_calcul+=covmatrices->GetBinContent(bindex,bindex);
 					}
-					std::cout<<std::endl;
+//					std::cout<<std::endl;
+//					std::cout<<"Quadrature sum: "<<temp_calcul<<std::endl;
 				}
-
+			
 				finalcov->Add(covmatrices);
 				cov_root->cd();
 				covmatrices->Write();
@@ -736,7 +872,7 @@ TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv){
  * Create a fractional covariance matrix;
  */
 TH2D* MakeFracCov(TString name,TH2D* inputcov, TH1F* oldcv, bool ec_smoothing, TH2D* origin_cov){
-
+	
 	int nb=oldcv->GetNbinsX();
 	int nl=oldcv->GetBinLowEdge(1);
 	int nh=oldcv->GetBinLowEdge(nb+1);
@@ -749,13 +885,14 @@ TH2D* MakeFracCov(TString name,TH2D* inputcov, TH1F* oldcv, bool ec_smoothing, T
 			double cvj = oldcv->GetBinContent(jndex);
 			double cvk = oldcv->GetBinContent(kndex);
 			double covjk = inputcov->GetBinContent(jndex,kndex);
-			double fjk = (ec_smoothing && jndex==kndex)? (covjk+cvj)/(cvj*cvk): covjk/(cvj*cvk);//not divide by nb;
+			double fjk = covjk/(cvj*cvk);//not divide by nb;
+//			double fjk = (ec_smoothing && jndex==kndex)? (covjk+cvj)/(cvj*cvk): covjk/(cvj*cvk);//not divide by nb;
 
-			if(ec_smoothing&&jndex==kndex && fjk > origin_cov->GetBinContent(jndex,kndex)/(cvj*cvk) ){
-				std::cout<<"\nAdjust matrix element to a smaller value: "<<jndex<<" "<<kndex<<": "<<fjk<<" to ";
-				fjk = origin_cov->GetBinContent(jndex,kndex)/(cvj*cvk);
-				std::cout<<fjk<<std::endl;
-			}
+//			if(ec_smoothing&&jndex==kndex && fjk > origin_cov->GetBinContent(jndex,kndex)/(cvj*cvk) ){
+//				std::cout<<"\nAdjust matrix element to a smaller value: "<<jndex<<" "<<kndex<<": "<<fjk<<" to ";
+//				fjk = origin_cov->GetBinContent(jndex,kndex)/(cvj*cvk);
+//				std::cout<<fjk<<std::endl;
+//			}
 
 			fractional_cov->SetBinContent(jndex,kndex,fjk);
 		}
@@ -794,114 +931,113 @@ TH2D* PropagateCov(TString name,TH2D* frac_cov, TH1F* newcv){
 //http://mathworld.wolfram.com/LeastSquaresFittingPolynomial.html
 int global_index = 0;
 void SmoothSW(TH1F* sw, TH1F* cv, bool ec_smoothing){//fit each bin with polynomials
-{
-  using namespace std;
-  bool print_ratio = false;
+
+	using namespace std;
+	bool print_ratio = false;
 
 
-  Int_t degree = 2;
-  Int_t first_bin = 1;
-  Int_t last_bin = cv->GetNbinsX() ;
-  Int_t Nbins=last_bin-first_bin+1;
+	Int_t degree = 2;
+	Int_t first_bin = 1;
+	Int_t last_bin = cv->GetNbinsX()-1;
+	Int_t Nbins=last_bin-first_bin+1;
 
 
-  if(ec_smoothing){ //use en-chuan's 
+	if(ec_smoothing){ //use en-chuan's 
+
+		gSystem->RedirectOutput("/dev/null");//no warning, shut up! thanks https://root-forum.cern.ch/t/suppress-all-root-info-warning-error-output/30766
+		TCanvas *rCanvas = new TCanvas("rCanvas", "", 600, 400);//Cavans to draw;
+		TF1* smoothFitter = new TF1("smoothFitter", "pol4", cv->GetBinLowEdge(1), cv->GetBinLowEdge(Nbins+1));
+		TH1F* copysw = (TH1F*) sw->Clone();
+		copysw->Divide(cv);
+		//debugging
+		if(print_ratio){
+			copysw->Draw();
+		}
+
+		copysw->Fit("smoothFitter","+","",cv->GetBinLowEdge(1)-0.5,cv->GetBinLowEdge(Nbins+1)+0.5);
+
+		sw->Reset();
+		for (Int_t bin=1;bin<Nbins+1;bin++) {//Here modify the sw
+			sw->SetBinContent(bin, cv->GetBinContent(bin) * smoothFitter->Eval(sw->GetBinCenter(bin)));
+		}
 
 
-	gSystem->RedirectOutput("/dev/null");//no warning, shut up! thanks https://root-forum.cern.ch/t/suppress-all-root-info-warning-error-output/30766
-	TCanvas *rCanvas = new TCanvas("rCanvas", "", 600, 400);//Cavans to draw;
-	  TF1* smoothFitter = new TF1("smoothFitter", "pol4", cv->GetBinLowEdge(1), cv->GetBinLowEdge(Nbins+1));
-	  TH1F* copysw = (TH1F*) sw->Clone();
-	  copysw->Divide(cv);
+		TH1F* copy_rsw = (TH1F*) sw->Clone();
+		copy_rsw->Divide(cv);
+		copy_rsw->SetLineColor(kRed);
+		copy_rsw->Draw("same");
 
-	  //debugging
-	  if(print_ratio){
-	  copysw->Draw();
-	  }
+		if(print_ratio){  
+			gSystem->RedirectOutput("/dev/null");//no warning, shut up! thanks https://root-forum.cern.ch/t/suppress-all-root-info-warning-error-output/30766
+			rCanvas->SaveAs(("/scratch/condor-tmp/klin/hellstroms_hive/hive/build/src/fullmcsystematics/drawn/ratio_OM_"+to_string_prec(global_index,0)+".pdf").c_str(),"pdf");
+			gSystem->RedirectOutput(0,0);//this let ROOT warns
+			rCanvas->Delete();
+			global_index++;
+		}
 
-	  copysw->Fit("smoothFitter","+","",cv->GetBinLowEdge(1)-0.5,cv->GetBinLowEdge(Nbins+1)+0.5);
-	  gSystem->RedirectOutput(0,0);//this let ROOT warns
+	}else{//use Zarko's
+		//solve M a = y
 
-	  sw->Reset();
-	  for (Int_t bin=1;bin<Nbins+1;bin++) {//Here modify the sw
-		  sw->SetBinContent(bin, cv->GetBinContent(bin) * smoothFitter->Eval(sw->GetBinCenter(bin)));
-	  }
+		cout << "Smoothing bins " << first_bin << " - " << last_bin << " (N=" << Nbins<< ") with pol "<<degree<<endl;
+		for (Int_t bin=0;bin<Nbins;bin++) {
+			//    cout <<cv->GetBinContent(bin+first_bin)<<"\t"<<sw->GetBinContent(bin+first_bin)<<endl;
+		}
+		Double_t M[degree+1][degree+1];
+		Double_t y[degree+1];
+		for (Int_t j=0;j<degree+1;j++) {
+			y[j]=0.;
+			for (Int_t k=0;k<degree+1;k++) {
+				M[j][k]=0.;
+			}
+		}
+		for (Int_t j=0;j<degree+1;j++) {
+			for (Int_t i=0;i<Nbins;i++) {
+				if ( cv->GetBinContent(i+first_bin)>0 )
+					y[j] += pow(Double_t(i+1),Double_t(j))*(sw->GetBinContent(i+first_bin)/cv->GetBinContent(i+first_bin));
+				else
+					y[j] += pow(Double_t(i+1),Double_t(j));
+			}
+		}
 
-		
-	  TH1F* copy_rsw = (TH1F*) sw->Clone();
-	  copy_rsw->Divide(cv);
-	  copy_rsw->SetLineColor(kRed);
-	  copy_rsw->Draw("same");
+		for (Int_t j=0;j<degree+1;j++) {
+			for (Int_t k=0;k<degree+1;k++) {
+				for (Int_t i=0;i<Nbins;i++) {
+					M[j][k] += pow(Double_t(i+1),j)*pow(Double_t(i+1),k);
+				}
+			}
+		}
 
-	  if(print_ratio){  
-		rCanvas->SaveAs(("/scratch/condor-tmp/klin/hellstroms_hive/hive/build/src/fullmcsystematics/drawn/ratio_OM_"+to_string_prec(global_index,0)+".pdf").c_str(),"pdf");
-		  rCanvas->Delete();
-		  global_index++;
-	  }
+		TVectorD va(degree+1);
+		TMatrixD mM(degree+1,degree+1);
+		TVectorD vy(degree+1);
 
-  }else{//use Zarko's
-  //solve M a = y
+		for (Int_t j=0;j<degree+1;j++) {
+			vy[j]=y[j];
+			for (Int_t k=0;k<degree+1;k++) {
+				mM[j][k]=M[j][k];
+			}
+		}
 
-//  cout << "Smoothing bins " << first_bin << " - " << last_bin << " (N=" << Nbins<< ") with pol "<<degree<<endl;
-  for (Int_t bin=0;bin<Nbins;bin++) {
-//    cout <<cv->GetBinContent(bin+first_bin)<<"\t"<<sw->GetBinContent(bin+first_bin)<<endl;
-  }
-  Double_t M[degree+1][degree+1];
-  Double_t y[degree+1];
-  for (Int_t j=0;j<degree+1;j++) {
-    y[j]=0.;
-    for (Int_t k=0;k<degree+1;k++) {
-      M[j][k]=0.;
-    }
-  }
-  for (Int_t j=0;j<degree+1;j++) {
-    for (Int_t i=0;i<Nbins;i++) {
-      if ( cv->GetBinContent(i+first_bin)>0 )
-	y[j] += pow(Double_t(i+1),Double_t(j))*(sw->GetBinContent(i+first_bin)/cv->GetBinContent(i+first_bin));
-      else
-	y[j] += pow(Double_t(i+1),Double_t(j));
-    }
-  }
+		TDecompLU lu(mM);
+		lu.Decompose();
+		Bool_t ok;
+		va=lu.Solve(vy,ok);
 
-  for (Int_t j=0;j<degree+1;j++) {
-    for (Int_t k=0;k<degree+1;k++) {
-      for (Int_t i=0;i<Nbins;i++) {
-	M[j][k] += pow(Double_t(i+1),j)*pow(Double_t(i+1),k);
-      }
-    }
-  }
+		if ( ok ) {
+			//    cout <<"success"<<endl;
+			for (Int_t i=0;i<Nbins;i++) {
+				Double_t num=0.;
+				for (Int_t j=0;j<degree+1;j++) {
+					num += va[j]*pow(Double_t(i+1),Double_t(j)); 
+				}
+				num *= cv->GetBinContent(i+first_bin);
+				//      cout <<"smoothed "<<i+first_bin<<"\t"<<num<<endl;
+				sw->SetBinContent(i+first_bin,num);
+			}
+		}
+		else cout <<"failed to solve"<<endl;
+	}
 
-  TVectorD va(degree+1);
-  TMatrixD mM(degree+1,degree+1);
-  TVectorD vy(degree+1);
-
-  for (Int_t j=0;j<degree+1;j++) {
-    vy[j]=y[j];
-    for (Int_t k=0;k<degree+1;k++) {
-      mM[j][k]=M[j][k];
-    }
-  }
-
-  TDecompLU lu(mM);
-  lu.Decompose();
-  Bool_t ok;
-  va=lu.Solve(vy,ok);
-  
-  if ( ok ) {
-    //    cout <<"success"<<endl;
-    for (Int_t i=0;i<Nbins;i++) {
-      Double_t num=0.;
-      for (Int_t j=0;j<degree+1;j++) {
-	num += va[j]*pow(Double_t(i+1),Double_t(j)); 
-      }
-      num *= cv->GetBinContent(i+first_bin);
-//      cout <<"smoothed "<<i+first_bin<<"\t"<<num<<endl;
-      sw->SetBinContent(i+first_bin,num);
-    }
-  }
-  else cout <<"failed to solve"<<endl;
-}
-}
 
 }
 
