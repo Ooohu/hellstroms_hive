@@ -50,6 +50,29 @@
 	<fixPOT> 4.108e21 </fixPOT>
 </bdtfile>
 
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "k0nue" hist_style = "hist" dirs = "" col = "(130,158,140)" plot_name = "#nu_{e} from K^{0}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType==5 </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "kpmnue" hist_style = "hist" dirs = "" col = "(133,194,163)" plot_name = "#nu_{e} from K^{+/-}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> (backgroundType==3||backgroundType==4) </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+
+
+<!--
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "munue" hist_style = "hist" dirs = "" col = "(176,207,199)" plot_name = "#nu_{e} from #mu^{+/-}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> (backgroundType==1||backgroundType==2) </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+-->
 <bdtfile filename = "timing_MC_nue_may07_2.root" tag = "intrinsicnue" hist_style = "hist" dirs = "" col = "(176,207,199)" plot_name = "Intrinsic #nu_{e}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
     <definition>
         <cut> (backgroundType[0]&gt;0) </cut>
@@ -205,9 +228,11 @@
 
 <!--
 <alias key = "regular" value = "data,other,pi0misid,intrinsicnue,delta"/>
+<alias key = "regular" value = "data,other,pi0misid,munue,kpmnue,k0nue,delta"/>
 <alias key = "regular" value = "data"/>
 -->
-<alias key = "regular" value = "data"/>
+<alias key = "regular" value = "data,other,pi0misid,intrinsicnue,delta"/>
+
 <!-- ============================================== Variables, BDT training and otherwise ====================================== -->
 <!--group 0: observable; group1: special; group 3: BDT-->
 
@@ -216,11 +241,13 @@
 <var def = "el.Y" binning="(20,-600,600)" unit = "Y [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
 <var def = "el.Z" binning="(20,-600,600)" unit = "Z [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
 <!--4-->
-<var def = "el.EnuQE" binning="(25,200,1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "fullmcsystematics/finalcov_elEnuQE_42_200_1250_s1_h12913107993099666.root" covarname = "elEnuQEmatrix" custombin = "true"/>
-<!--5-->
-<var def = "el.EnuQE" binning="(24,100,1300)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  />
+<var def = "el.EnuQE" binning="(21, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "fullmcsystematics/finalcov_elEnuQE_bgap50_s1_h12913107993099666.root" covarname = "elEnuQEmatrix" custombin = "false"/>
 
+<var def = "el.EnuQE" binning="(25, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1150, 1200, 1250, 1300)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "fullmcsystematics/finalcov_elEnuQE_bgap25_s1_h12913107993099666.root" covarname = "elEnuQEmatrix" custombin = "true"/>
+<!--6-->
 <var def = "el.EnuQE" binning="(25,200,1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "fullmcsystematics/finalcov_elEnuQE_bgap25_s1_h12913107993099666.root" covarname = "elEnuQEmatrix" custombin = "true"/>
+
+<var def = "el.EnuQE" binning="(25,100,3000)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "fullmcsystematics/finalcov_elEnuQE_bgap25_s1_h12913107993099666.root" covarname = "elEnuQEmatrix" custombin = "true"/>
 <!--7-->
 <var def = "el.EnuQE" binning="(25, 200, 250, 300, 375, 475, 550, 600, 675, 750, 800, 950, 1100, 1150,1250,1300,1500,1700,1900,3000)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "fullmcsystematics/finalcov_elEnuQE_bgap25_s1_h12913107993099666.root" covarname = "elEnuQEmatrix" custombin = "true" />
 
@@ -256,30 +283,31 @@
 -->
 
 <!--dirt Multisim-->
-<systematics tag = "DirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "may07DirtNueMC.root" tree = "TTiming" var = "Dirt" varnam = "Dirt" pot = "51.76e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
+<systematics tag = "DirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "Nuemay07DetDirtMC.root" tree = "TTiming" var = "Dirt" varnam = "Dirt" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
 
-<systematics tag = "DirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "may07DirtNueMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "51.76e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
+<systematics tag = "DirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "Nuemay07DetDirtMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
 
 <!--Multisims
-<systematics tag = "BkgMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07DetNueMC.root" tree = "TTiming" var = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield_stat" varnam = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield_statbkg" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
+<systematics tag = "BkgMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC.root" tree = "TTiming" var = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield" varnam = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
 
-<systematics tag = "BkgMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07DetNueMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
+<systematics tag = "BkgMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
 
-Multisims pi0yield_common_det
-<systematics tag = "BkgMCMultismPi0" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07DetNueMC_onlypi0.root" tree = "TTiming" var = "Pi0Yield_det" varnam = "Pi0Yield_common_det" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
+Multisims pi0yield, use this when using combined fit
+<systematics tag = "BkgMCMultismPi0" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_onlypi0.root" tree = "TTiming" var = "Pi0Yield_det" varnam = "Pi0Yield_common_det" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
 
-<systematics tag = "BkgMCMultismPi0" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07DetNueMC_onlypi0.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
+<systematics tag = "BkgMCMultismPi0" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_onlypi0.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
 
 Unisims
-<systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07DISCNueMC.root" tree = "TTiming" var = "CV" varnam = "XsecxFluxWgt" pot = "41.10e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "false" />
+<systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DISCMC.root" tree = "TTiming" var = "CV" varnam = "XsecxFluxWgt" pot = "41.10e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "false" />
 
-<systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07QTCORRNueMC.root" tree = "TTiming" var = "CV" varnam = "QtcorrXsecxFluxWgt" pot = "41.13e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "false" />
+<systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07QTCORRMC.root" tree = "TTiming" var = "CV" varnam = "QtcorrXsecxFluxWgt" pot = "41.13e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "false" />
 
-<systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07DetNueMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
+<systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
+-->
+<!--OM-->
+<systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC.root" tree = "TTiming" var = "CV" varnam = "newCV" pot = "41.08e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "true" />
 
-<systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07DetNueMC.root" tree = "TTiming" var = "CV" varnam = "newCV" pot = "41.08e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "true" />
+<systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "Nuemay06OM_MC.root" tree = "TTiming" var = "CV" varnam = "XsecxFluxWgt" pot = "6.58848e20" throws = "66"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
 
-<systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "may06OM_NueMC.root" tree = "TTiming" var = "CV" varnam = "XsecxFluxWgt" pot = "6.58848e20" throws = "66"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
-
-<systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "may06OM_NueMCCV.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "43.8925e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
+<systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "Nuemay06OM_MCCV.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "43.8925e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
 

@@ -105,6 +105,10 @@ class bdt_datamc{
         int plotEfficiency(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, int stage_denom, int stage_numer);
 
 
+		/*
+		 * This function separate the matrix cov into shape, mixed, and norm three components.
+		 */
+		void SeparateMatrix(TMatrixD* cov, TH1* hist, double NormErr);
 
 
 };

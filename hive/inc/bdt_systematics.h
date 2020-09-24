@@ -105,7 +105,7 @@ TH2D* PropagateCov(TString name,TH2D* frac_cov, TH1F* newcv);
 /*
  * Smooth the matrix
  */
-void SmoothSW(TH1F* sw, TH1F* cv, bool);
+TH1F SmoothSW(TH1F* sw, TH1F* cv, bool);
 
 /*
  * Make Covaraince matrix from 2d histograms

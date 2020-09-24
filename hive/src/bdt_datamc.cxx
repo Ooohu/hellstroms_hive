@@ -764,6 +764,8 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				std::cout<<"Reading a covariance matrix "<<var.covar_file.c_str()<<std::endl;
 				covar_collapsed = covar_full;//I think this is right, if the POT for systematic is considered.
 //				this->calcCollapsedCovariance(covar_full, covar_collapsed,var);
+				
+				SeparateMatrix(covar_collapsed, tsum, 0.1);
 
 				double temp_sys_err2 = 0;
 				double temp_all_err2 = 0;
@@ -1401,4 +1403,29 @@ int bdt_datamc::printPassingPi0DataEvents(std::string outfilename, int stage, st
 
 
     return 0;
+}
+
+/*
+ * This function separate the matrix cov into shape, mixed, and norm three components.
+ */
+void bdt_datamc::SeparateMatrix(TMatrixD* cov, TH1* hist, double NormErr){
+
+//	int nb = hist->GetNbinsX();
+//	double nl = hist->GetBinLowEdge(1);
+//	double nh = hist->GetBinLowEdge(nb+1);
+//
+//	TH2D* shape = new TH2D("shape", "shape", nb, nl, nh, nb, nl, nh);
+//	TH2D* mixed = new TH2D("mixed", "mixed", nb, nl, nh, nb, nl, nh);
+//	TH2D* norm = new TH2D("norm", "norm", nb, nl, nh, nb, nl, nh);
+//
+//	for(int index=0; index< hist->GetNbinsX();index++){
+//		for(int jndex=0; jndex< hist->GetNbinsX();jndex++){
+//
+//			(*covar_collapsed)(index,jndex);
+//		}
+//	}
+//
+//	TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
+//
+//	cobs->SaveAs(("datamc/"+tag+"_"+data_file->tag+"_"+var.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
 }
