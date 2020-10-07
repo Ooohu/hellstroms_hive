@@ -239,13 +239,15 @@ int main (int argc, char *argv[]){
     std::map<bdt_file*,bool> plotOnTopMap;
 
 	//systematic files; its follows each bdt_file;
-	std::vector<bdt_sys*> systematics;
+	sys_env sysConfig;
 
-	std::string sys_root = analysis_tag + "systematics/roots";
-	std::string sys_draw = analysis_tag + "systematics/drawn";
-	gadget_buildfolder(analysis_tag + "systematics");
-	gadget_buildfolder(sys_root);
-	gadget_buildfolder(sys_draw);
+	sysConfig.setVerbose(2);//2 - all messge;
+	sysConfig.setEnv(analysis_tag, "roots", "drawn");
+	gadget_buildfolder(std::string(sysConfig.top_dir));
+	gadget_buildfolder(std::string(sysConfig.root_dir));
+	gadget_buildfolder(std::string(sysConfig.drawn_dir));
+
+	std::vector<bdt_sys*> systematics;
 
     std::cout<<"================================================================================"<<std::endl;
     std::cout<<"=============== Loading all BDT files for this analysis ========================"<<std::endl;
@@ -275,11 +277,12 @@ int main (int argc, char *argv[]){
         std::cout<<" -- Color ";XMLconfig.bdt_cols[f]->Print();std::cout<<" and hist style "<<XMLconfig.bdt_hist_styles[f]<<" fillstyle "<<XMLconfig.bdt_fillstyles[f]<<std::endl;
         std::cout<<" -- With the following Definition Cuts: "<<std::endl;
         for(int i=0; i< XMLconfig.bdt_definitions[f].size(); ++i){
-            std::cout<<" -- ---> "<<XMLconfig.bdt_definitions[f][i]<<std::endl;
+            std::cout<<" -----> "<<XMLconfig.bdt_definitions[f][i]<<std::endl;
         }
 
 		//load up all bdt files
 
+	std::cout<<__LINE__<<" Check f "<<f<<std::endl;
 		bdt_files.push_back( new bdt_file(f, XMLconfig, analysis_flow));
         bdt_files.back()->addPlotName(XMLconfig.bdt_plotnames[f]);
         tagToFileMap[XMLconfig.bdt_tags[f]] = bdt_files.back();
@@ -300,7 +303,7 @@ int main (int argc, char *argv[]){
 
 
         if(XMLconfig.bdt_is_onbeam_data[f]){
-            std::cout<<" -- Setting as ON beam data with "<<XMLconfig.bdt_onbeam_pot[f]/1e19<<" e19 POT equivalent"<<std::endl;
+            std::cout<<" -- Setting as ON beam "<<std::endl;//data with "<<XMLconfig.bdt_onbeam_pot[f]/1e19<<" e19 POT equivalent"<<std::endl;
             bdt_files.back()->setAsOnBeamData(XMLconfig.bdt_onbeam_pot[f]); //tor860_wc
 //            incl_in_stack = false;
             onbeam_data_file = bdt_files.back();
@@ -336,24 +339,26 @@ int main (int argc, char *argv[]){
 //				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");//CHECK
         }
 		
-	if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-3,3,"Nue")==0){ 
-//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root_Nue_mBtouB_weights.root");
-//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights.root");
-//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights_1499.root");
-//		    bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights_1699.root");
-		    bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/weights_Nue_1699.root");
-		}
-	
-	if(bdt_files[f]->tag.compare("fulloscTrain")==0){ 
-		    bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/fullosc_step_weights.root");
-	}
-	if(bdt_files[f]->tag.compare("FulloscTrain")==0){ 
-		    bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/weights_Nue_fullosc.root");
-	}
+		if(false){//add friends
+			if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-3,3,"Nue")==0){ 
+				//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root_Nue_mBtouB_weights.root");
+				//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights.root");
+				//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights_1499.root");
+				//		    bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights_1699.root");
+				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/weights_Nue_1699.root");
+			}
 
-	if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-4,4,"Numu")==0){ 
-			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Numu_3_weights_1499.root");
-	}
+			if(bdt_files[f]->tag.compare("fulloscTrain")==0){ 
+				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/fullosc_step_weights.root");
+			}
+			if(bdt_files[f]->tag.compare("FulloscTrain")==0){ 
+				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/weights_Nue_fullosc.root");
+			}
+
+			if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-4,4,"Numu")==0){ 
+				bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Numu_3_weights_1499.root");
+			}
+		}
 	//        bdt_files.back()->calcPOT();
 	//std::string r1 = "run_number>=5121 && run_number <=5946";
 	//bdt_files.back()->scale( bdt_files.back()->tvertex->GetEntries(r1.c_str())/(double)bdt_files.back()->tvertex->GetEntries() );
@@ -363,19 +368,23 @@ int main (int argc, char *argv[]){
 
 		if(XMLconfig.bdt_is_validate_file[f]) validate_files.push_back(bdt_files.back());//Mark validate files
 
-		//prepare systematic enviroments;
+ 
+		//load Initialize systematic files for each bdt_file
 		for(int sys_index = 0; sys_index < XMLconfig.n_sys;sys_index ++){
 			std::vector<TString > temp_s = XMLconfig.sys_for_files[sys_index];
 			TString this_s = XMLconfig.bdt_tags[f];
 			if( std::find( temp_s.begin(), temp_s.end(), XMLconfig.bdt_tags[f]) != temp_s.end() ){//we want this systematics
-			std::cout<<this_s<<std::endl;
+			std::cout<<this_s<<" systematic is inheritated from the bdt_file."<<std::endl;
 				systematics.push_back( new bdt_sys(sys_index, XMLconfig, f, analysis_flow));
-				(systematics.back())->setCutStage(which_stage);
+//				(systematics.back())->setCutStage(which_stage);
 
 			}
 		}
 
     }
+		//set systematic enviroments;
+	sysConfig.out_POT = onbeam_data_file->pot;
+//	sysConfig.setCutStage(which_stage);
 
     std::vector<bdt_file*> stack_bdt_files(bkg_bdt_files);
 	stack_bdt_files.insert(stack_bdt_files.end(),signal_bdt_files.begin(),signal_bdt_files.end());//bkg go first, because we want signal on top; Check, specific for MiniBooNE
@@ -645,23 +654,25 @@ int main (int argc, char *argv[]){
         }
 
 		
-		if(true){
+		if(true){//Use this for datamc;
 			//prepare input variables for the plotStacks function;
 			bdt_datamc datamc(onbeam_data_file, histogram_stack, analysis_tag+"_datamc");//last element of histogram_stack is signal
 			std::vector<bdt_variable> tmp_vars;
 
-			if(number>-1){//a variable is specified
+			if(number>-1){//a specific variable
 				tmp_vars = {vars.at(number)};
+				
+				//do systematics
+				if(true&&tmp_vars[0].has_covar){
 
-				if(true&&tmp_vars[0].has_covar){//do systematics
 
+					sysConfig.setStageHash(which_stage, stack_bdt_files[0],fbdtcuts);
 
-					InitSys({tmp_vars[0]}, vec_precuts, systematics, onbeam_data_file->pot, fbdtcuts, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
-//				std::cout<<"CHECK memory!"<<std::endl;
-//				sleep(10);
+					sysConfig.InitSys({tmp_vars[0]}, systematics);//prepare 1dhist, save them in systematics
+
 				}
 
-			}else{
+			}else{//all varaibles;
 				for(auto &v: vars){//load variables
 					if(which_group == -1 || which_group == v.cat){
 						tmp_vars.push_back(v);
@@ -674,7 +685,8 @@ int main (int argc, char *argv[]){
 			}
 
 			datamc.setPlotStage(which_stage);//set through -s option;
-			datamc.plotStacks(ftest, tmp_vars, fbdtcuts, bdt_infos);
+//			datamc.plotStacks(ftest, tmp_vars, fbdtcuts, bdt_infos);
+			datamc.plotStacksSys(ftest, tmp_vars, fbdtcuts, bdt_infos, systematics);
 		}
 
 
@@ -812,7 +824,7 @@ int main (int argc, char *argv[]){
 
 			if(tmp_var.size() == 2){ 
 					if(true){ //do systematics
-					InitSys(tmp_var,vec_precuts, systematics, onbeam_data_file->pot, fbdtcuts, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
+//					InitSys(tmp_var,vec_precuts, systematics, onbeam_data_file->pot, fbdtcuts, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
 					}
 			} else{
 				std::cout<<"No systematics because there are not exact 2 variables as inputs "<<std::endl;

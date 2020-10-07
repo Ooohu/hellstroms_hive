@@ -263,7 +263,7 @@ class bdt_file{
 
         std::string getStageCuts(int stage, double bdtvar1, double bdtvar2);
         std::string getStageCuts(int stage, std::vector<double> bdt_cuts);
-		TString getStageCutsPlus(int stage, std::vector<double> bdt_cuts, int vec_index);
+		TString getStageCutsIndex(int stage, std::vector<double> bdt_cuts, int vec_index);
 
 
         int writeStageFriendTree(std::string nam,double,double);

@@ -947,8 +947,9 @@ std::string bdt_file::getStageCuts(int stage, std::vector<double> bdt_cuts){
 }
 
 
-TString bdt_file::getStageCutsPlus(int stage, std::vector<double> bdt_cuts, int vec_index){
-    //modern
+TString bdt_file::getStageCutsIndex(int stage, std::vector<double> bdt_cuts, int vec_index){
+	//The index of a variable, [0] will change to [vec_index]
+
     bool verbose = false;
 
     std::string ans;
@@ -982,49 +983,53 @@ TString bdt_file::getStageCutsPlus(int stage, std::vector<double> bdt_cuts, int 
 
 std::string bdt_file::getStageCuts(int stage, double bdtvar1, double bdtvar2){
 
-    bool verbose = false;
-
-    std::string ans;
-    switch(stage) {
-        case 0:
-            ans = flow.base_cuts;
-            break;
-        case 1:
-            ans = flow.base_cuts + "&&"+ flow.pre_cuts;
-            if(verbose)std::cout << "Stage 1 cuts: " << ans << std::endl;
-            break;
-        case 2: {
-                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
-                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1);
-                    if(verbose)std::cout << "Stage 2 cuts: " << ans << std::endl;
-                    break;
-                }
-
-        case 3: {
-                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
-                    bdt_variable stage3var = this->getBDTVariable(flow.bdt_bnb_cuts);		
-                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1)+"&&"+stage3var.name +">" +std::to_string(bdtvar2);
-                    if(verbose)std::cout << "Stage 2 var name: " << stage2var.name << std::endl;
-                    if(verbose)std::cout << "Stage 3 var name: " << stage3var.name << std::endl;
-                    if(verbose)std::cout << "Stage 3 cuts: " << ans << std::endl;
-                    break;
-                }
-        case 4: {
-                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
-                    bdt_variable stage3var = this->getBDTVariable(flow.bdt_bnb_cuts);		
-                    if(verbose)std::cout << "Stage 2 var name: " << stage2var.name << std::endl;
-                    if(verbose)std::cout << "Stage 3 var name: " << stage3var.name << std::endl;
-                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1)+"&&"+stage3var.name +">" +std::to_string(bdtvar2) +"&&" +flow.post_cuts;
-                    if(verbose)std::cout << "Stage 4 cuts: " << ans << std::endl;
-                    break;
-                }
-        default: 
-                ans = "1";
-                break;
-
-    }	
-    return ans;
+        std::cerr<<"Obselete function is called, see "<<__FILE__<<__LINE__<<std::endl;
+        exit(EXIT_FAILURE);
+	
+//    bool verbose = false;
+//
+//    std::string ans;
+//    switch(stage) {
+//        case 0:
+//            ans = flow.base_cuts;
+//            break;
+//        case 1:
+//            ans = flow.base_cuts + "&&"+ flow.pre_cuts;
+//            if(verbose)std::cout << "Stage 1 cuts: " << ans << std::endl;
+//            break;
+//        case 2: {
+//                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
+//                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1);
+//                    if(verbose)std::cout << "Stage 2 cuts: " << ans << std::endl;
+//                    break;
+//                }
+//
+//        case 3: {
+//                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
+//                    bdt_variable stage3var = this->getBDTVariable(flow.bdt_bnb_cuts);		
+//                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1)+"&&"+stage3var.name +">" +std::to_string(bdtvar2);
+//                    if(verbose)std::cout << "Stage 2 var name: " << stage2var.name << std::endl;
+//                    if(verbose)std::cout << "Stage 3 var name: " << stage3var.name << std::endl;
+//                    if(verbose)std::cout << "Stage 3 cuts: " << ans << std::endl;
+//                    break;
+//                }
+//        case 4: {
+//                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
+//                    bdt_variable stage3var = this->getBDTVariable(flow.bdt_bnb_cuts);		
+//                    if(verbose)std::cout << "Stage 2 var name: " << stage2var.name << std::endl;
+//                    if(verbose)std::cout << "Stage 3 var name: " << stage3var.name << std::endl;
+//                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1)+"&&"+stage3var.name +">" +std::to_string(bdtvar2) +"&&" +flow.post_cuts;
+//                    if(verbose)std::cout << "Stage 4 cuts: " << ans << std::endl;
+//                    break;
+//                }
+//        default: 
+//                ans = "1";
+//                break;
+//
+//    }	
+//    return ans;
 }
+
 
 int bdt_file::splitBDTfile(std::string split_string,std::string trueTAG, bdt_file* truesplit, std::string falseTAG, bdt_file *falsesplit){
 
