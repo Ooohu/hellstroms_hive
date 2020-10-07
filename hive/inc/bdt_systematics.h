@@ -35,14 +35,15 @@ class sys_env{
 		std::vector<double> fbdt_cuts;
 		TString fcut_hash;
 
+		bool verbose;
+		bool debug_verbose;
+
 		TString hist_prefix;//raw histograms for making covaraicne matrices;
 		TString cov_prefix;//all (fractional) covariane maatrices;
 		TString final_prefix;//fractional matrices for plotting
 		
-		bool verbose;
-		bool debug_verbose;
 
-		//filled on the flight
+		//filled on the flight for hist2cov()
 		std::vector<TString> tag_collection;//tags = systags[?]+"_"+bdtftags[?];
 		std::multimap< TString, bdt_sys* > tag2SWmap;
 		std::map< TString, bdt_sys* > tag2CVmap;
@@ -54,14 +55,20 @@ class sys_env{
 				drawn_dir = top_dir+"/"+subdir_drawn+"/";
 		};
 
-		void catchupEnv(TString in_top_dir, TString indir_root, TString indir_drawn, double cur_pot, int cur_stage, TString cur_hash, std::vector<double> cur_bdt_cuts){//for son class, i.e. bdt_sys, to catch up info.
-			top_dir = in_top_dir;
-			root_dir = indir_root;
-			drawn_dir = indir_drawn;
-			out_POT = cur_pot;
-			fstage = cur_stage;
-			fcut_hash = cur_hash;
-			fbdt_cuts = cur_bdt_cuts;
+		void catchupEnv(sys_env* cur_env){//for son class, i.e. bdt_sys, to catch up info.
+		//these update is for Make1dhist;
+			top_dir       = cur_env->top_dir;
+			root_dir      = cur_env->root_dir;
+			drawn_dir     = cur_env->drawn_dir;
+			out_POT       = cur_env->out_POT;
+			fstage        = cur_env->fstage;
+			fcut_hash     = cur_env->fcut_hash;
+			fbdt_cuts     = cur_env->fbdt_cuts;
+			verbose       = cur_env->verbose;
+			debug_verbose = cur_env->debug_verbose;
+			hist_prefix   = cur_env->hist_prefix;
+			cov_prefix    = cur_env->cov_prefix;
+			final_prefix  = cur_env->final_prefix;
 		};
 
 		//get fstage & cut_hash filled.
@@ -90,7 +97,7 @@ class sys_env{
 		/*
 		 * make covariance matrix according to the histograms;
 		 */
-		void hist2cov( bdt_variable var, std::vector<bdt_sys*> syss);
+		void hist2cov( bdt_variable var, bool rescale, bool smooth_matrix);
 
 
 		void setVerbose(int lv){	
