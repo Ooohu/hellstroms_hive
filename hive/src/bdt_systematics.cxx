@@ -486,11 +486,11 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 				bdt_sys* temp_sys = itr->second;
 				int tmpN = temp_sys->num_vars;
 
-				if(verbose) std::cout<<"Got "<<temp_sys->tag<<std::endl;
 
 				double tmp_pscale = out_POT/temp_sys->pot;
 				double tmp_tscale = (1.0/temp_sys->throws);
 				for(int index = 0; index < tmpN; ++index){
+				if(verbose) std::cout<<"Got "<<temp_sys->tag+" "+temp_sys->vars_name[index]<<std::endl;
 					//hists2pscalemap.insert(std::make_pair(temp_sys->hists[index], tmp_pscale)); 
 					//hists2tscalemap.insert(std::make_pair(temp_sys->hists[index], tmp_tscale)); 
 					std::vector<TH1D*> tmp_h = temp_sys->hists[index];
@@ -519,7 +519,7 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 		int nby = 1.5*cv_hist->GetBinContent(cv_hist->GetMaximumBin());//set histogram height
 		for(size_t index = 0; index < hists_names.size(); ++index){//loop over sets of independent histograms
 
-			TString temp_sw_name = cur_tag + hists_names[index];
+			TString temp_sw_name = cur_tag +"_"+ hists_names[index];
 			TH2D* all_hist = new TH2D(temp_sw_name, temp_sw_name, nb, &(output_binning).front(), nby, 0, nby);//to store many throws SW
 			TH2D* covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix", temp_sw_name+"_CovarainceMatrix",nb,&(output_binning).front(), nb,&(output_binning).front());//to store covariance matrix, equal width;
 
@@ -590,9 +590,8 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 
 			//Save CV,FracCov in TF & TMatrix forms to finalcov_root;
 			finalcov_root->cd();
-			fracCov->Draw();
-			cv_hist->Draw();
-
+			fracCov->Write(temp_sw_name + "_FracMatrix_drawn");
+			cv_hist->Write(temp_sw_name + "_CV_drawn");
 			//TMatrix
 			TMatrixD covMatrix(nb,nb); 
 			TArrayD nums(nb*nb);
@@ -610,8 +609,8 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 			if(debug_verbose) std::cout<<std::endl;
 			covMatrix.SetMatrixArray(nums.GetArray());
 			cvhistM.SetMatrixArray(numsCV.GetArray());
-			covMatrix.Write(cur_tag + temp_sw_name + "_FracMatrix");
-			cvhistM.Write(cur_tag + temp_sw_name + "_CV");
+			covMatrix.Write(temp_sw_name + "_FracMatrix");
+			cvhistM.Write(temp_sw_name + "_CV");
 
 
 		}//next set of histograms;
@@ -638,7 +637,6 @@ TH2D* MakeCov(TH1D* hist, TH1D* cv){
 //	int counter = 0;
 //	delete gROOT->FindObject("tmp");
 	TH2D* covmatrix = new TH2D(("tmp"+to_string_prec(global_index++,0)).c_str() ,"tmp",nb, &(bins.front()),nb, &(bins.front()) );//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
-//	TH2D covmatrix("tmp","tmp",nb, &(bins.front()),nb, &(bins.front()) );//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 	for(int index = 1; index<nb+1; ++index){
 		for(int jndex = 1; jndex<nb+1; ++jndex){
 			double entry = (hist->GetBinContent(index)-cv->GetBinContent(index) )*(hist->GetBinContent(jndex)-cv->GetBinContent(jndex) );
@@ -646,16 +644,7 @@ TH2D* MakeCov(TH1D* hist, TH1D* cv){
 
 		}
 	}
-//	covmatrix->SetDirectory(0);
 	return covmatrix;
-//				std::cout<<__LINE__<<std::endl;
-//	TH2D tmp_cov = *covmatrix;
-//
-//				std::cout<<__LINE__<<std::endl;
-//	delete covmatrix;
-//				std::cout<<__LINE__<<std::endl;
-//
-//	return tmp_cov;
 }
 
 /*
@@ -685,29 +674,6 @@ TH2D* MakeFracCov(TH2D* inputcov, TH1D* oldcv){
 	return fractional_cov;
 }
 
-/*
- * Propagate matrix
- */
-TH2D* PropagateCov(TString name,TH2D* frac_cov, TH1D* newcv){
-
-	int nb=newcv->GetNbinsX();
-	int nl=newcv->GetBinLowEdge(1);
-	int nh=newcv->GetBinLowEdge(nb+1);
-	
-	TH2D* Pro_cov = (TH2D*) frac_cov->Clone("Propagated_Covaraince_Matrix_"+name);
-
-	for(int jndex = 1; jndex < nb+1; ++jndex){
-		for(int kndex = 1; kndex < nb+1; ++kndex){
-			double fjk = frac_cov->GetBinContent(jndex,kndex);
-
-			double cvj_new = newcv->GetBinContent(jndex);
-			double cvk_new = newcv->GetBinContent(kndex);
-			Pro_cov->SetBinContent(jndex,kndex,fjk*cvj_new*cvk_new);
-		}
-	}
-
-	return Pro_cov;
-}
 
 /*
  * Smooth the matrix
@@ -914,17 +880,16 @@ void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss
 			std::cout<<"Skip making cov matrices."<<std::endl;
 		}
 		skip_sysEvaluation = true;
+		check_cov_root->Close();
 	}else{//no such root;
 		if(verbose){ 
 			std::cout<<"Did not found fractional covaraince matrices root: "<<check_covroot_name<<std::endl;
 			std::cout<<"Will generate matices in "<<(this->top_dir+this->final_prefix + ".root")<<std::endl;
 		}
 	}
-	check_cov_root->Close();
 	delete check_cov_root;
 
 	check_covroot_name = (this->top_dir+this->final_prefix + ".root");
-
 	//check 2) for the 1d histgrams, if 1) pass;
 	if(do_cov || !skip_sysEvaluation){//true - explore further, false - exit the function.
 

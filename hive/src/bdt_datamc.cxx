@@ -2060,7 +2060,7 @@ std::cout<<"\n Getting fracitonal matrices"<<std::endl;
 			temp_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
 
 			if(temp_matrix == NULL){
-				std::cout<<"\tSkip loading matrix for "<<temp_tag<<std::endl;
+				std::cout<<"\tSkip loading matrix for "<<temp_tag+ "_FracMatrix"<<std::endl;
 				continue;
 			}
 			if(cur_sys->its_OM){//modify the stat part of the matrix for Optical Model

@@ -196,12 +196,6 @@ TH2D* MakeCov(TH1D* hist, TH1D* cv);
  */
 TH2D* MakeFracCov(TH2D* cov_temp, TH1D* oldcv);
 
-/*
- * Propagate matrix
- */
-//TH2D PropagateCov(TString name,TH2D* frac_cov, TH1D* newcv);
-
-
 
 /*
  * Smooth the matrix

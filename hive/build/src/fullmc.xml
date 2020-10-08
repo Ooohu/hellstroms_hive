@@ -284,11 +284,11 @@
 <systematics tag = "BkgMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "may07DetNueMC.root" tree = "TTiming" var = "CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
 -->
 
-<!--dirt Multisim
+<!--dirt Multisim-->
 <systematics tag = "DirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "Nuemay07DetDirtMC.root" tree = "TTiming" var = "Dirt[0]" varnam = "Dirt" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
 
 <systematics tag = "DirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "Nuemay07DetDirtMC.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
--->
+
 <!--Multisims
 <systematics tag = "BkgMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_KpCorrected.root" tree = "TTiming" var = "KpProd[0],KmProd[0],K0Prod[0],PipProd_RawAboutSW[0],PimProd_RawAboutSW[0],BeamUnisims[0],XSec[0],CCQECCpi[0],Hadronic[0],Pi0Yield[0]" varnam = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "false" />
 
@@ -309,18 +309,19 @@
 
 <systematics tag = "BkgMCMultismPi0Test2" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_onlypi0.root" tree = "TTiming" var = "2*CV" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
 -->
-
+<!--
 <systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DISCMC.root" tree = "TTiming" var = "CV[0]" varnam = "XsecxFluxWgt" pot = "41.10e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "false" />
 
 <systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07QTCORRMC.root" tree = "TTiming" var = "CV[0]" varnam = "QtcorrXsecxFluxWgt" pot = "41.13e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "false" />
 
 <systematics tag = "BkgMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetMC.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "false" />
-
+-->
 <!--OM-->
 <!--
 <systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC.root" tree = "TTiming" var = "CV" varnam = "newCV" pot = "41.08e20" throws = "1"  isCV = "false" isMultithrows = "false" isOpticalModelCV = "true" />
 -->
+<!--
 <systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "Nuemay06OM_MC_66.root" tree = "TTiming" var = "CV[0]" varnam = "XsecxFluxWgt" pot = "6.58848e20" throws = "66"  isCV = "false" isMultithrows = "true" isOpticalModelCV = "true" />
 
 <systematics tag = "BkgMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "Nuemay06OM_MCCV.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "43.8925e20" throws = "1"  isCV = "true" isMultithrows = "false" isOpticalModelCV = "true" />
-
+-->
