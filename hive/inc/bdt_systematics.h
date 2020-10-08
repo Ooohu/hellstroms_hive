@@ -47,6 +47,7 @@ class sys_env{
 		std::vector<TString> tag_collection;//tags = systags[?]+"_"+bdtftags[?];
 		std::multimap< TString, bdt_sys* > tag2SWmap;
 		std::map< TString, bdt_sys* > tag2CVmap;
+		std::vector<double> output_binning;
 
 		//set directories and POT;
 		void setEnv(TString input_top_dir, TString subdir_root, TString subdir_drawn){
@@ -98,7 +99,10 @@ class sys_env{
 		 * make covariance matrix according to the histograms;
 		 */
 		void hist2cov( bdt_variable var, bool rescale, bool smooth_matrix);
-
+		
+		//combine
+//		TH2D combine_sw(TH1D* cv_hist, std::vector<TH1D*> sw_hists);//no need scaling
+//		TH2D combine_cov(TH1D* cv_hist, std::vector<TH1D*> sw_hists);//scale with throw or not;
 
 		void setVerbose(int lv){	
 
@@ -152,7 +156,7 @@ class bdt_sys : public sys_env, public bdt_file{
 
 		//deduced elements
 		std::vector< TString> TdirNames;
-		std::vector< std::vector<TH1F*> > hists;
+		std::vector< std::vector<TH1D*> > hists;
 		std::vector< std::vector<TString> > histNames;
 		std::vector< std::vector<TH2D*> > twodhists;
 		std::vector< std::vector<TString> > twodhistNames;
@@ -185,24 +189,24 @@ class bdt_sys : public sys_env, public bdt_file{
  * make covaraince matrix according to input histograms, hist - weights and cv - cv;
  *
  */
-TH2D* MakeCov(TString name,TH1F* hist, TH1F* cv);
+TH2D* MakeCov(TH1D* hist, TH1D* cv);
 
 /*
  * covariane matrix propagation, create a fractional covariance matrix;
  */
-TH2D* MakeFracCov(TString name,TH2D* cov_temp, TH1F* oldcv, bool, TH2D*);
+TH2D* MakeFracCov(TH2D* cov_temp, TH1D* oldcv);
 
 /*
  * Propagate matrix
  */
-TH2D* PropagateCov(TString name,TH2D* frac_cov, TH1F* newcv);
+//TH2D PropagateCov(TString name,TH2D* frac_cov, TH1D* newcv);
 
 
 
 /*
  * Smooth the matrix
  */
-TH1F SmoothSW(TH1F* sw, TH1F* cv, bool special);
+TH1D SmoothSW(TH1D* sw, TH1D* cv, bool special);
 
 /*
  * Make Covaraince matrix from 2d histograms

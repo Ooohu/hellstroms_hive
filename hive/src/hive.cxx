@@ -241,7 +241,7 @@ int main (int argc, char *argv[]){
 	//systematic files; its follows each bdt_file;
 	sys_env sysConfig;
 
-	sysConfig.setVerbose(2);//2 - all messge;
+	sysConfig.setVerbose(1);//2 - all messge; 1- no debug message;
 	sysConfig.setEnv(analysis_tag, "roots", "drawn");
 	gadget_buildfolder(std::string(sysConfig.top_dir));
 	gadget_buildfolder(std::string(sysConfig.root_dir));
