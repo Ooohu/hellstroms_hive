@@ -983,51 +983,49 @@ TString bdt_file::getStageCutsIndex(int stage, std::vector<double> bdt_cuts, int
 
 std::string bdt_file::getStageCuts(int stage, double bdtvar1, double bdtvar2){
 
-        std::cerr<<"Obselete function is called, see "<<__FILE__<<__LINE__<<std::endl;
-        exit(EXIT_FAILURE);
 	
-//    bool verbose = false;
-//
-//    std::string ans;
-//    switch(stage) {
-//        case 0:
-//            ans = flow.base_cuts;
-//            break;
-//        case 1:
-//            ans = flow.base_cuts + "&&"+ flow.pre_cuts;
-//            if(verbose)std::cout << "Stage 1 cuts: " << ans << std::endl;
-//            break;
-//        case 2: {
-//                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
-//                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1);
-//                    if(verbose)std::cout << "Stage 2 cuts: " << ans << std::endl;
-//                    break;
-//                }
-//
-//        case 3: {
-//                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
-//                    bdt_variable stage3var = this->getBDTVariable(flow.bdt_bnb_cuts);		
-//                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1)+"&&"+stage3var.name +">" +std::to_string(bdtvar2);
-//                    if(verbose)std::cout << "Stage 2 var name: " << stage2var.name << std::endl;
-//                    if(verbose)std::cout << "Stage 3 var name: " << stage3var.name << std::endl;
-//                    if(verbose)std::cout << "Stage 3 cuts: " << ans << std::endl;
-//                    break;
-//                }
-//        case 4: {
-//                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
-//                    bdt_variable stage3var = this->getBDTVariable(flow.bdt_bnb_cuts);		
-//                    if(verbose)std::cout << "Stage 2 var name: " << stage2var.name << std::endl;
-//                    if(verbose)std::cout << "Stage 3 var name: " << stage3var.name << std::endl;
-//                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1)+"&&"+stage3var.name +">" +std::to_string(bdtvar2) +"&&" +flow.post_cuts;
-//                    if(verbose)std::cout << "Stage 4 cuts: " << ans << std::endl;
-//                    break;
-//                }
-//        default: 
-//                ans = "1";
-//                break;
-//
-//    }	
-//    return ans;
+    bool verbose = false;
+
+    std::string ans;
+    switch(stage) {
+        case 0:
+            ans = flow.base_cuts;
+            break;
+        case 1:
+            ans = flow.base_cuts + "&&"+ flow.pre_cuts;
+            if(verbose)std::cout << "Stage 1 cuts: " << ans << std::endl;
+            break;
+        case 2: {
+                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
+                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1);
+                    if(verbose)std::cout << "Stage 2 cuts: " << ans << std::endl;
+                    break;
+                }
+
+        case 3: {
+                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
+                    bdt_variable stage3var = this->getBDTVariable(flow.bdt_bnb_cuts);		
+                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1)+"&&"+stage3var.name +">" +std::to_string(bdtvar2);
+                    if(verbose)std::cout << "Stage 2 var name: " << stage2var.name << std::endl;
+                    if(verbose)std::cout << "Stage 3 var name: " << stage3var.name << std::endl;
+                    if(verbose)std::cout << "Stage 3 cuts: " << ans << std::endl;
+                    break;
+                }
+        case 4: {
+                    bdt_variable stage2var = this->getBDTVariable(flow.bdt_cosmic_cuts);		
+                    bdt_variable stage3var = this->getBDTVariable(flow.bdt_bnb_cuts);		
+                    if(verbose)std::cout << "Stage 2 var name: " << stage2var.name << std::endl;
+                    if(verbose)std::cout << "Stage 3 var name: " << stage3var.name << std::endl;
+                    ans = flow.base_cuts + "&&" + flow.pre_cuts + "&&"+  stage2var.name + ">" +std::to_string(bdtvar1)+"&&"+stage3var.name +">" +std::to_string(bdtvar2) +"&&" +flow.post_cuts;
+                    if(verbose)std::cout << "Stage 4 cuts: " << ans << std::endl;
+                    break;
+                }
+        default: 
+                ans = "1";
+                break;
+
+    }	
+    return ans;
 }
 
 
@@ -1181,8 +1179,8 @@ int bdt_file::makePrecalcSBNfitFile(const std::string &analysis_tag, int which_s
     std::cout<<"Starting to make SBNFit output file named: "<<output_file_name<<std::endl;
     TFile* f_sbnfit = new TFile(output_file_name.c_str(),"recreate");
     std::cout<<"Creating directory structure"<<std::endl;
-    TDirectory *cdtof = f_sbnfit->mkdir("singlephoton");
-    cdtof->cd();    
+//    TDirectory *cdtof = f_sbnfit->mkdir("singlephoton");
+//    cdtof->cd();    
 
     std::string sbnfit_cuts = this->getStageCuts(which_stage,fbdtcuts);
 
@@ -1193,7 +1191,7 @@ int bdt_file::makePrecalcSBNfitFile(const std::string &analysis_tag, int which_s
     for(const auto&& obj: *lf1) t_sbnfit_tree->GetListOfFriends()->Remove(obj);
 
     std::cout<<"Writing to file"<<std::endl;
-    cdtof->cd();
+//    cdtof->cd();
     t_sbnfit_tree->Write();
     f_sbnfit->Close();
     file->Close();
@@ -1216,8 +1214,8 @@ int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<
     TFile* f_sbnfit = new TFile(output_file_name.c_str(),"recreate");
 
     std::cout<<"Creating directory structure"<<std::endl;
-    TDirectory *cdtof = f_sbnfit->mkdir("singlephoton");
-    cdtof->cd();    
+//    TDirectory *cdtof = f_sbnfit->mkdir("singlephoton");
+//    cdtof->cd();    
 
     std::string sbnfit_cuts = this->getStageCuts(which_stage,fbdtcuts);
     sbnfit_cuts = "(("+sbnfit_cuts+") && ( " +external_cuts+"))"; 
@@ -1234,110 +1232,176 @@ int bdt_file::makeSBNfitFile(const std::string &analysis_tag, const std::vector<
 //    TTree * t_sbnfit_slice_tree = (TTree*)this->tslice->CopyTree(sbnfit_cuts.c_str());
 
 
-    TTree * t_sbnfit_simpletree = new TTree("simple_tree","simple_tree");
-    double simple_var = 0;
-    double simple_wei = 0;
-    double simple_pot_wei = 0;
-    int original_entry = 0;
-    //double plot_pot = 13.2e20;
+    TTree * t_sbnfit_simpletree = new TTree("h55","for MiniBooNE CombinedFitPlus");//Check, MiniBooNE CombinedFitPlus required inputs;
 
-    std::vector<double> simple_bdt_vars(vars.size(),0.0);
-    std::vector<double> bdt_mvas(bdt_infos.size(),0.0);
+	if(true){
+		//Prepare h55 variables;
+		const int nh55 = 11;
+		std::vector<Float_t> h55_vars(nh55);
+		std::vector<TString> h55_varnames = 
+		{"iflux",
+		"ibkgd",
+		"nuchan",
+		"inno",
+		"enugen",//4
+		"energy",
+		"nuleng",
+		"parid",
+		"wgt",
+		"ispi0",//9
+		"isdirt"};
 
-    TTreeFormula * CUT = new TTreeFormula("CUT", sbnfit_cuts.c_str(),this->tvertex);
+		for(int index = 0; index < nh55; index ++){
+			t_sbnfit_simpletree->Branch(h55_varnames[index],& h55_vars[index]);
+		}
 
-    t_sbnfit_simpletree->Branch("simple_variable",&simple_var);
-    t_sbnfit_simpletree->Branch("simple_weight",&simple_wei);
-    t_sbnfit_simpletree->Branch("simple_pot_weight",&simple_pot_wei);
-    t_sbnfit_simpletree->Branch("original_entry",&original_entry);
-
-    for(int i=0; i< bdt_infos.size(); i++){
-        std::string nam = "simple_"+bdt_infos[i].identifier+"_mva";
-        t_sbnfit_simpletree->Branch(nam.c_str(), &(bdt_mvas[i]));
-    }
-
-    for(int i=0; i< vars.size(); i++){
-        std::string tnam = "simple_bdt_var_"+std::to_string(i);
-        t_sbnfit_simpletree->Branch(tnam.c_str(),&(simple_bdt_vars[i]));
-    }
-
-    TTreeFormula* weight = new TTreeFormula("weight_formula ",this->weight_branch.c_str(),this->tvertex);
-    TTreeFormula* var = new TTreeFormula("var_formula ",input_string.c_str(),this->tvertex);
-
-    std::vector<TTreeFormula*> form_vec;
-    std::vector<TTreeFormula*> form_vec_vars;
-
-    for(int i=0; i< bdt_infos.size();i++){
-        std::string nam = this->tag+"_"+bdt_infos[i].identifier+".mva";
-        form_vec.push_back(new TTreeFormula((bdt_infos[i].identifier+"_mva_formula").c_str(), nam.c_str(),this->tvertex));
-    }
-
-    for(int i=0; i< vars.size();i++){
-        form_vec_vars.push_back(new TTreeFormula((vars[i].safe_unit).c_str(), vars[i].name.c_str(),this->tvertex));
-    }
+		std::vector<TTreeFormula*> form_h55;
+		TTreeFormula * CUT = new TTreeFormula("CUT", sbnfit_cuts.c_str(),this->tvertex);
 
 
-    std::string var_string = input_string;
-    if(var_string == "") var_string = "reco_vertex_size";
-    std::cout<<"Starting to make a simpletree with variable "<<var_string<<std::endl;
-    for(int i=0; i< this->tvertex->GetEntries(); i++){
-        this->tvertex->GetEntry(i); 
 
-        CUT->GetNdata();
-        bool is_is = CUT->EvalInstance();
+		for(int i=0; i< nh55;i++){
+			form_h55.push_back(new TTreeFormula((h55_varnames[i]), h55_varnames[i],this->tvertex));
+		}
+		form_h55[5] =  new TTreeFormula((h55_varnames[5]), "el.EnuQE",this->tvertex);
 
-        if(!is_is) continue;
+		for(int i=0; i< this->tvertex->GetEntries(); i++){
 
-        weight->GetNdata();
-        var->GetNdata();
-        simple_wei = weight->EvalInstance();
+			this->tvertex->GetEntry(i); 
 
-        /*
-           if(simple_wei<0 || simple_wei!=simple_wei || isinf(simple_wei) ){
-           std::cout<<"WARNING WARNING, the weight here is "<<simple_wei<<std::endl;
-           std::cout<<"Setting to 1 for now, investigate!"<<std::endl;
-           simple_wei = 1.0;
-           }
-           */
-
-        simple_var = var->EvalInstance();
-        simple_pot_wei = simple_wei*this->scale_data*plot_pot/this->pot;
-        original_entry = i;
-
-        for(int j=0; j< bdt_infos.size();j++){
-            form_vec[j]->GetNdata();
-            bdt_mvas[j] = form_vec[j]->EvalInstance();
-        }
-
-        for(int j=0; j< vars.size();j++){
-            form_vec_vars[j]->GetNdata();
-            simple_bdt_vars[j] = form_vec_vars[j]->EvalInstance();
-        }
-        t_sbnfit_simpletree->Fill();
-    }
+			CUT->GetNdata();
+			bool is_is = CUT->EvalInstance();
+			if(!is_is) continue;
 
 
-    TList * lf1 = (TList*)t_sbnfit_tree->GetListOfFriends();
-    for(const auto&& obj: *lf1) t_sbnfit_tree->GetListOfFriends()->Remove(obj);
+			//			h55_vars[0] = 0;//iflux are all set to 0; no worry, bad numerical exp gives 0
 
+			if(this->is_data){
+				for(int j=1; j< nh55;j++){
+					h55_vars[j] = -9999;
+				}
+				h55_vars[0] = 15;
+				h55_vars[8] = 1;
+
+			} else{
+				for(int j=1; j< nh55;j++){
+					form_h55[j]->GetNdata();
+					h55_vars[j] = form_h55[j]->EvalInstance();
+				}
+			}
+			h55_vars[5] = form_h55[5]->EvalInstance()/1000;
+
+			t_sbnfit_simpletree->Fill();
+		}
+	}
+
+	if(false){//disable these outputs, might be useful in future for BDTs Analysis;
+		//BDT varaibels not used now;
+		double simple_var = 0;
+		double simple_wei = 0;
+		double simple_pot_wei = 0;
+		int original_entry = 0;
+		//double plot_pot = 13.2e20;
+
+		std::vector<double> simple_bdt_vars(vars.size(),0.0);
+		std::vector<double> bdt_mvas(bdt_infos.size(),0.0);
+
+
+		TTreeFormula * CUT = new TTreeFormula("CUT", sbnfit_cuts.c_str(),this->tvertex);
+
+		t_sbnfit_simpletree->Branch("simple_variable",&simple_var);
+		t_sbnfit_simpletree->Branch("simple_weight",&simple_wei);
+		t_sbnfit_simpletree->Branch("simple_pot_weight",&simple_pot_wei);
+		t_sbnfit_simpletree->Branch("original_entry",&original_entry);
+
+		for(int i=0; i< bdt_infos.size(); i++){
+			std::string nam = "simple_"+bdt_infos[i].identifier+"_mva";
+			t_sbnfit_simpletree->Branch(nam.c_str(), &(bdt_mvas[i]));
+		}
+
+		for(int i=0; i< vars.size(); i++){
+			std::string tnam = "simple_bdt_var_"+std::to_string(i);
+			t_sbnfit_simpletree->Branch(tnam.c_str(),&(simple_bdt_vars[i]));
+		}
+
+		TTreeFormula* weight = new TTreeFormula("weight_formula ",this->weight_branch.c_str(),this->tvertex);
+		TTreeFormula* var = new TTreeFormula("var_formula ",input_string.c_str(),this->tvertex);
+
+		std::vector<TTreeFormula*> form_vec;
+		std::vector<TTreeFormula*> form_vec_vars;
+
+		for(int i=0; i< bdt_infos.size();i++){
+			std::string nam = this->tag+"_"+bdt_infos[i].identifier+".mva";
+			form_vec.push_back(new TTreeFormula((bdt_infos[i].identifier+"_mva_formula").c_str(), nam.c_str(),this->tvertex));
+		}
+
+		for(int i=0; i< vars.size();i++){
+			form_vec_vars.push_back(new TTreeFormula((vars[i].safe_unit).c_str(), vars[i].name.c_str(),this->tvertex));
+		}
+
+
+		std::string var_string = input_string;
+		if(var_string == "") var_string = "reco_vertex_size";
+		std::cout<<"Starting to make a simpletree with variable "<<var_string<<std::endl;
+		for(int i=0; i< this->tvertex->GetEntries(); i++){
+			this->tvertex->GetEntry(i); 
+
+			CUT->GetNdata();
+			bool is_is = CUT->EvalInstance();
+
+			if(!is_is) continue;
+
+			weight->GetNdata();
+			var->GetNdata();
+			simple_wei = weight->EvalInstance();
+
+			/*
+			   if(simple_wei<0 || simple_wei!=simple_wei || isinf(simple_wei) ){
+			   std::cout<<"WARNING WARNING, the weight here is "<<simple_wei<<std::endl;
+			   std::cout<<"Setting to 1 for now, investigate!"<<std::endl;
+			   simple_wei = 1.0;
+			   }
+			   */
+
+			simple_var = var->EvalInstance();
+			simple_pot_wei = simple_wei*this->scale_data*plot_pot/this->pot;
+			original_entry = i;
+
+			for(int j=0; j< bdt_infos.size();j++){
+				form_vec[j]->GetNdata();
+				bdt_mvas[j] = form_vec[j]->EvalInstance();
+			}
+
+			for(int j=0; j< vars.size();j++){
+				form_vec_vars[j]->GetNdata();
+				simple_bdt_vars[j] = form_vec_vars[j]->EvalInstance();
+			}
+			t_sbnfit_simpletree->Fill();
+		}
+
+
+		TList * lf1 = (TList*)t_sbnfit_tree->GetListOfFriends();
+		for(const auto&& obj: *lf1) t_sbnfit_tree->GetListOfFriends()->Remove(obj);
+	}
 //    TList * lf2 = (TList*)t_sbnfit_eventweight_tree->GetListOfFriends();
 //    for(const auto&& obj: *lf2) t_sbnfit_eventweight_tree->GetListOfFriends()->Remove(obj);
 
 
     std::cout<<"Writing to file"<<std::endl;
-    cdtof->cd();
+//    cdtof->cd();
     t_sbnfit_tree->Write();
 //    t_sbnfit_pot_tree->Write();
 //    t_sbnfit_rs_tree->Write();
 //    t_sbnfit_eventweight_tree->Write(); 
 //    t_sbnfit_slice_tree->Write();
     t_sbnfit_simpletree->Write();
-    weight->Write();
-    var->Write();
+//    weight->Write();
+//    var->Write();
+//    CHECK, disable some branches;
 
     TVectorD POT_value(1);
     POT_value[0] = this->pot;
-    POT_value.Write("POT_value");
+//    POT_value.Write("POT_value");
 
     f_sbnfit->Close();
     std::cout<<"Done!"<<std::endl;

@@ -2058,7 +2058,11 @@ std::cout<<"\n Getting fracitonal matrices"<<std::endl;
 			temp_matrix = (TMatrixD*) matrix_root->Get(temp_tag + "_FracMatrix");
 			//if((cur_sys->FracMatrix).size()<1)
 			temp_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
-
+			
+			if(temp_matrix->GetNcols() != nb){ 
+				std::cout<<"Err: Dimension of input Tmatrix:"<<temp_matrix->GetNcols()<<" vs. target "<<nb<<std::endl;
+				exit(EXIT_FAILURE);
+			}
 			if(temp_matrix == NULL){
 				std::cout<<"\tSkip loading matrix for "<<temp_tag+ "_FracMatrix"<<std::endl;
 				continue;

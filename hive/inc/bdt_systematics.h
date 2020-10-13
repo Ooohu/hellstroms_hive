@@ -177,7 +177,7 @@ class bdt_sys : public sys_env, public bdt_file{
 		 * this fills hist;
 		 */
 //		void Make1dhist(TString histfilename, bdt_variable* var);//,  double plot_pot,std::vector<double> bdt_cuts);
-		void Make1dhist(bdt_variable *var);//,  double plot_pot,std::vector<double> bdt_cuts);
+		void Make1dhist(bdt_variable *var, TFile* out_root);//,  double plot_pot,std::vector<double> bdt_cuts);
 
 //		void Load1dhist(TString histfilename, bdt_variable* var);
 		bool Load1dhist(TFile* cur_file);
