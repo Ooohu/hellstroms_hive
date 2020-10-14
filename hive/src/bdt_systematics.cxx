@@ -266,7 +266,7 @@ void bdt_sys::Make1dhist(bdt_variable *var, TFile* out_root){//TString histfilen
 //				TTreeFormula varformula(var->unit.c_str(), gadget_updateindex(var->mininame, kndex), temptree);//get the x-axis
 //				varformula.GetNdata();
 				double temp_xvalue = varformula[kndex]->EvalInstance();
-				double temp_weight = wgtforms[kndex]->EvalInstance();//*plot_pot/this->pot; do this when making cov matrix
+				double temp_weight = (wgtforms[kndex]->EvalInstance()>29)? 0 : wgtforms[kndex]->EvalInstance();//No large weight..
 //				std::cout<<"CHECK! "<<kndex<<" throws "<<wgtforms[kndex]->EvalInstance()<<" "<<plot_pot<<" "<<this->pot<<std::endl;
 
 				hist1d[kndex]->Fill(temp_xvalue,temp_weight);//index - nth sw; kndex - nth throw
@@ -474,14 +474,19 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 				if(verbose) std::cout<<std::flush<<"\r Processing hists "+temp_sw_name<<hist_counter++;
 				
 				if(force_rebin) cur_hist->Rebin(2);
-				if(do_smooth){//smooth first
+
+				bool trad_bin = false;
+				if(do_smooth&& trad_bin){//smooth first
 					if(verbose) std::cout<<"\r Smoothing a sw histogram";
-					bool trad_bin = true;
 					*cur_hist = SmoothSW(cur_hist, smoothRef_hist, trad_bin);
 				}
 
 				if(do_rebin) *cur_hist = gadget_vrebin(cur_hist, output_binning);
 
+				if(do_smooth && !trad_bin){//smooth first
+					if(verbose) std::cout<<"\r Smoothing a sw histogram";
+					*cur_hist = SmoothSW(cur_hist, cv_hist, trad_bin);
+				}
 				for(int jndex = 1; jndex < nb+1;  ++ jndex){
 					all_hist->Fill(cur_hist->GetBinLowEdge(jndex) , cur_hist->GetBinContent(jndex));
 					if(debug_verbose){
@@ -530,6 +535,9 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 			covmatrices->SetTitle(temp_sw_name + " Covaraince Matrix");
 			drawCanvas->SaveAs( drawn_dir + cov_prefix + "_"+temp_sw_name+".pdf" ,"pdf");
 
+			cov_root->cd();
+			covmatrices->Write();
+
 			//Fractional Covariance matrix;
 			drawCanvas->Clear();
 			fracCov->SetStats(false);
@@ -539,11 +547,8 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 			fracCov->SetTitle(temp_sw_name + " Fractional Covaraince Matrix");
 			drawCanvas->SaveAs( drawn_dir + cov_prefix + "_"+temp_sw_name+"_frac.pdf" ,"pdf");
 			gSystem->RedirectOutput(0,0);//re-activate the pirnt out.
+			fracCov->Write();
 
-
-			//Save Cov to cov_root;
-			cov_root->cd();
-			cov_root->Write();
 
 			//Save CV,FracCov in TF & TMatrix forms to finalcov_root;
 			finalcov_root->cd();
@@ -571,7 +576,9 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 
 		}//next set of histograms;
 	}//next tag
-	if(verbose) std::cout<<"Save with hash "<<hist_prefix<<std::endl;
+	if(verbose) std::cout<<"Saving matrices with hash "<<hist_prefix<<std::endl;
+	finalcov_root->Close();
+	cov_root->Close();
 }
 
 /*
@@ -809,7 +816,7 @@ TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv){
  */
 
 void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss){
-	bool do_cov = true; //true - generate covariance matrix everytime, no matter what; false -this boolean is not functioning
+	bool do_cov = false; //true - generate covariance matrix everytime, no matter what; false -this boolean is not functioning
 	bool do_hist = false; //true - generate hist everytime, no matter what; false -this boolean is not functioning
 
 	bool skip_sysEvaluation = false;//true - do nothing;

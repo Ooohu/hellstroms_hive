@@ -722,17 +722,24 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 			}
 
 			Events_num.clear();//reset events# 
-			for(auto &f: mc_stack->stack){//calculate # of MC events of each samples;
-				double Nevents = f->GetEntries()*(plot_pot/f->pot)*f->scale_data;
+			for(size_t index = 0; index< mc_stack->vec_hists.size(); ++index){//calculate # of MC events of each samples;
+				double Nevents = mc_stack->vec_hists[index]->Integral();
 				Events_num.push_back(Nevents);
-				if(!f->is_signal) total_MCbkg_events += Nevents;
-			if(debug_message) std::cout<<"Event "<<std::setw(12)<<f->tag<<" has events "<<Nevents<<std::endl;
+				if(!mc_stack->stack[index]->is_signal) total_MCbkg_events += Nevents;
+			if(debug_message) std::cout<<"Event "<<std::setw(12)<<mc_stack->stack[index]->tag<<" has events "<<Nevents<<std::endl;
 			}
+
+//			for(auto &f: mc_stack->stack){//calculate # of MC events of each samples;
+//				double Nevents = f->GetEntries()*(plot_pot/f->pot)*f->scale_data;
+//				Events_num.push_back(Nevents);
+//				if(!f->is_signal) total_MCbkg_events += Nevents;
+//			if(debug_message) std::cout<<"Event "<<std::setw(12)<<f->tag<<" has events "<<Nevents<<std::endl;
+//			}
 			total_MC_events =  std::accumulate(Events_num.begin(),Events_num.end(),0.0);//sum up all events, note that  we need double 0.0!
-			NdatEvents = data_file->GetEntries()*(plot_pot/data_file->pot )*data_file->scale_data;
+			NdatEvents = d0->Integral();//data_file->GetEntries()*(plot_pot/data_file->pot )*data_file->scale_data;
 
 			if(var.has_covar){//Determine Estimated Errors
-				tsum_name = "All MC w. Stat+Systematic(no-fullosc) Errors "+to_string_prec(total_MC_events,2);//var.covar_legend_name.c_str();
+				tsum_name = "All MC w. Stat+Systematic Errors "+to_string_prec(total_MC_events,2);//var.covar_legend_name.c_str();
 				legend_style = "fl";
 			}else{
 				if(disable_number){
@@ -862,7 +869,8 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 			for(size_t jndex = 0; jndex < mc_stack->stack.size(); ++jndex){//For l0, set legend contents according to bdt_file members
 				bdt_file* f = mc_stack->stack[jndex];
-				double Nevents = f->GetEntries()*(plot_pot/f->pot)*f->scale_data;
+				double Nevents = (mc_stack->vec_hists[jndex])->Integral();// f->GetEntries()*(plot_pot/f->pot)*f->scale_data;
+
 
 				auto temp_histogram = new TH1F(("tmp"+current_stage+var.safe_name+f->tag).c_str(),"TLegend Example",200,-10,10);//Ghost TH1F
 
@@ -884,7 +892,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 			}
 
 			if(!label_removal) l0->AddEntry(tsum, tsum_name, legend_style);
-			if(disable_number){
+			if(disable_number){//??? here is not the legend of the data;
 				l0->AddEntry(d0,(data_file->plot_name).c_str(),"lp");
 			}else{
 				l0->AddEntry(d0,(data_file->plot_name+" "+to_string_prec(NdatEvents,2)).c_str(),"lp");
@@ -2051,6 +2059,8 @@ std::cout<<"\n Getting fracitonal matrices"<<std::endl;
 		for(size_t jndex = 0; jndex < (cur_sys->vars).size(); ++jndex){//loop over spcific type of SW 
 
 			TString temp_tag = cur_sys->tag+"_"+cur_sys->vars_name[jndex];
+
+
 			TMatrixD* temp_matrix; 
 			TMatrixD* temp_CV; 
 
@@ -2059,13 +2069,27 @@ std::cout<<"\n Getting fracitonal matrices"<<std::endl;
 			//if((cur_sys->FracMatrix).size()<1)
 			temp_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
 			
-			if(temp_matrix->GetNcols() != nb){ 
-				std::cout<<"Err: Dimension of input Tmatrix:"<<temp_matrix->GetNcols()<<" vs. target "<<nb<<std::endl;
-				exit(EXIT_FAILURE);
-			}
 			if(temp_matrix == NULL){
 				std::cout<<"\tSkip loading matrix for "<<temp_tag+ "_FracMatrix"<<std::endl;
 				continue;
+			}
+
+			TH1D* temp_CVhist  = (TH1D*) matrix_root->Get(temp_tag + "_CV_drawn");
+			if(true){//check bins;
+				double test_1stbin = temp_CVhist->GetBinLowEdge(1);  
+				double test_1stMCbin = MChist->GetBinLowEdge(1);
+				double test_lastbin = temp_CVhist->GetBinLowEdge(temp_CVhist->GetNbinsX()+1);  
+				double test_lastMCbin = MChist->GetBinLowEdge(MChist->GetNbinsX()+1);
+				if( abs(test_1stbin - test_1stMCbin) + 	abs(test_lastbin - test_lastMCbin)  > 10e-5){
+					std::cout<<"Binnings from matrices:(" <<test_1stbin<<","<<test_lastbin<<") vs MC (";
+					std::cout<<"("<<test_1stMCbin<<","<<test_lastMCbin;
+					std::cout<<"). Dont match, need to generate the matrices."<<std::endl;
+					exit(EXIT_FAILURE);
+				}
+			}
+			if(temp_matrix->GetNcols() != nb){ 
+				std::cout<<"Err: Dimension of input Tmatrix:"<<temp_matrix->GetNcols()<<" vs. target "<<nb<<std::endl;
+				exit(EXIT_FAILURE);
 			}
 			if(cur_sys->its_OM){//modify the stat part of the matrix for Optical Model
 				std::cout<<"\tAdjust Optical Model statistical error in the fractional matrix"<<std::endl;
@@ -2082,7 +2106,7 @@ std::cout<<"\n Getting fracitonal matrices"<<std::endl;
 				total_fm+= (*temp_matrix);
 			for(int kndex = 0; kndex < nb; ++kndex){
 				double temp_error = sqrt((*temp_matrix)(kndex,kndex))*MChist->GetBinContent(kndex+1);
-				std::cout<<temp_tag<<" bin "<<kndex<<" sys error is "<<temp_error<<" w. fm "<<(*temp_matrix)(kndex,kndex)<<std::endl;
+//				std::cout<<temp_tag<<" bin "<<kndex<<" sys error is "<<temp_error<<" w. fm "<<(*temp_matrix)(kndex,kndex)<<std::endl;
 			}//next bin
 		}//next SW
 

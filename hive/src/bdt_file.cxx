@@ -635,26 +635,26 @@ TH1* bdt_file::getTH1(std::string invar, std::string cuts, std::string nam, doub
 	exit(0);
 
     //std::cout<<"Starting to get for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
-    TCanvas *ctmp = new TCanvas();
-    //this->CheckWeights();
-    this->tvertex->Draw((invar+">>"+nam).c_str() , ("("+cuts+")*"+this->weight_branch).c_str(),"goff");
-    //std::cout<<"Done with Draw for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
-    TH1* th1 = (TH1*)gDirectory->Get(nam.c_str()) ;
-	gSystem->RedirectOutput("/dev/null");//no warning, shut up!
-    th1->Sumw2();//the error will be [sum of sqrt(weights)]
-	gSystem->RedirectOutput(0,0);
-    th1->Scale(this->scale_data*plot_POT/this->pot);
-    //std::cout<<"IS THIS: "<<this->scale_data*plot_POT/this->pot<<" "<<th1->GetSumOfWeights()<<std::endl;
-    if(rebin>1) th1->Rebin(rebin);
-    th1->SetLineColor(col);
-    th1->SetLineWidth(1);
-    th1->SetStats(0);
-    th1->GetXaxis()->SetTitle("Unit");
-    th1->GetYaxis()->SetTitle("Events");
-    th1->SetDirectory(0);	
-
-    //delete ctmp;
-    return th1;
+//    TCanvas *ctmp = new TCanvas();
+//    //this->CheckWeights();
+//    this->tvertex->Draw((invar+">>"+nam).c_str() , ("("+cuts+")*"+this->weight_branch).c_str(),"goff");
+//    //std::cout<<"Done with Draw for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
+//    TH1* th1 = (TH1*)gDirectory->Get(nam.c_str()) ;
+//	gSystem->RedirectOutput("/dev/null");//no warning, shut up!
+//    th1->Sumw2();//the error will be [sum of sqrt(weights)]
+//	gSystem->RedirectOutput(0,0);
+//    th1->Scale(this->scale_data*plot_POT/this->pot);
+//    //std::cout<<"IS THIS: "<<this->scale_data*plot_POT/this->pot<<" "<<th1->GetSumOfWeights()<<std::endl;
+//    if(rebin>1) th1->Rebin(rebin);
+//    th1->SetLineColor(col);
+//    th1->SetLineWidth(1);
+//    th1->SetStats(0);
+//    th1->GetXaxis()->SetTitle("Unit");
+//    th1->GetYaxis()->SetTitle("Events");
+//    th1->SetDirectory(0);	
+//
+//    //delete ctmp;
+//    return th1;
 }
 
 int bdt_file::scanStage(int which_stage, std::vector<double> bdt_cuts , std::string scan_string){
