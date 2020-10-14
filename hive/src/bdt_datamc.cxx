@@ -1978,7 +1978,7 @@ int bdt_datamc::printPassingPi0DataEvents(std::string outfilename, int stage, st
  */
 void bdt_datamc::SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
 	
-	bool message = true;
+	bool message = false;
 
 	std::cout<<"Separate the fractional covaraince matrix."<<std::endl;
 	int nb = hist->GetNbinsX();
@@ -2075,16 +2075,38 @@ std::cout<<"\n Getting fracitonal matrices"<<std::endl;
 			}
 
 			TH1D* temp_CVhist  = (TH1D*) matrix_root->Get(temp_tag + "_CV_drawn");
+			int initial_bin = 0;//nth element of the TMatrix
+			int final_bin = nb;
 			if(true){//check bins;
 				double test_1stbin = temp_CVhist->GetBinLowEdge(1);  
 				double test_1stMCbin = MChist->GetBinLowEdge(1);
 				double test_lastbin = temp_CVhist->GetBinLowEdge(temp_CVhist->GetNbinsX()+1);  
 				double test_lastMCbin = MChist->GetBinLowEdge(MChist->GetNbinsX()+1);
-				if( abs(test_1stbin - test_1stMCbin) + 	abs(test_lastbin - test_lastMCbin)  > 10e-5){
+				if( - test_1stbin + test_1stMCbin < - 10e-5 || 	test_lastbin - test_lastMCbin  > 10e-5){
 					std::cout<<"Binnings from matrices:(" <<test_1stbin<<","<<test_lastbin<<") vs MC (";
 					std::cout<<"("<<test_1stMCbin<<","<<test_lastMCbin;
 					std::cout<<"). Dont match, need to generate the matrices."<<std::endl;
 					exit(EXIT_FAILURE);
+				} else if (abs(test_1stbin - test_1stMCbin ) > 10e-5){//not taking 1st bin from matrix;
+					for(int jndex = 2; jndex < nb; jndex++){
+						if(abs(MChist->GetBinLowEdge(jndex) - test_1stbin) < 10e-5){//got it 
+							initial_bin = jndex - 1;
+							std::cout<<"Started from "<<initial_bin<<"bins"<<std::endl;
+							break;
+						}
+						if(jndex == nb-1) exit(EXIT_FAILURE);
+					}
+					
+				} else if (abs(test_lastbin - test_lastMCbin ) > 10e-5){//not taking last bin from matrix;
+					for(int jndex = nb; jndex > 1; jndex--){
+						if(abs(MChist->GetBinLowEdge(jndex) - test_1stbin) < 10e-5){//got it 
+							final_bin = jndex - 1;
+							std::cout<<"End at  "<<final_bin<<"bins"<<std::endl;
+							break;
+						}
+						if(jndex == 2 ) exit(EXIT_FAILURE);
+					}
+					
 				}
 			}
 			if(temp_matrix->GetNcols() != nb){ 
@@ -2093,19 +2115,23 @@ std::cout<<"\n Getting fracitonal matrices"<<std::endl;
 			}
 			if(cur_sys->its_OM){//modify the stat part of the matrix for Optical Model
 				std::cout<<"\tAdjust Optical Model statistical error in the fractional matrix"<<std::endl;
-				for(int kndex = 0; kndex < nb; ++kndex){
+				int lndex = 0;
+				for(int kndex = initial_bin; kndex < final_bin; ++kndex){
 					double temp_mii = (*temp_matrix)(kndex,kndex);
 					double origin_cvi = (*temp_CV)(kndex,0)/data_file->pot*cur_sys->pot;//which is OM weights POT
-					double MCi = MChist->GetBinContent(kndex+1);
+					double MCi = MChist->GetBinContent(lndex+1);
 					std::cout<<"\tThe ("<<kndex<<","<<kndex<<") element: "<<temp_mii<<" -> ";
-					(*temp_matrix)(kndex,kndex) = ((temp_mii*pow(origin_cvi,2)-origin_cvi)*pow(MCi/origin_cvi,2)+MCi)/pow(MCi,2);
+					(*temp_matrix)(lndex,lndex) = ((temp_mii*pow(origin_cvi,2)-origin_cvi)*pow(MCi/origin_cvi,2)+MCi)/pow(MCi,2);
 					std::cout<<(*temp_matrix)(kndex,kndex)<<std::endl;
+					lndex++;
 				}//next bin
 			}
 
 				total_fm+= (*temp_matrix);
-			for(int kndex = 0; kndex < nb; ++kndex){
-				double temp_error = sqrt((*temp_matrix)(kndex,kndex))*MChist->GetBinContent(kndex+1);
+			int lndex = 1;
+			for(int kndex = initial_bin; kndex < final_bin; ++kndex){
+				double temp_error = sqrt((*temp_matrix)(kndex,kndex))*MChist->GetBinContent(lndex);
+				lndex++;
 //				std::cout<<temp_tag<<" bin "<<kndex<<" sys error is "<<temp_error<<" w. fm "<<(*temp_matrix)(kndex,kndex)<<std::endl;
 			}//next bin
 		}//next SW
