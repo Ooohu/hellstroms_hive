@@ -116,6 +116,7 @@ class sys_env{
 					verbose = true;
 			}
 		};
+
 };
 
 
@@ -207,5 +208,7 @@ TH1D SmoothSW(TH1D* sw, TH1D* cv, bool special);
  *
  */
 TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv);
+
+int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > output_binning);
 
 #endif

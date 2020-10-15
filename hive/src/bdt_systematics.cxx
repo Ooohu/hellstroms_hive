@@ -22,6 +22,45 @@ TH1D gadget_vrebin(TH1D* hist, std::vector<double > binning){
 	return *hist;
 }
 
+/*
+ * Check bins of cv_hist, see if it is handlable;
+ *0 - no problem; (1,2,4) - (1,2,4)
+ *1 - Rebinable: cv_hist out of range (1,2,3,4) - (2,3)
+ *2 - Rebinable: (1,2,4) - (1,4)
+ *3 - BAD: underflow bins: output_binning range too large (1,2,4) - (0,1,4)
+ *4 - BAD: bins edge not found in cv_hist (1,2,5) - (1,2,3,4)
+ */
+int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > output_binning){
+
+			bool debug_message = false;
+
+			int binchecker = 0;//monitor if there are difference between var binning and histogram binning;
+			int edges = output_binning.size();
+			int histnb = cv_hist->GetNbinsX();
+
+			for(double binedge : output_binning){//go through each bin in output_binning;
+				for(int bindex = 1; bindex < histnb+2; ++bindex){//loop through lowegdes of cv_hist 
+					if(debug_message)std::cout<<cv_hist->GetBinLowEdge(bindex)<<" vs "<<binedge;
+					if(abs(cv_hist->GetBinLowEdge(bindex) - binedge) < 10e-10){//edge matches;
+						binchecker++;
+						if(debug_message) std::cout<<"Good match"<<std::endl;
+						break;
+					}
+					if(debug_message) std::cout<<std::endl;
+				}
+			}
+
+			if(binchecker == edges ){ 
+				if(edges - 1 == histnb ) return 0; //perfect
+				return 1; //rebinnable; checker is less than the NbinsX();
+			}
+			
+			bool lb = output_binning.front() < cv_hist->GetBinLowEdge(1);
+			bool hb = output_binning.back() > cv_hist->GetBinLowEdge(1+ histnb);
+			if(lb||hb) return 3;//underflow bins; 
+
+			return 4;
+}
 
 int sys_env::checkEnv(){
 	//check dirs, stage, hash
@@ -383,30 +422,20 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 
 		if(checkbins){//check syss's hisogram bin edges; it is good, if all output_binning edges are found.
 
-			int binchecker = 0;//monitor if there are difference between var binning and histogram binning;
-			for(double binedge : output_binning){
-				for(int bindex = 1; bindex < cv_hist->GetNbinsX()+2; ++bindex){
-					if(debug_verbose)std::cout<<cv_hist->GetBinLowEdge(bindex)<<" vs "<<binedge;
-					if(abs(cv_hist->GetBinLowEdge(bindex) - binedge) < 10e-10){//edge matches;
-						binchecker++;
-						if(debug_verbose) std::cout<<"Good match"<<std::endl;
-						break;
-					}
-					if(debug_verbose) std::cout<<std::endl;
-				}
-			}
-			checkbins = false;//only need to check once.
-
-			if(binchecker == nb+1){//the left edge does not count;
-				if(debug_verbose) std::cout<<"Matched bin edges "<<binchecker<<"/"<<nb+1<<std::endl;
-				if(binchecker < cv_hist->GetNbinsX()){
-					if(verbose) std::cout<<"Histograms are going be rebinned: "<<cv_hist->GetNbinsX()<<" -> "<<nb<<std::endl;
-					do_rebin = true;
-				}
-			} else{
-				std::cout<<"Binning not adjustable: matched bin edges "<<binchecker<<"/"<<nb+1<<std::endl;
-				std::cout<<"Please check the input hist_*.root."<<std::endl; 
+			checkbins = false;
+			int matching_code = gadget_BinMatcher(cv_hist, output_binning);
+			/*0 - no problem; (1,2,4) - (1,2,4)
+			 *1 - Rebinable: cv_hist out of range (1,2,3,4) - (2,3)
+			 *2 - Rebinable: (1,2,4) - (1,4)
+			 *3 - BAD: underflow bins: output_binning range too large (1,2,4) - (0,1,4)
+			 *4 - BAD: bins edge not found in cv_hist (1,2,5) - (1,2,3,4)
+			 */
+			if(matching_code > 2){	
+				std::cout<<"Please check the input the binning of hist_*.root."<<std::endl; 
 				exit(EXIT_FAILURE);
+			} else if( matching_code > 0){
+				if(verbose) std::cout<<"Histograms are going be rebinned: "<<cv_hist->GetNbinsX()<<" -> "<<nb<<std::endl;
+				do_rebin = true;
 			}
 		}
 
