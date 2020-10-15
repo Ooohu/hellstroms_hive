@@ -35,24 +35,29 @@ int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > output_binning){
 			bool debug_message = false;
 
 			int binchecker = 0;//monitor if there are difference between var binning and histogram binning;
+			int mis_count = 0;
 			int edges = output_binning.size();
 			int histnb = cv_hist->GetNbinsX();
-
+			int bindex_starter = 1;
 			for(double binedge : output_binning){//go through each bin in output_binning;
-				for(int bindex = 1; bindex < histnb+2; ++bindex){//loop through lowegdes of cv_hist 
+				for(int bindex = bindex_starter; bindex < histnb+2; ++bindex){//loop through lowegdes of cv_hist 
 					if(debug_message)std::cout<<cv_hist->GetBinLowEdge(bindex)<<" vs "<<binedge;
 					if(abs(cv_hist->GetBinLowEdge(bindex) - binedge) < 10e-10){//edge matches;
 						binchecker++;
+						bindex_starter = bindex+1;
 						if(debug_message) std::cout<<"Good match"<<std::endl;
 						break;
 					}
+					if(binchecker>1 && binchecker < edges) mis_count++;
 					if(debug_message) std::cout<<std::endl;
 				}
 			}
 
 			if(binchecker == edges ){ 
 				if(edges - 1 == histnb ) return 0; //perfect
-				return 1; //rebinnable; checker is less than the NbinsX();
+				if(mis_count < 1) return 1;
+				std::cout<<mis_count<<std::endl;
+				return 2; //rebinnable; checker is less than the NbinsX();
 			}
 			
 			bool lb = output_binning.front() < cv_hist->GetBinLowEdge(1);

@@ -613,11 +613,11 @@ TH1* bdt_file::getEventTH1(bdt_variable var, std::string cuts, std::string nam, 
 
     TH1* th1 = (TH1*)gDirectory->Get(nam.c_str()) ;
     th1->Scale(this->scale_data*plot_POT/this->pot);
-    th1->SetLineColor(col);
-    th1->SetLineWidth(1);
-    th1->SetStats(0);
-    th1->GetXaxis()->SetTitle(var.unit.c_str());
-    th1->GetYaxis()->SetTitle("Events");
+//    th1->SetLineColor(col);
+//    th1->SetLineWidth(1);
+//    th1->SetStats(0);
+//    th1->GetXaxis()->SetTitle(var.unit.c_str());
+//    th1->GetYaxis()->SetTitle("Events");
 
 
     return th1;

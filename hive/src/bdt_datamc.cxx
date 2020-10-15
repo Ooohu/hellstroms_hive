@@ -1001,7 +1001,12 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 				//Top Histograms: stk, tsum, d0 , l0
 			stk->SetTitle("");
 			stk->GetXaxis()->SetTitle(var.unit.c_str());
-			stk->GetYaxis()->SetTitle("Events");
+			if(var.is_custombin){ 
+				stk->GetYaxis()->SetTitle("Events/MeV");
+			} else{
+				stk->GetYaxis()->SetTitle("Events");
+			}
+
 			stk->GetYaxis()->SetTitleSize(0.05);
 			stk->GetYaxis()->SetTitleOffset(0.9);
 			stk->SetMaximum( std::max(tsum->GetBinContent(tsum->GetMaximumBin()), d0->GetMaximum())*max_modifier);
@@ -1041,7 +1046,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 				ratunit->SetTitle("");
 				ratunit->SetMinimum(rmin);	
 				ratunit->SetMaximum(rmax);//ratunit->GetMaximum()*1.1);
-				ratunit->GetYaxis()->SetTitle(  (stack_mode ? "#splitline{Systematic}{Uncertainty}" : "Data/(BkgMC)"));
+				ratunit->GetYaxis()->SetTitle(  (stack_mode ? "#splitline{Systematic}{Uncertainty}" : "Data/(MC)"));
 				ratunit->GetYaxis()->SetTitleOffset(title_offset_ratioY*1.25);
 				ratunit->GetYaxis()->SetTitleSize(title_size_ratio);
 				ratunit->GetYaxis()->SetLabelSize(label_size_ratio);
@@ -1595,7 +1600,7 @@ int bdt_datamc::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, std::ve
 				ratunit->SetTitle("");
 				ratunit->SetMinimum(rmin);	
 				ratunit->SetMaximum(rmax);//ratunit->GetMaximum()*1.1);
-				ratunit->GetYaxis()->SetTitle(  (stack_mode ? "#splitline{Systematic}{Uncertainty}" : "Data/(BkgMC)"));
+				ratunit->GetYaxis()->SetTitle(  (stack_mode ? "#splitline{Systematic}{Uncertainty}" : "Data/(MC)"));
 				ratunit->GetYaxis()->SetTitleOffset(title_offset_ratioY*1.25);
 				ratunit->GetYaxis()->SetTitleSize(title_size_ratio);
 				ratunit->GetYaxis()->SetLabelSize(label_size_ratio);
@@ -2063,8 +2068,8 @@ TMatrixD bdt_datamc::PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_roo
 
 			TMatrixD temp_matrix(nb,nb); 
 			TMatrixD temp_CV(nb,1); 
-			TArrayD nums(nb*nb); 
-			TArrayD numsCV(nb); 
+//			TArrayD nums(nb*nb); 
+//			TArrayD numsCV(nb); 
 
 			TMatrixD* read_matrix = (TMatrixD*) matrix_root->Get(temp_tag + "_FracMatrix");
 			TMatrixD* read_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
@@ -2094,27 +2099,29 @@ TMatrixD bdt_datamc::PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_roo
 					case 0:
 						temp_matrix = *read_matrix;
 						temp_CV = *read_CV;
+						std::cout<<"Covariance matrix is all good."<<std::endl;
 						break;
 					case 1:
 						{//take out temp_matrix & temp_CV to match MChist binning;
-							std::cout<<"Covariance matrix is partially useful, pick bin edges: "<<std::endl;
+							std::cout<<"Covariance matrix is partially useful, pick bin edges started from ";
 							int initial_bin = 0;
 							for(int lndex = 1; lndex < nb; lndex++){
-								if(abs(MChist->GetBinLowEdge(lndex) - MCbinning.front()) < 10e-5){//got it 
+								if(abs(temp_CVhist->GetBinLowEdge(lndex) - MCbinning.front()) < 10e-5){//got it 
 									initial_bin = lndex - 1;
+									std::cout<<"bin "<<lndex<<std::endl;
 									break;
-									std::cout<<"Read matrices from bin "<<lndex<<std::endl;
 								} 
 							}
 							for(int lndex = 0; lndex < nb; lndex ++){
-								numsCV[lndex] = (*read_CV)(initial_bin + lndex ,0);
+								temp_CV(lndex,0) = (*read_CV)(initial_bin + lndex ,0);
 								for(int mndex = 0; mndex < nb; mndex ++){
-								nums[lndex*nb+mndex] = (*read_matrix)(initial_bin+lndex,initial_bin+mndex);
+								temp_matrix(lndex,mndex) = (*read_matrix)(initial_bin+lndex,initial_bin+mndex);
 								}
 							}
 						}
 						break;
 					default://>1;
+						std::cout<<"BinMatcher Code "<< matching_code<<std::endl;
 						std::cout<<"Binnings from matrices:(" <<temp_CVhist->GetBinLowEdge(1)<<",";
 						std::cout<<temp_CVhist->GetBinLowEdge(1+ temp_CVhist->GetNbinsX())<<") vs MC (";
 						std::cout<<"("<<MChist->GetBinLowEdge(1)<<","<<MChist->GetBinLowEdge(nb+1);
@@ -2127,20 +2134,20 @@ TMatrixD bdt_datamc::PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_roo
 			if(cur_sys->its_OM){//modify the stat part of the matrix for Optical Model
 				std::cout<<"\tAdjust Optical Model statistical error in the fractional matrix"<<std::endl;
 				for(int kndex =  0; kndex < nb; ++kndex){
-					double temp_mii = nums[kndex*nb+kndex];
-					double origin_cvi = numsCV[kndex]/data_file->pot*cur_sys->pot;//which is OM weights POT
+					double temp_mii = temp_matrix(kndex,kndex);//[kndex*nb+kndex];
+					double origin_cvi = temp_CV(kndex,0)/data_file->pot*cur_sys->pot;//which is OM weights POT
 					double MCi = MChist->GetBinContent(kndex+1);
 					std::cout<<"\tThe ("<<kndex<<","<<kndex<<") element: "<<temp_mii<<" -> ";
 
-					nums[kndex*nb+kndex] = ((temp_mii*pow(origin_cvi,2)-origin_cvi)*pow(MCi/origin_cvi,2)+MCi)/pow(MCi,2);
-					std::cout<<nums[kndex*nb+kndex]<<std::endl;
+					temp_matrix(kndex,kndex) = ((temp_mii*pow(origin_cvi,2)-origin_cvi)*pow(MCi/origin_cvi,2)+MCi)/pow(MCi,2);
+					std::cout<<temp_matrix(kndex,kndex)<<std::endl;
 				}//next bin
 			}
-			temp_matrix.SetMatrixArray(nums.GetArray());
+//			temp_matrix.SetMatrixArray(nums.GetArray());
 			total_fm+= temp_matrix;
 			for(int kndex = 0; kndex < nb; ++kndex){
-				double temp_error = sqrt(nums[kndex*nb+kndex])*MChist->GetBinContent(kndex);
-				std::cout<<temp_tag<<" bin "<<kndex<<" sys error is "<<temp_error<<" w. fm "<<nums[kndex*nb+kndex]<<std::endl;
+				double temp_error = sqrt(temp_matrix(kndex,kndex)*MChist->GetBinContent(kndex));
+				std::cout<<temp_tag<<" bin "<<kndex<<" sys error is "<<temp_error<<" w. fm "<<temp_matrix(kndex,kndex)<<std::endl;
 			}//next bin
 		}//next SW
 

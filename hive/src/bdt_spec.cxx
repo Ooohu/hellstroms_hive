@@ -242,7 +242,6 @@ std::vector<double> bdt_stack::getEntryFullVector(bdt_variable var){
 
 THStack* bdt_stack::getEntryStack(bdt_variable var, int level){
 	bool debug_message = false;
-
     THStack *stacked = new THStack((this->name+"_stack").c_str(), (this->name+"_stack").c_str());
     int stack_rebin = 1;
     //	if(level ==2) stack_rebin=2;
@@ -284,12 +283,13 @@ THStack* bdt_stack::getEntryStack(bdt_variable var, int level){
         hist->Scale();
 
         hist->GetXaxis()->SetTitle(var.unit.c_str());
-        hist->GetYaxis()->SetTitle("Events");
 
 
-		if(var.is_custombin){ hist->Scale(1,"width");
-		hist->GetYaxis()->SetTitle("Events/MeV");
-		
+		if(var.is_custombin){ 
+			hist->Scale(1,"width");
+//			hist->GetYaxis()->SetTitle("Events/MeV");
+		} else{
+//			hist->GetYaxis()->SetTitle("Events");
 		}
         std::cout<<"Stack "<<stack.at(t)->tag<<" level "<<t<< " group "<< stack.at(t)->group<<" with events: "<<vec_hists.back()->Integral()<<std::endl;
 //        to_sort.push_back(hist);
