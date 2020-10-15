@@ -2146,8 +2146,8 @@ TMatrixD bdt_datamc::PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_roo
 //			temp_matrix.SetMatrixArray(nums.GetArray());
 			total_fm+= temp_matrix;
 			for(int kndex = 0; kndex < nb; ++kndex){
-				double temp_error = sqrt(temp_matrix(kndex,kndex)*MChist->GetBinContent(kndex));
-				std::cout<<temp_tag<<" bin "<<kndex<<" sys error is "<<temp_error<<" w. fm "<<temp_matrix(kndex,kndex)<<std::endl;
+				double temp_error = sqrt(temp_matrix(kndex,kndex))*MChist->GetBinContent(kndex+1);
+				std::cout<<temp_tag<<" bin "<<kndex+1<<" sys error is "<<temp_error<<" w. fm "<<temp_matrix(kndex,kndex)<<std::endl;
 			}//next bin
 		}//next SW
 

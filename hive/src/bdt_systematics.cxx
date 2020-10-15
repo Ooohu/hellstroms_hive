@@ -375,8 +375,8 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 	int stage = fstage;
 
 	int nb = var.n_bins;//n_bins is the target binning;
-	int nl = var.plot_min;
-	int nh = var.plot_max;
+	double nl = var.plot_min;
+	double nh = var.plot_max;
 	bool do_rebin = var.is_custombin;//this will be updated, if the sys histogram binning can be used.
 
 
@@ -436,6 +436,7 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 			 *4 - BAD: bins edge not found in cv_hist (1,2,5) - (1,2,3,4)
 			 */
 			if(matching_code > 2){	
+				std::cout<<"BinMatcher Code "<<matching_code<<std::endl;
 				std::cout<<"Please check the input the binning of hist_*.root."<<std::endl; 
 				exit(EXIT_FAILURE);
 			} else if( matching_code > 0){
@@ -509,9 +510,9 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 				
 				if(force_rebin) cur_hist->Rebin(2);
 
-				bool trad_bin = false;
+				bool trad_bin = false;//for R<5 selection.
 				if(do_smooth&& trad_bin){//smooth first
-					if(verbose) std::cout<<"\r Smoothing a sw histogram";
+					if(verbose) std::cout<<"\r Traditionally Smoothing a sw histogram";
 					*cur_hist = SmoothSW(cur_hist, smoothRef_hist, trad_bin);
 				}
 
