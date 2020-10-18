@@ -723,10 +723,15 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 			Events_num.clear();//reset events# 
 			for(size_t index = 0; index< mc_stack->vec_hists.size(); ++index){//calculate # of MC events of each samples;
-				double Nevents = mc_stack->vec_hists[index]->Integral();
+				//				double Nevents = mc_stack->vec_hists[index]->Integral();
+
+				bdt_file* f = mc_stack->stack[index];
+				std::string temp_varcut =  var.name+">"+to_string_prec(var.plot_min)+"&&"+var.name+"<"+to_string_prec(var.plot_max);
+				//				std::cout<<temp_varcut<<std::endl;
+				double Nevents = f->GetEntries(temp_varcut)*(plot_pot/f->pot)*f->scale_data;// get the original number of events;
 				Events_num.push_back(Nevents);
 				if(!mc_stack->stack[index]->is_signal) total_MCbkg_events += Nevents;
-			if(debug_message) std::cout<<"Event "<<std::setw(12)<<mc_stack->stack[index]->tag<<" has events "<<Nevents<<std::endl;
+				if(debug_message) std::cout<<"Event "<<std::setw(12)<<mc_stack->stack[index]->tag<<" has events "<<Nevents<<std::endl;
 			}
 
 //			for(auto &f: mc_stack->stack){//calculate # of MC events of each samples;
@@ -870,9 +875,9 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 			for(size_t jndex = 0; jndex < mc_stack->stack.size(); ++jndex){//For l0, set legend contents according to bdt_file members
 				bdt_file* f = mc_stack->stack[jndex];
 
-				std::string temp_varcut =  var.name+">"+to_string_prec(var.plot_min)+"&&"+var.name+"<"+to_string_prec(var.plot_max);
+//				std::string temp_varcut =  var.name+">"+to_string_prec(var.plot_min)+"&&"+var.name+"<"+to_string_prec(var.plot_max);
 //				std::cout<<temp_varcut<<std::endl;
-				double Nevents = f->GetEntries(temp_varcut)*(plot_pot/f->pot)*f->scale_data;// get the original number of events;
+				double Nevents =Events_num[jndex];// f->GetEntries(temp_varcut)*(plot_pot/f->pot)*f->scale_data;// get the original number of events;
 //				double Nevents = (mc_stack->vec_hists[jndex])->Integral();// f->GetEntries()*(plot_pot/f->pot)*f->scale_data;
 
 
