@@ -444,9 +444,9 @@ int bdt_file::calcBaseEntryList(std::string analysis_tag){
 	std::cout<<precut_key<<std::endl;
     unsigned long precut_hash = this->jenkins_hash(precut_key); 
     std::cout<<"These particular precuts and definitions have a hash of "<<precut_hash<<std::endl;
-    std::string s_precut_hash = std::to_string(precut_hash);
+	this->s_precut_hash = std::to_string(precut_hash);
 
-    std::string filename = analysis_tag+"entrylists/"+this->tag+"_"+analysis_tag+"_entrylists.root";
+    std::string filename = analysis_tag+"entrylists/"+this->tag+"_"+analysis_tag+"_entrylists"+this->s_precut_hash+".root";
     topological_list_name = "topological_list_"+analysis_tag+"_"+this->tag;
     precut_list_name = "precut_list_"+analysis_tag+"_"+this->tag;
 
@@ -458,7 +458,7 @@ int bdt_file::calcBaseEntryList(std::string analysis_tag){
         std::cout<<"Entry List file already exists for "<<this->tag<<std::endl;
         TFile* fpre = new TFile(filename.c_str(),"read");	
 
-        hash_right = fpre->GetListOfKeys()->Contains(s_precut_hash.c_str());
+        hash_right = fpre->GetListOfKeys()->Contains(this->s_precut_hash.c_str());
         if(hash_right){
             std::cout<<"\nFile has correct hash! Just going to load the TEntryLists"<<std::endl;
             topological_list = (TEntryList*)fpre->Get(topological_list_name.c_str());
@@ -509,7 +509,7 @@ int bdt_file::calcTopologicalEntryList(){
 
 
 
-    std::string filename = this->tag+"_entrylists.root";
+    std::string filename = this->tag+"_entrylists"+this->s_precut_hash+".root";
     topological_list_name = "topological_list_"+this->tag;
 
     std::ifstream ifile(filename.c_str());

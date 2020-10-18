@@ -186,8 +186,9 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     //Grab the first element. Note very little error checking here! make sure they exist.
     pMVA = doc.FirstChildElement("mva");
     if(!pMVA) {
-        std::cerr<<"ERROR: MVALoader::MVALoader || XMl contains no mva's! "<<whichxml<<std::endl;
-        exit(EXIT_FAILURE);
+        std::cerr<<"Warnnig: MVALoader::MVALoader || XMl contains no mva's! No BDT is used."<<whichxml<<std::endl;
+//        std::cerr<<"ERROR: MVALoader::MVALoader || XMl contains no mva's! "<<whichxml<<std::endl;
+//        exit(EXIT_FAILURE);
     }
 
     TMVA::Types  type_instance = TMVA::Types::Instance();
@@ -648,23 +649,23 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		}
 
         std::string covar_file;
-        std::string covar_name;
+//        std::string covar_name;
         std::string covar_leg = "default";
         bool has_covar = false;
         const char* var_covar_file = pVar->Attribute("covarfile");
-        const char* var_covar_name = pVar->Attribute("covarname");
-        if (var_covar_file==NULL || var_covar_name==NULL){
+//        const char* var_covar_name = pVar->Attribute("covarname");
+        if (var_covar_file==NULL){// || var_covar_name==NULL){}
             has_covar= false;
         }else{
             has_covar= true;
             covar_file = var_covar_file;
-            covar_name = var_covar_name;
+//            covar_name = var_covar_name;
         }
         
         if(has_global_covar){
             has_covar= true;
             covar_file =  global_covar_dir;
-            covar_name = global_covar_name;
+//            covar_name = global_covar_name;
             covar_leg = global_leg_name;
         }
 
@@ -726,9 +727,10 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		}
 
         if(has_covar){
-            std::cout<<"Adding a covariance matrix "<<covar_name<<" from file "<<covar_file<<std::endl;
+            std::cout<<"Adding a file with fractional covaraince matrices "<<covar_file<<std::endl;
             covar_file = covar_file;//+"/VID"+std::to_string(n_var)+".SBNcovar.root";
-            t.addCovar(covar_name,covar_file);
+//            t.addCovar(covar_name,covar_file);
+            t.addCovar(covar_file);
             t.covar_legend_name = covar_leg; 
         }
 
@@ -902,7 +904,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 		//boolean 
 		sys_its_CV.push_back(gadget_boolreader( pSys->Attribute("isCV")));
 		sys_its_multithrows.push_back(gadget_boolreader( pSys->Attribute("isMultithrows")));
-		sys_its_OpticalModel.push_back(gadget_boolreader(pSys->Attribute("isOpticalModelCV")));
+		sys_its_OpticalModel.push_back(gadget_boolreader(pSys->Attribute("OpticalModel")));
 
 //tokenize the following var, varnam, bdtfiles
 //

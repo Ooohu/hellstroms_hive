@@ -240,7 +240,6 @@ int main (int argc, char *argv[]){
 
 	//systematic files; its follows each bdt_file;
 	sys_env sysConfig;
-
 	sysConfig.setVerbose(1);//2 - all messge; 1- no debug message;
 	sysConfig.setEnv(analysis_tag, "roots", "drawn");
 	gadget_buildfolder(std::string(sysConfig.top_dir));
@@ -282,7 +281,6 @@ int main (int argc, char *argv[]){
 
 		//load up all bdt files
 
-	std::cout<<__LINE__<<" Check f "<<f<<std::endl;
 		bdt_files.push_back( new bdt_file(f, XMLconfig, analysis_flow));
         bdt_files.back()->addPlotName(XMLconfig.bdt_plotnames[f]);
         tagToFileMap[XMLconfig.bdt_tags[f]] = bdt_files.back();

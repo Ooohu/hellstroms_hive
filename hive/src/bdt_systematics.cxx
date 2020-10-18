@@ -13,7 +13,7 @@ TH1D gadget_vrebin(TH1D* hist, std::vector<double > binning){
 		if(binning.front() < hb1 ||binning.back() > hb2){
 			std::cout<<"\nReject to rebin underflow bins: Hist is rebinned from ("<<hb1<<","<<hb2;
 			std::cout<<") to ("<<binning.front() <<","<<binning.back() <<"). Please check bin edges in xml and hist*.root."<<std::endl;
-			exit(EXIT_FAILURE);
+			return *hist;
 		}
 	}
 	hist->Rebin(binning.size() -1, ("tmp"+to_string_prec(global_index)).c_str() ,&(binning).front());//tags[index]+"CV" is just some name, can be anything;
@@ -446,10 +446,10 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 		}
 
 		//Update cv_hist, if the binning are not exactly what we want;
+		if(rescale) cv_hist->Scale(out_POT/tempsCV->pot);//scale hist to data POT
 		TH1D* smoothRef_hist = (TH1D*) cv_hist->Clone();
 		if(do_rebin) *cv_hist = gadget_vrebin(cv_hist, output_binning);
 
-		if(rescale) cv_hist->Scale(out_POT/tempsCV->pot);//scale hist to data POT
 
 		//		//STEP 2.2 Load SW and draw histograms, covariance matrix only the flight;
 
@@ -683,6 +683,7 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 	using namespace std;
 	//use the special option for the old (but effective) smoothing strategy
 	
+	bool message = false;
 	bool print_ratio = false;
 	bool ec_smoothing = false;
 
@@ -705,6 +706,13 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 
 		*cv = gadget_vrebin(cv, sm_binning);
 		*sw = gadget_vrebin(sw, sm_binning);
+		if(false){
+			for(int index = 1;index < cv->GetNbinsX()+2; ++index){
+				std::cout<<" "<<cv->GetBinLowEdge(index);
+			}
+			std::cout<<std::endl;
+		}
+
 //		cv->Rebin(sm_binning.size()-1, cur_tag+"smCV",&(sm_binning).front());//tags[index]+"CV" is just some name, can be anything;
 //		cv = (TH1D*) gDirectory->Get(cur_tag+"smCV");
 //
@@ -714,11 +722,11 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 
 	Int_t degree = 2;
 	Int_t first_bin = 1;
-	Int_t last_bin = sw->GetNbinsX();//1;
+//	Int_t last_bin = sw->GetNbinsX()-1;//1;
 //	while(sw->GetBinLowEdge(last_bin)<1275){//dont smooth bins with EnuE>1899
 //		last_bin++;
 //	}
-	Int_t Nbins=last_bin-first_bin+1;
+	Int_t Nbins=sw->GetNbinsX()-1;//this controls how many bins to use;
 
 
 	if(ec_smoothing){ //use en-chuan's 
@@ -759,7 +767,7 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 		
 		//proceed to smoothing
 
-		cout << "Smoothing bins "<< first_bin << "-" << last_bin << " (N=" << Nbins<< ", "<<cv->GetBinLowEdge(last_bin)<<") with pol "<<degree;
+		cout << "Smoothing bins "<< first_bin << "-" << Nbins << " (N=" << Nbins<< ", "<<cv->GetBinLowEdge(Nbins+1)<<") with pol "<<degree;
 		for (Int_t bin=0;bin<Nbins;bin++) {
 			//    cout <<cv->GetBinContent(bin+first_bin)<<"\t"<<sw->GetBinContent(bin+first_bin)<<endl;
 		}
@@ -821,9 +829,11 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 		//calculte chi^2 on sw;
 	
 		double chi2 = 0;
-		for (Int_t bin=1;bin<Nbins+1;bin++) {//Here modify the sw
+		if(message) std::cout<<std::endl;
+		for (Int_t bin=1;bin<sw->GetNbinsX()+1;bin++) {//Here modify the sw
 			if(cv->GetBinContent(bin)>0){
 			chi2+=pow(sw->GetBinContent(bin)-cv->GetBinContent(bin), 2)/cv->GetBinContent(bin);
+			if(message)	std::cout<<" bin "<<bin<<" sw "<<sw->GetBinContent(bin)<<" cv "<<cv->GetBinContent(bin)<<std::endl;
 			}
 		}
 		double AIC = chi2+ 2*degree+ (2*degree)*(degree+1)/(Nbins-degree-1);

@@ -91,6 +91,8 @@ class bdt_file{
 
         std::string weight_branch;
 
+		std::string s_precut_hash;
+
 
         TRandom3* rangen;
         std::string topo_name;

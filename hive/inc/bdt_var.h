@@ -37,7 +37,7 @@ struct bdt_variable{
 		std::string type;
         bool is_logplot;
         bool has_covar;
-        std::string covar_name;
+//        std::string covar_name;
         std::string covar_file;
         std::string covar_legend_name;
 
@@ -52,9 +52,10 @@ struct bdt_variable{
 		bool is_custombin;
 		
 
-        int addCovar(std::string name, std::string file){
+//        int addCovar(std::string name, std::string file){}
+        int addCovar(std::string file){
             has_covar=true;
-            covar_name = name;
+//            covar_name = name;
             covar_file = file;
             return 0;
         }
