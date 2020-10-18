@@ -2111,7 +2111,7 @@ TMatrixD bdt_datamc::PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_roo
 						{//take out temp_matrix & temp_CV to match MChist binning;
 							std::cout<<"Covariance matrix is partially useful, pick bin edges started from ";
 							int initial_bin = 0;
-							for(int lndex = 1; lndex < nb; lndex++){
+							for(int lndex = 1; lndex < temp_CVhist->GetNbinsX()+1; lndex++){
 								if(abs(temp_CVhist->GetBinLowEdge(lndex) - MCbinning.front()) < 10e-5){//got it 
 									initial_bin = lndex - 1;
 									std::cout<<"bin "<<lndex<<std::endl;
