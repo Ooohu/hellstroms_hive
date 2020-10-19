@@ -211,4 +211,5 @@ TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv);
 
 int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > output_binning);
 
+TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist, double outPOT);
 #endif

@@ -14,6 +14,7 @@
 #include  "bdt_info.h"
 #include  "bdt_flow.h"
 #include  "method_struct.h"
+#include  "bdt_systematics.h"
 
 /******** Root includes *****/
 

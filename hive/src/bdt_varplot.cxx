@@ -194,7 +194,11 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 					//get chi_square
 					double mychi=0;
 					int ndof = v.n_bins - 1;
-						
+
+					//CHECK
+					//
+				//*covar_collapsed = gadget_PrepareMatrix(systematics, covar_f, pure_bkg_hist, data_file->pot);
+
 					for(int ib=1; ib<v.n_bins+1; ib++){
 						double dav = data->GetBinContent(ib);//the excess
 						double mcv = MC[index]->GetBinContent(ib);

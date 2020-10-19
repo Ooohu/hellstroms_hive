@@ -1357,7 +1357,9 @@ return 0;
 
     if(which_stage == -1) which_stage = 1;
 
-	plot_var_allF(stack_bdt_files, onbeam_data_file, vars, false, which_stage,fbdtcuts, true);//last bool set normalization, true - normalize the sum of each type as 1;
+	plot_var_allF(stack_bdt_files, onbeam_data_file, vars, false, which_stage,fbdtcuts, true);
+	//first bool indicates the variable is not a spectator variable.
+	//last bool set normalization, true - normalize the sum of each type as 1;
 //    for(int i=0; i< bdt_infos.size(); i++){
 //
 //

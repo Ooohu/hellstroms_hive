@@ -87,7 +87,7 @@ class bdt_datamc{
 // add the systematic friendly version for MiniBooNE;
 int plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics);
 
-TMatrixD PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root, TH1* MChist);
+//TMatrixD PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root, TH1* MChist);
 
 //        int plotStacks(TFile *ftest, bdt_variable var,double c1, double c2, bdt_info whichbdt);
 //        int plotStacks(TFile*f, bdt_variable var,double,double);

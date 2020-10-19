@@ -784,8 +784,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 //				this->calcCollapsedCovariance(covar_full, covar_collapsed,var);
 				
 				//NOTE, all pure_bkg_hist in this part was tsum; CHECK
-				*covar_collapsed = PrepareMatrix(systematics, covar_f, pure_bkg_hist);
-//				*covar_collapsed = PrepareMatrix(systematics, covar_f, tsum);
+				*covar_collapsed = gadget_PrepareMatrix(systematics, covar_f, pure_bkg_hist, data_file->pot);
 
 				SeparateMatrix(covar_collapsed, pure_bkg_hist, "datamc/"+this->tag+var.safe_unit+"_stage_"+std::to_string(stage)+"_ThreeFracM_");
 
@@ -1093,27 +1092,32 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 			//STEP 2.5 Additional Info.
 			if(print_message){
-				int gap=13;
-				std::vector<TH1*> somehists((mc_stack->stack).size());
-				std::cout<<std::left<<std::setw(gap)<<"Bin#";
-				for(size_t lndex = 0; lndex < somehists.size(); ++lndex){
-					std::cout<<std::left<<std::setw(gap)<<mc_stack->stack[lndex]->tag;
-					std::cout<<std::left<<std::setw(gap+6)<<mc_stack->stack[lndex]->tag+"_statE";
-					somehists[lndex] = mc_stack->vec_hists[lndex];
-				}
-				std::cout<<std::setw(5)<<"data"<<"data_E"<<std::endl;
-				for(int bin=1; bin< d0->GetNbinsX()+1; bin++){
-					std::cout<<std::setw(gap)<<bin;
-					for(size_t lndex = 0; lndex<somehists.size(); ++lndex){
-						std::cout<<std::left<<std::setw(gap)<<somehists[lndex]->GetBinContent(bin);
-						std::cout<<std::left<<std::setw(gap+6)<<somehists[lndex]->GetBinError(bin);
-					}
-					std::cout<<std::setw(5)<<d0->GetBinContent(bin)<<d0->GetBinError(bin)<<std::endl;
-				}
-				std::cout<<std::endl;
-			}
+				int summary_rows = 1 + (mc_stack->vec_hists[0])->GetNbinsX();//((mc_stack->stack).size() )*2;
+				int gap = 12;
+				std::vector<std::stringstream> summary(summary_rows);
+				std::vector<bool> summary_headers(summary_rows, true);//true - do header, i.e. LowBinEdge
 
-//			cobs->Write();
+				summary[0] << "BinLEdge ";
+
+				for(size_t lndex = 0; lndex < mc_stack->vec_hists.size(); ++lndex){
+					std::string summary_tag = mc_stack->stack[lndex]->tag;
+					std::string summary_tagErr = (var.has_covar)? "TErr" : "SErr";
+					summary[0] << std::setw(gap)<<std::left<<summary_tag <<std::setw(gap)<<std::left<<summary_tagErr;//title
+					for(int bin = 1; bin < d0->GetNbinsX() + 1; bin++){
+						if(summary_headers[bin]){
+							summary[bin] << std::setw(9)<<std::left <<(mc_stack->vec_hists[lndex])->GetBinLowEdge(bin);
+							summary_headers[bin] = false;
+						}
+						summary[bin] << std::setw( gap )<<std::left << (mc_stack->vec_hists[lndex])->GetBinContent( bin );
+						summary[bin] << std::setw( gap )<<std::left << (mc_stack->vec_hists[lndex])->GetBinError( bin );
+					}
+				}
+
+				for(size_t lndex = 0; lndex < summary.size(); ++lndex){
+					std::cout<<summary[lndex].rdbuf()<<"\n";
+				}
+
+			}
 
 
 			if(stack_mode){
@@ -2061,115 +2065,3 @@ void bdt_datamc::SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
 	canvas_out->Delete();
 }
 
-TMatrixD bdt_datamc::PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist){
-	//Extract Error matrix from the fractionla matrix and adjust optical Model;
-	//Only the diagonal element matters.
-
-	int nb = MChist->GetNbinsX();
-	TMatrixD total_fm(nb,nb);
-	std::cout<<"\n Getting fracitonal matrices"<<std::endl;
-	for(size_t index = 0; index < syss.size(); ++index){//loop over systematics
-		if(syss[index]->its_CV) continue;//work with non-CV systematic weights, bdt_sys only provides names to retrieve contents;
-		bdt_sys* cur_sys = syss[index];
-
-		for(size_t jndex = 0; jndex < (cur_sys->vars).size(); ++jndex){//loop over spcific type of SW 
-
-			TString temp_tag = cur_sys->tag+"_"+cur_sys->vars_name[jndex];
-
-
-			TMatrixD temp_matrix(nb,nb); 
-			TMatrixD temp_CV(nb,1); 
-//			TArrayD nums(nb*nb); 
-//			TArrayD numsCV(nb); 
-
-			TMatrixD* read_matrix = (TMatrixD*) matrix_root->Get(temp_tag + "_FracMatrix");
-			TMatrixD* read_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
-
-			if(read_matrix == NULL){
-				std::cout<<"\tSkip loading matrix for "<<temp_tag+ "_FracMatrix"<<std::endl;
-				continue;
-			}
-
-			TH1D* temp_CVhist  = (TH1D*) matrix_root->Get(temp_tag + "_CV_drawn");
-//			int initial_bin = 0;//nth element of the TMatrix
-//			int final_bin = nb;
-			if(true){//check bins;
-				std::vector< double > MCbinning;
-				for(int kndex = 1; kndex < nb+2; kndex ++){
-					MCbinning.push_back(MChist->GetBinLowEdge(kndex) );
-				}
-
-				int matching_code = gadget_BinMatcher(temp_CVhist, MCbinning);
-				/*0 - no problem; (1,2,4) - (1,2,4)
-				 *1 - Rebinable: temp_CVhist out of range (1,2,3,4) - (2,3)
-				 *2 - Rebinable: (1,2,4) - (1,4)
-				 *3 - BAD: underflow bins: output_binning range too large (1,2,4) - (0,1,4)
-				 *4 - BAD: bins edge not found in temp_CVhist (1,2,5) - (1,2,3,4)
-				 */
-				switch (matching_code){
-					case 0:
-						temp_matrix = *read_matrix;
-						temp_CV = *read_CV;
-						std::cout<<"Covariance matrix is all good."<<std::endl;
-						break;
-					case 1:
-						{//take out temp_matrix & temp_CV to match MChist binning;
-							std::cout<<"Covariance matrix is partially useful, pick bin edges started from ";
-							int initial_bin = 0;
-							for(int lndex = 1; lndex < temp_CVhist->GetNbinsX()+1; lndex++){
-								if(abs(temp_CVhist->GetBinLowEdge(lndex) - MCbinning.front()) < 10e-5){//got it 
-									initial_bin = lndex - 1;
-									std::cout<<"bin "<<lndex<<std::endl;
-									break;
-								} 
-							}
-							for(int lndex = 0; lndex < nb; lndex ++){
-								temp_CV(lndex,0) = (*read_CV)(initial_bin + lndex ,0);
-								for(int mndex = 0; mndex < nb; mndex ++){
-								temp_matrix(lndex,mndex) = (*read_matrix)(initial_bin+lndex,initial_bin+mndex);
-								}
-							}
-						}
-						break;
-					default://>1;
-						std::cout<<"BinMatcher Code "<< matching_code<<std::endl;
-						std::cout<<"Binnings from matrices:(" <<temp_CVhist->GetBinLowEdge(1)<<",";
-						std::cout<<temp_CVhist->GetBinLowEdge(1+ temp_CVhist->GetNbinsX())<<") vs MC (";
-						std::cout<<"("<<MChist->GetBinLowEdge(1)<<","<<MChist->GetBinLowEdge(nb+1);
-						std::cout<<"). Dont match, need to generate the matrices."<<std::endl;
-						exit(EXIT_FAILURE);
-						break;	
-				}
-			}
-
-			if(cur_sys->its_OM){//modify the stat part of the matrix for Optical Model
-				std::cout<<"\tAdjust Optical Model statistical error in the fractional matrix"<<std::endl;
-				for(int kndex =  0; kndex < nb; ++kndex){
-					double temp_mii = temp_matrix(kndex,kndex);//[kndex*nb+kndex];
-					double origin_cvi = temp_CV(kndex,0)/data_file->pot*cur_sys->pot;//which is OM weights POT
-					double MCi = MChist->GetBinContent(kndex+1);
-					std::cout<<"\tThe ("<<kndex<<","<<kndex<<") element: "<<temp_mii<<" -> ";
-
-					temp_matrix(kndex,kndex) = ((temp_mii*pow(origin_cvi,2)-origin_cvi)*pow(MCi/origin_cvi,2)+MCi)/pow(MCi,2);
-					std::cout<<temp_matrix(kndex,kndex)<<std::endl;
-				}//next bin
-			}
-//			temp_matrix.SetMatrixArray(nums.GetArray());
-			total_fm+= temp_matrix;
-			for(int kndex = 0; kndex < nb; ++kndex){
-				double temp_error = sqrt(temp_matrix(kndex,kndex))*MChist->GetBinContent(kndex+1);
-				std::cout<<temp_tag<<" bin "<<kndex+1<<" sys error is "<<temp_error<<" w. fm "<<temp_matrix(kndex,kndex)<<std::endl;
-			}//next bin
-		}//next SW
-
-		//Review
-	}//next systematic
-
-	for(int index = 0; index < nb; ++index){
-		std::cout<<"Total Fractional Error Matrix ("<<index<<","<<index<<"): "<<(total_fm)(index,index);
-		std::cout<<" CV:"<<MChist->GetBinContent(index+1)<<" Frac Err:"<<sqrt((total_fm)(index,index))*MChist->GetBinContent(index+1)<<std::endl;
-	}
-	std::cout<<std::endl;
-	return total_fm;
-
-}

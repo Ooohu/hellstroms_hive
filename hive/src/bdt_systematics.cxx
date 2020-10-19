@@ -67,6 +67,126 @@ int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > output_binning){
 			return 4;
 }
 
+
+/*
+ * return a covariance matrix whose diagonal elements are 
+ * the systematic errors;
+ * basically, it is (total_fractional matrices_ii)*(MChist_i)
+ */
+TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist, double outPOT){
+	//Extract Error matrix from the fractionla matrix and adjust optical Model;
+	//Only the diagonal element matters.
+
+	int nb = MChist->GetNbinsX();
+	TMatrixD total_fm(nb,nb);
+	std::cout<<"\n Getting fracitonal matrices"<<std::endl;
+	for(size_t index = 0; index < syss.size(); ++index){//loop over systematics
+		if(syss[index]->its_CV) continue;//work with non-CV systematic weights, bdt_sys only provides names to retrieve contents;
+		bdt_sys* cur_sys = syss[index];
+
+		for(size_t jndex = 0; jndex < (cur_sys->vars).size(); ++jndex){//loop over spcific type of SW 
+
+			TString temp_tag = cur_sys->tag+"_"+cur_sys->vars_name[jndex];
+
+
+			TMatrixD temp_matrix(nb,nb); 
+			TMatrixD temp_CV(nb,1); 
+//			TArrayD nums(nb*nb); 
+//			TArrayD numsCV(nb); 
+
+			TMatrixD* read_matrix = (TMatrixD*) matrix_root->Get(temp_tag + "_FracMatrix");
+			TMatrixD* read_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
+
+			if(read_matrix == NULL){
+				std::cout<<"\tSkip loading matrix for "<<temp_tag+ "_FracMatrix"<<std::endl;
+				continue;
+			}
+
+			TH1D* temp_CVhist  = (TH1D*) matrix_root->Get(temp_tag + "_CV_drawn");
+//			int initial_bin = 0;//nth element of the TMatrix
+//			int final_bin = nb;
+			if(true){//check bins;
+				std::vector< double > MCbinning;
+				for(int kndex = 1; kndex < nb+2; kndex ++){
+					MCbinning.push_back(MChist->GetBinLowEdge(kndex) );
+				}
+
+				int matching_code = gadget_BinMatcher(temp_CVhist, MCbinning);
+				/*0 - no problem; (1,2,4) - (1,2,4)
+				 *1 - Rebinable: temp_CVhist out of range (1,2,3,4) - (2,3)
+				 *2 - Rebinable: (1,2,4) - (1,4)
+				 *3 - BAD: underflow bins: output_binning range too large (1,2,4) - (0,1,4)
+				 *4 - BAD: bins edge not found in temp_CVhist (1,2,5) - (1,2,3,4)
+				 */
+				switch (matching_code){
+					case 0:
+						temp_matrix = *read_matrix;
+						temp_CV = *read_CV;
+						std::cout<<"Covariance matrix is all good."<<std::endl;
+						break;
+					case 1:
+						{//take out temp_matrix & temp_CV to match MChist binning;
+							std::cout<<"Covariance matrix is partially useful, pick bin edges started from ";
+							int initial_bin = 0;
+							for(int lndex = 1; lndex < temp_CVhist->GetNbinsX()+1; lndex++){
+								if(abs(temp_CVhist->GetBinLowEdge(lndex) - MCbinning.front()) < 10e-5){//got it 
+									initial_bin = lndex - 1;
+									std::cout<<"bin "<<lndex<<std::endl;
+									break;
+								} 
+							}
+							for(int lndex = 0; lndex < nb; lndex ++){
+								temp_CV(lndex,0) = (*read_CV)(initial_bin + lndex ,0);
+								for(int mndex = 0; mndex < nb; mndex ++){
+								temp_matrix(lndex,mndex) = (*read_matrix)(initial_bin+lndex,initial_bin+mndex);
+								}
+							}
+						}
+						break;
+					default://>1;
+						std::cout<<"BinMatcher Code "<< matching_code<<std::endl;
+						std::cout<<"Binnings from matrices:(" <<temp_CVhist->GetBinLowEdge(1)<<",";
+						std::cout<<temp_CVhist->GetBinLowEdge(1+ temp_CVhist->GetNbinsX())<<") vs MC (";
+						std::cout<<"("<<MChist->GetBinLowEdge(1)<<","<<MChist->GetBinLowEdge(nb+1);
+						std::cout<<"). Dont match, need to generate the matrices."<<std::endl;
+						exit(EXIT_FAILURE);
+						break;	
+				}
+			}
+
+			if(cur_sys->its_OM){//modify the stat part of the matrix for Optical Model
+				std::cout<<"\tAdjust Optical Model statistical error in the fractional matrix"<<std::endl;
+				for(int kndex =  0; kndex < nb; ++kndex){
+					double temp_mii = temp_matrix(kndex,kndex);//[kndex*nb+kndex];
+					double origin_cvi = temp_CV(kndex,0)/outPOT*cur_sys->pot;//which is OM weights POT
+					double MCi = MChist->GetBinContent(kndex+1);
+					std::cout<<"\tThe ("<<kndex<<","<<kndex<<") element: "<<temp_mii<<" -> ";
+
+					temp_matrix(kndex,kndex) = ((temp_mii*pow(origin_cvi,2)-origin_cvi)*pow(MCi/origin_cvi,2)+MCi)/pow(MCi,2);
+					std::cout<<temp_matrix(kndex,kndex)<<std::endl;
+				}//next bin
+			}
+//			temp_matrix.SetMatrixArray(nums.GetArray());
+			total_fm+= temp_matrix;
+			for(int kndex = 0; kndex < nb; ++kndex){
+				double temp_error = sqrt(temp_matrix(kndex,kndex))*MChist->GetBinContent(kndex+1);
+				std::cout<<temp_tag<<" bin "<<kndex+1<<" sys error is "<<temp_error<<" w. fm "<<temp_matrix(kndex,kndex)<<std::endl;
+			}//next bin
+		}//next SW
+
+		//Review
+	}//next systematic
+
+	for(int index = 0; index < nb; ++index){
+		std::cout<<"Total Fractional Error Matrix ("<<index<<","<<index<<"): "<<(total_fm)(index,index);
+		std::cout<<" CV:"<<MChist->GetBinContent(index+1)<<" Frac Err:"<<sqrt((total_fm)(index,index))*MChist->GetBinContent(index+1)<<std::endl;
+	}
+	std::cout<<std::endl;
+	return total_fm;
+
+}
+
+
 int sys_env::checkEnv(){
 	//check dirs, stage, hash
 	try{
