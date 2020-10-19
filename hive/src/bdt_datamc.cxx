@@ -1101,7 +1101,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 				for(size_t lndex = 0; lndex < mc_stack->vec_hists.size(); ++lndex){
 					std::string summary_tag = mc_stack->stack[lndex]->tag;
-					std::string summary_tagErr = (var.has_covar)? "TErr" : "SErr";
+					std::string summary_tagErr = (var.has_covar)? "TotalErr" : "StatErr";
 					summary[0] << std::setw(gap)<<std::left<<summary_tag <<std::setw(gap)<<std::left<<summary_tagErr;//title
 					for(int bin = 1; bin < d0->GetNbinsX() + 1; bin++){
 						if(summary_headers[bin]){
@@ -1116,7 +1116,6 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 				for(size_t lndex = 0; lndex < summary.size(); ++lndex){
 					std::cout<<summary[lndex].rdbuf()<<"\n";
 				}
-
 			}
 
 
