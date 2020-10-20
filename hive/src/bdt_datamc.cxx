@@ -1,5 +1,35 @@
 #include "bdt_datamc.h"
 
+/*
+ * print out a summary table;
+ * New upgrade. pending, see https://stackoverflow.com/questions/30184998/how-to-disable-cout-output-in-the-runtime
+ */
+void gadget_summary(bdt_variable var, std::vector<bdt_file*>  bdtfiles, std::vector<TH1*> hists){
+	int summary_rows = 1 + (hists[0])->GetNbinsX();//((bdtfiles).size() )*2;
+	int gap = 12;
+	std::vector<std::stringstream> summary(summary_rows);
+	std::vector<bool> summary_headers(summary_rows, true);//true - do header, i.e. LowBinEdge
+
+	summary[0] << "BinLEdge ";//title of 1st column
+
+	for(size_t lndex = 0; lndex < hists.size(); ++lndex){
+		std::string summary_tag = bdtfiles[lndex]->tag;
+		std::string summary_tagErr = (var.has_covar)? "TotalErr" : "StatErr";
+		summary[0] << std::setw(gap)<<std::left<<summary_tag <<std::setw(gap)<<std::left<<summary_tagErr;//title
+		for(int bin = 1; bin < hists[0]->GetNbinsX() + 1; bin++){
+			if(summary_headers[bin]){
+				summary[bin] << std::setw(9)<<std::left <<(hists[lndex])->GetBinLowEdge(bin);//first column
+				summary_headers[bin] = false;
+			}
+			summary[bin] << std::setw( gap )<<std::left << (hists[lndex])->GetBinContent( bin );
+			summary[bin] << std::setw( gap )<<std::left << (hists[lndex])->GetBinError( bin );
+		}
+	}
+
+	for(size_t lndex = 0; lndex < summary.size(); ++lndex){
+		std::cout<<summary[lndex].rdbuf()<<"\n";
+	}
+}
 
 //This is called in the hive.cxx. It is used var2D for reading var1,var2,var3 argument
 std::vector<bdt_variable> bdt_datamc::GetSelectVars(std::string vector, std::vector<bdt_variable> vars){
@@ -784,9 +814,9 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 //				this->calcCollapsedCovariance(covar_full, covar_collapsed,var);
 				
 				//NOTE, all pure_bkg_hist in this part was tsum; CHECK
-				*covar_collapsed = gadget_PrepareMatrix(systematics, covar_f, pure_bkg_hist, data_file->pot);
+				*covar_collapsed = gadget_PrepareMatrix(systematics, covar_f, pure_bkg_hist, data_file->pot, data_file->tag);
 
-				SeparateMatrix(covar_collapsed, pure_bkg_hist, "datamc/"+this->tag+var.safe_unit+"_stage_"+std::to_string(stage)+"_ThreeFracM_");
+//				gadget_SeparateMatrix(covar_collapsed, pure_bkg_hist, "datamc/"+this->tag+var.safe_unit+"_stage_"+std::to_string(stage)+"_ThreeFracM_");
 
 				double temp_sys_err2 = 0;
 				double temp_all_err2 = 0;
@@ -1091,31 +1121,8 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 
 			//STEP 2.5 Additional Info.
-			if(print_message){
-				int summary_rows = 1 + (mc_stack->vec_hists[0])->GetNbinsX();//((mc_stack->stack).size() )*2;
-				int gap = 12;
-				std::vector<std::stringstream> summary(summary_rows);
-				std::vector<bool> summary_headers(summary_rows, true);//true - do header, i.e. LowBinEdge
-
-				summary[0] << "BinLEdge ";
-
-				for(size_t lndex = 0; lndex < mc_stack->vec_hists.size(); ++lndex){
-					std::string summary_tag = mc_stack->stack[lndex]->tag;
-					std::string summary_tagErr = (var.has_covar)? "TotalErr" : "StatErr";
-					summary[0] << std::setw(gap)<<std::left<<summary_tag <<std::setw(gap)<<std::left<<summary_tagErr;//title
-					for(int bin = 1; bin < d0->GetNbinsX() + 1; bin++){
-						if(summary_headers[bin]){
-							summary[bin] << std::setw(9)<<std::left <<(mc_stack->vec_hists[lndex])->GetBinLowEdge(bin);
-							summary_headers[bin] = false;
-						}
-						summary[bin] << std::setw( gap )<<std::left << (mc_stack->vec_hists[lndex])->GetBinContent( bin );
-						summary[bin] << std::setw( gap )<<std::left << (mc_stack->vec_hists[lndex])->GetBinError( bin );
-					}
-				}
-
-				for(size_t lndex = 0; lndex < summary.size(); ++lndex){
-					std::cout<<summary[lndex].rdbuf()<<"\n";
-				}
+			if(print_message){//use stringstrea as printout buffer; convenient to make tables by columns!
+				gadget_summary( var, mc_stack->stack, mc_stack->vec_hists);
 			}
 
 
@@ -1992,75 +1999,4 @@ int bdt_datamc::printPassingPi0DataEvents(std::string outfilename, int stage, st
     return 0;
 }
 
-/*
- * This function separate the matrix cov into shape, mixed, and norm three components.
- */
-void bdt_datamc::SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
-	
-	bool message = false;
-
-	std::cout<<"Separate the fractional covaraince matrix."<<std::endl;
-	int nb = hist->GetNbinsX();
-	double nl = hist->GetBinLowEdge(1);
-	double nh = hist->GetBinLowEdge(nb+1);
-
-	double total_event = hist->Integral();
-
-	TH2D* shape = new TH2D("shape", "shape", nb, nl, nh, nb, nl, nh);
-	TH2D* mixed = new TH2D("mixed", "mixed", nb, nl, nh, nb, nl, nh);
-	TH2D* norm = new TH2D("norm", "norm", nb, nl, nh, nb, nl, nh);
-
-	for(int index=0; index< nb;index++){
-		for(int jndex=0; jndex< nb;jndex++){
-			double bini = hist->GetBinContent(index+1);
-			double binj = hist->GetBinContent(jndex+1);
-			double fm_ij = (*frac_cov)(index,jndex);
-
-			double msum_ik = 0;
-			double msum_kj = 0;
-			double msum_kl = 0;
-			for(int kndex=0; kndex< nb;kndex++){
-				msum_ik += (*frac_cov)(index,kndex);
-				msum_kj += (*frac_cov)(kndex,jndex);
-				for(int lndex=0; lndex< nb;lndex++){
-
-					msum_kl += (*frac_cov)(kndex,lndex);
-				}
-			}
-			double shape_ij = fm_ij - binj/total_event*msum_ik - bini/total_event*msum_kj + bini*binj/pow(total_event,2)*msum_kl;
-			double mixed_ij = binj/total_event*msum_ik + bini/total_event*msum_kj - 2*bini*binj/pow(total_event,2)*msum_kl;
-			double norm_ij = bini*binj/pow(total_event,2)*msum_kl;
-			if(message){
-				std::cout<<"("<<index<<","<<jndex<<") fm_ij:"<<fm_ij;
-				std::cout<<" bini:"<<bini<<" binj:"<<binj;
-				std::cout<<" msum_ik:"<<msum_ik;
-				std::cout<<" msum_kj:"<<msum_kj;
-				std::cout<<" msum_kl:"<<msum_kl;
-				std::cout<<" shape_ij:"<<shape_ij;
-				std::cout<<" mixed_ij:"<<mixed_ij;
-				std::cout<<" norm_ij:"<<norm_ij<<std::endl;;
-			}
-
-			shape->SetBinContent(index,jndex, shape_ij);
-			mixed->SetBinContent(index,jndex, mixed_ij);
-			norm->SetBinContent(index,jndex, norm_ij);
-		}
-	}
-
-	TCanvas *canvas_out = new TCanvas("tmp_3matrices","tmp_3matrices",1800,1600);
-	shape->SetStats(false);
-	shape->Draw("COLZ");
-	canvas_out->SaveAs((label+"_shape.pdf"),"pdf");
-	canvas_out->Clear();
-
-	mixed->SetStats(false);
-	mixed->Draw("COLZ");
-	canvas_out->SaveAs((label+"_mixed.pdf"),"pdf");
-	canvas_out->Clear();
-
-	norm->SetStats(false);
-	norm->Draw("COLZ");
-	canvas_out->SaveAs((label+"_norm.pdf"),"pdf");
-	canvas_out->Delete();
-}
 

@@ -73,26 +73,29 @@ int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > output_binning){
  * the systematic errors;
  * basically, it is (total_fractional matrices_ii)*(MChist_i)
  */
-TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist, double outPOT){
+TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist, double outPOT, std::string bdt_tag){
 	//Extract Error matrix from the fractionla matrix and adjust optical Model;
 	//Only the diagonal element matters.
+	
+	bool message = true;
 
 	int nb = MChist->GetNbinsX();
 	TMatrixD total_fm(nb,nb);
-	std::cout<<"\n Getting fracitonal matrices"<<std::endl;
+	std::cout<<"\n Getting fracitonal matrices: ";
 	for(size_t index = 0; index < syss.size(); ++index){//loop over systematics
+		if(bdt_tag.compare(syss[index]->bdt_file::tag) != 0 ) continue;
 		if(syss[index]->its_CV) continue;//work with non-CV systematic weights, bdt_sys only provides names to retrieve contents;
 		bdt_sys* cur_sys = syss[index];
 
+		std::vector<std::stringstream> summary(nb+1);//print out buffer
+		std::vector<bool> summary_headers(nb+1, true);
+		
 		for(size_t jndex = 0; jndex < (cur_sys->vars).size(); ++jndex){//loop over spcific type of SW 
 
 			TString temp_tag = cur_sys->tag+"_"+cur_sys->vars_name[jndex];
 
-
 			TMatrixD temp_matrix(nb,nb); 
 			TMatrixD temp_CV(nb,1); 
-//			TArrayD nums(nb*nb); 
-//			TArrayD numsCV(nb); 
 
 			TMatrixD* read_matrix = (TMatrixD*) matrix_root->Get(temp_tag + "_FracMatrix");
 			TMatrixD* read_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
@@ -103,8 +106,6 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 			}
 
 			TH1D* temp_CVhist  = (TH1D*) matrix_root->Get(temp_tag + "_CV_drawn");
-//			int initial_bin = 0;//nth element of the TMatrix
-//			int final_bin = nb;
 			if(true){//check bins;
 				std::vector< double > MCbinning;
 				for(int kndex = 1; kndex < nb+2; kndex ++){
@@ -122,7 +123,7 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 					case 0:
 						temp_matrix = *read_matrix;
 						temp_CV = *read_CV;
-						std::cout<<"Covariance matrix is all good."<<std::endl;
+						std::cout<<"\rCovariance matrix binnings are all good.";
 						break;
 					case 1:
 						{//take out temp_matrix & temp_CV to match MChist binning;
@@ -170,11 +171,22 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 			total_fm+= temp_matrix;
 			for(int kndex = 0; kndex < nb; ++kndex){
 				double temp_error = sqrt(temp_matrix(kndex,kndex))*MChist->GetBinContent(kndex+1);
-				std::cout<<temp_tag<<" bin "<<kndex+1<<" sys error is "<<temp_error<<" w. fm "<<temp_matrix(kndex,kndex)<<std::endl;
+				if(summary_headers[kndex+1]){
+					if(kndex == 0) summary[kndex]<<"Bin ";
+					summary[kndex+1]<<std::setw(4)<<std::left<<kndex+1;
+					summary_headers[kndex+1] = false;
+				}
+				summary[kndex+1]<<std::setw(9)<<temp_error<<"("<<std::setw(11)<<std::left<<temp_matrix(kndex,kndex)<<") ";
 			}//next bin
+				summary[0]<<std::setw(23)<<std::left<<cur_sys->vars_name[jndex]+"_Err (fm) ";
 		}//next SW
 
-		//Review
+		std::cout<<" "<<cur_sys->systag<<std::endl;
+		std::streambuf* orig_buf = std::cout.rdbuf();//save the original buffer,
+		for(int kndex = 0; kndex < summary.size(); ++kndex){
+			std::cout<<summary[kndex].rdbuf()<<"\n";
+		}
+		std::cout.rdbuf(orig_buf);//swap back after finish;
 	}//next systematic
 
 	for(int index = 0; index < nb; ++index){
@@ -185,6 +197,83 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 	return total_fm;
 
 }
+
+
+/*
+ * This function separate the matrix cov into shape, mixed, and norm three components.
+ */
+std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
+	
+	bool message = false;
+
+	std::cout<<"Separate the fractional covaraince matrix."<<std::endl;
+	int nb = hist->GetNbinsX();
+	double nl = hist->GetBinLowEdge(1);
+	double nh = hist->GetBinLowEdge(nb+1);
+
+	double total_event = hist->Integral();
+
+	TH2D* shape = new TH2D("shape", "shape", nb, nl, nh, nb, nl, nh);
+	TH2D* mixed = new TH2D("mixed", "mixed", nb, nl, nh, nb, nl, nh);
+	TH2D* norm = new TH2D("norm", "norm", nb, nl, nh, nb, nl, nh);
+
+	for(int index=0; index< nb;index++){
+		for(int jndex=0; jndex< nb;jndex++){
+			double bini = hist->GetBinContent(index+1);
+			double binj = hist->GetBinContent(jndex+1);
+			double fm_ij = (*frac_cov)(index,jndex);
+
+			double msum_ik = 0;
+			double msum_kj = 0;
+			double msum_kl = 0;
+			for(int kndex=0; kndex< nb;kndex++){
+				msum_ik += (*frac_cov)(index,kndex);
+				msum_kj += (*frac_cov)(kndex,jndex);
+				for(int lndex=0; lndex< nb;lndex++){
+
+					msum_kl += (*frac_cov)(kndex,lndex);
+				}
+			}
+			double shape_ij = fm_ij - binj/total_event*msum_ik - bini/total_event*msum_kj + bini*binj/pow(total_event,2)*msum_kl;
+			double mixed_ij = binj/total_event*msum_ik + bini/total_event*msum_kj - 2*bini*binj/pow(total_event,2)*msum_kl;
+			double norm_ij = bini*binj/pow(total_event,2)*msum_kl;
+			if(message){
+				std::cout<<"("<<index<<","<<jndex<<") fm_ij:"<<fm_ij;
+				std::cout<<" bini:"<<bini<<" binj:"<<binj;
+				std::cout<<" msum_ik:"<<msum_ik;
+				std::cout<<" msum_kj:"<<msum_kj;
+				std::cout<<" msum_kl:"<<msum_kl;
+				std::cout<<" shape_ij:"<<shape_ij;
+				std::cout<<" mixed_ij:"<<mixed_ij;
+				std::cout<<" norm_ij:"<<norm_ij<<std::endl;;
+			}
+
+			shape->SetBinContent(index,jndex, shape_ij);
+			mixed->SetBinContent(index,jndex, mixed_ij);
+			norm->SetBinContent(index,jndex, norm_ij);
+		}
+	}
+	
+	if(false){//print out?
+	TCanvas *canvas_out = new TCanvas("tmp_3matrices","tmp_3matrices",1800,1600);
+	shape->SetStats(false);
+	shape->Draw("COLZ");
+	canvas_out->SaveAs((label+"_shape.pdf"),"pdf");
+	canvas_out->Clear();
+
+	mixed->SetStats(false);
+	mixed->Draw("COLZ");
+	canvas_out->SaveAs((label+"_mixed.pdf"),"pdf");
+	canvas_out->Clear();
+
+	norm->SetStats(false);
+	norm->Draw("COLZ");
+	canvas_out->SaveAs((label+"_norm.pdf"),"pdf");
+	canvas_out->Delete();
+	}
+	return {shape, mixed, norm};
+}
+
 
 
 int sys_env::checkEnv(){
@@ -1098,7 +1187,7 @@ void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss
 
 		bool rescale_out_hist = true;
 		bool smooth_unisims = true;
-		hist2cov( *var1, rescale_out_hist, smooth_unisims);//tag_collection, tag2CVmap, tag2SWmap pointed to bdt_sys.
+//		hist2cov( *var1, rescale_out_hist, smooth_unisims);//tag_collection, tag2CVmap, tag2SWmap pointed to bdt_sys.
 		hist_root->Close();//if close, reference to hists are lost.
 	}
 

@@ -1,32 +1,29 @@
 #include "bdt_varplot.h"
 
 //int plot_bdt_variables(bdt_file * signal_pure, bdt_file * background_pure, std::vector<bdt_variable> vars, bdt_info input_bdt_info, bool isSpectator,int stage,std::vector<double> cuts);
-int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::vector<bdt_variable> vars,  bool isSpectator, int stage, std::vector<double> bdtcuts, bool isNorm){
-
+int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss, int stage, std::vector<double> bdtcuts, bool isNorm){
 //    std::vector<std::string> title = {"Topological Selection","Pre-Selection Cuts","Cosmic","BNB","Pi0","Other"};
     {
-        int j = stage;
 		int num_MC = MCfiles.size();
-		double is_bestfit_in = false;
-		bool do_pair_plot = true;
+		double is_bestfit_in = false;//false - not include signal in the output;
+		bool do_pair_plot = true;//true - excess vs each MC;
 		bool draw_estimator = true;
 		bool debug_message = true;
 
 		double yaxis_factor = 1.6;
 
-		std::cout<<"on stage : "<<j<<std::endl;
-        std::cout<<" Setting sig stage entry lists."<<std::endl;
-        if(j>1){
-            datafile->calcBDTEntryList(j,bdtcuts);
+		std::cout<<"on stage : "<<stage<<"\n"<<"Setting sig stage entry lists."<<std::endl;
+        if(stage>1){
+            datafile->calcBDTEntryList(stage,bdtcuts);
         }
 
 
 		for(size_t index = 0; index <num_MC; ++index){
-			if(j>1) MCfiles[index]->calcBDTEntryList(j,bdtcuts);
-			MCfiles[index]->setStageEntryList(j);
+			if(stage>1) MCfiles[index]->calcBDTEntryList(stage,bdtcuts);
+			MCfiles[index]->setStageEntryList(stage);
 		}
         std::cout<<" Setting back stage entry lists."<<std::endl;
-        datafile->setStageEntryList(j);
+        datafile->setStageEntryList(stage);
         std::cout<<" Set stage entry lists."<<std::endl;
 
         int nv = 0;
@@ -41,49 +38,49 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 			TH1* data = datafile->getTH1(v,"1",v.safe_name+"_data_var" ,datafile->pot);
 			TLegend *legend = new TLegend(0.13,0.73,0.89,0.88);
 
-
-
-
 			data->SetMarkerSize(3);
 			data->SetMarkerStyle(20);
 			data->SetLineColor(kBlack);
-			data->SetBinErrorOption(TH1::kPoisson);
-
+//			data->SetBinErrorOption(TH1::kPoisson);
 
 			//Prepare MC
 			std::vector<TH1*> MC(num_MC);
-			TH1* AllBkg_MC;
+			TH1* AllNue_MC;
 			bool first_hist = true;
 
-			for(size_t index = 0; index <num_MC; ++index){
+			for(size_t index = 0; index <num_MC; ++index){//loop through each NueMC; do the substraction;
 
 				MC[index] = MCfiles[index]->getTH1(v,"1",v.safe_name+"_MC_var" , datafile->pot);
+				
+				//adjust MC error using the Matrix;
+				TFile *covar_f = new TFile(v.covar_file.c_str(),"read");
+				TMatrixD * covar_collapsed = new TMatrixD(v.n_bins,v.n_bins);
+				*covar_collapsed = gadget_PrepareMatrix(syss, covar_f, MC[index] , datafile->pot, MCfiles[index]->tag);
+				//			std::vector< TH2D* > gadget_SeparateMatrix( covar_collapsed, MC[index], "vars/");
+				for(int jndex = 0; jndex < MC[index]->GetNbinsX() ; ++jndex){
 
-
-//				if(!TMath::Finite(MC[->Integral())){
-//					std::cout<<"scanning"<<std::endl;
-//					MCfiles[index]->tvertex->Scan(v.name.c_str());
-//				}else{
-//					std::cout<<"So its fnite"<<std::endl;
-//				}
-
+					double temp_binErrSq = pow(MC[index]->GetBinError(jndex+1),2) + pow(MC[index]->GetBinContent(jndex+1),2)*(*covar_collapsed)(jndex,jndex);
+					std::cout<<"Update "<<MCfiles[index]->tag<<" Bin "<<1+jndex<<"/"<<MC[index]->GetNbinsX()<<" Error "<<MC[index]->GetBinError(jndex+1);
+					std::cout<<" to ErrSq: "<<temp_binErrSq<<" MC: "<<MC[index]->GetBinContent(jndex+1)<<" FM_ii:"<<(*covar_collapsed)(jndex,jndex)<< std::endl;
+					MC[index]->SetBinError(jndex+1, sqrt(temp_binErrSq));
+				}
 				MC[index]->SetLineColor((MCfiles[index]->is_signal)? kBlack:MCfiles[index]->col);
 				MC[index]->SetLineWidth(2);
 
 //				MC[index]->SetFillColor(MCfiles[index]->col);
 				MC[index]->SetFillStyle(3445);
 
-
 				//addd legend
-				legend->AddEntry(MC[index], MCfiles[index]->plot_name.c_str(),"lf");	
+				legend->AddEntry(MC[index], (MCfiles[index]->plot_name).c_str(),"lf");	
+//				legend->AddEntry(MC[index], (MCfiles[index]->plot_name+" w. Stat & Sys. Error").c_str(),"lf");	
 
-				if(is_bestfit_in || !MCfiles[index]->is_signal ){ 
+				if(is_bestfit_in || !MCfiles[index]->is_signal ){//NueMC must go through, Best-fit may not;
 
-					if(first_hist){ 
-						AllBkg_MC = (TH1*) MC[index]->Clone("AllBkgmc");
+					if(first_hist){//copy the first MC hist
+						AllNue_MC = (TH1*) MC[index]->Clone("AllNuemc");
 						first_hist = false;
-					} else{
-						AllBkg_MC->Add(MC[index],1.0);
+					} else{//add to the current MC hist;
+						AllNue_MC->Add(MC[index],1.0);
 
 					}
 					std::cout<<" data - "<< MCfiles[index]->tag <<std::endl;
@@ -91,19 +88,20 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				}
 			}
 
-//			if(isNorm) data->Scale(1.0/data->Integral());
 			double maxy_of_data = data->GetBinContent(data->GetMaximumBin());
-			//Draw 
+			//Canvas to be Drawn
 			TCanvas *c_var = new TCanvas(("cvar_"+v.name).c_str(), ("cvar_"+v.name).c_str(),1200,1200);
 
 			c_var->cd();
 
-			legend->AddEntry(data, (is_bestfit_in)? "Data - (BkgMC+Best Fit)": "Data - BkgMC","lp");	
+			TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
+			legend_label += " w. Stat & Sys. Error";
+			legend->AddEntry(data, legend_label, "lp" );
 
 
 			//No need to adjust errors
 			for(int ib=1; ib<v.n_bins+1; ib++){
-				if(debug_message)std::cout<<" rescaled BkgMC "<<ib<<" bin has "<<AllBkg_MC->GetBinContent(ib)<< " with error "<<AllBkg_MC->GetBinError(ib)<<" and the excess Error "<<data->GetBinError(ib)<<std::endl; 
+				if(debug_message)std::cout<<" rescaled NueMC "<<ib<<" bin has "<<AllNue_MC->GetBinContent(ib)<< " with error "<<AllNue_MC->GetBinError(ib)<<" and the excess Error "<<data->GetBinError(ib)<<std::endl; 
 //				data->SetBinError(ib, data_err);
 			}
 
@@ -111,7 +109,9 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 			//set max&min, and scale MC evnets if isNorm is true;
 			std::vector< double > mc_scale_factor(num_MC);
-			for(size_t index = 0; index <num_MC; ++index){
+			for(size_t index = 0; index <num_MC; ++index){//the data here means the excess;
+
+
 				mc_scale_factor[index] = data->Integral()/MC[index]->Integral();
 				if(isNorm) MC[index]->Scale( mc_scale_factor[index] );
 				//determine max
@@ -126,11 +126,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 
 			//Configure labels yaxis;
-//			if(j!=1){
-//				data->SetTitle(title.at(j).c_str());
-//			}else{
-				data->SetTitle(" ");
-//			}
+			data->SetTitle(" ");
 
 			//MC->GetXaxis()->SetTitle(v.unit.c_str());
 			data->GetYaxis()->SetTitle((isNorm)? "Events [MC Rescaled]" : "Events");
@@ -164,9 +160,9 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				new_axis->Draw();
 				//std::cout<<"min "<<minv<<" max "<<maxv<<" maxy "<<maxy<<std::endl;
 			}
-			c_var->Print(("vars/"+std::to_string(nv)+"_"+v.safe_unit+"_stage_"+std::to_string(j)+".pdf").c_str(),"pdf");
+			c_var->Print(("vars/"+std::to_string(nv)+"_"+v.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
 
-			if(do_pair_plot){//data-BkgMC vs each MC
+			if(do_pair_plot){//data-NueMC vs each MC
 				c_var->Clear();
 
 				for(size_t index = 0; index <num_MC; ++index){
@@ -180,8 +176,12 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 					//legend
 					TLegend *le = new TLegend(0.13,0.75,0.42,0.88);
-					le->AddEntry(MC[index], MCfiles[index]->plot_name.c_str(),"lf");	
-					le->AddEntry(data, (is_bestfit_in)? "Data - (BkgMC+Best Fit)": "Data - BkgMC","lp");	
+					le->AddEntry(MC[index], (MCfiles[index]->plot_name).c_str(),"lf");	
+//					le->AddEntry(MC[index], (MCfiles[index]->plot_name+" w. Stat & Sys. Error").c_str(),"lf");	
+
+					TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
+					legend_label += " w. Stat & Sys. Error";
+					le->AddEntry(data, legend_label,"lp");	
 					le->SetLineColor(kWhite);
 					le->SetFillStyle(0);
 					le->SetNColumns(1);
@@ -194,10 +194,6 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 					//get chi_square
 					double mychi=0;
 					int ndof = v.n_bins - 1;
-
-					//CHECK
-					//
-				//*covar_collapsed = gadget_PrepareMatrix(systematics, covar_f, pure_bkg_hist, data_file->pot);
 
 					for(int ib=1; ib<v.n_bins+1; ib++){
 						double dav = data->GetBinContent(ib);//the excess
@@ -250,34 +246,40 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 						//std::cout<<"min "<<minv<<" max "<<maxv<<" maxy "<<maxy<<std::endl;
 					}
 
-					c_var->Print(("vars/"+std::to_string(nv)+"_"+v.safe_unit+"_"+MCfiles[index]->tag+"_stage_"+std::to_string(j)+".pdf").c_str(),"pdf");
+					c_var->Print(("vars/"+std::to_string(nv)+"_"+v.safe_unit+"_"+MCfiles[index]->tag+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
 				}
 				if(debug_message){
+
+					std::vector< TH1*> pHists(MC);
+					pHists.push_back(data);
+					std::vector<bdt_file*> pFiles(MCfiles);
+					pFiles.push_back(datafile);
 					std::cout<<"------------------- Summary -------------------"<<std::endl;
-					int gap=9;
-					std::cout<<std::left<<std::setw(5)<<"Bin#";
-					std::cout<<std::left<<std::setw(gap)<<"Excess";
-					std::cout<<std::left<<std::setw(gap+8)<<"(Excess+MC)_E";
-
-					for(size_t index = 0; index <num_MC; ++index){
-						std::cout<<std::left<<std::setw(gap)<<MCfiles[index]->tag;
-						std::cout<<std::left<<std::setw(gap+6)<<MCfiles[index]->tag+"_statE";
-						std::cout<<std::left<<std::setw(gap+6)<<"scale_factor";
-					}
-					std::cout<<std::endl;
-
-					for(int ib=1; ib<v.n_bins+1; ib++){
-//						if(data->GetBinContent(ib) < 10e-20) continue;
-						std::cout<<std::left<<std::setw(5)<<ib;
-						std::cout<<std::left<<std::setw(gap)<<data->GetBinContent(ib);
-						std::cout<<std::left<<std::setw(gap+8)<<data->GetBinError(ib);
-						for(size_t index = 0; index <num_MC; ++index){
-							std::cout<<std::left<<std::setw(gap)<<MC[index]->GetBinContent(ib);
-							std::cout<<std::left<<std::setw(gap+6)<<MC[index]->GetBinError(ib);
-							std::cout<<std::left<<std::setw(gap+6)<<mc_scale_factor[index];
-						}
-						std::cout<<std::endl;
-					}
+					gadget_summary( v, pFiles, pHists);
+//					int gap=9;
+//					std::cout<<std::left<<std::setw(5)<<"Bin#";
+//					std::cout<<std::left<<std::setw(gap)<<"Excess";
+//					std::cout<<std::left<<std::setw(gap+8)<<"(Excess+MC)_E";
+//
+//					for(size_t index = 0; index <num_MC; ++index){
+//						std::cout<<std::left<<std::setw(gap)<<MCfiles[index]->tag;
+//						std::cout<<std::left<<std::setw(gap+6)<<MCfiles[index]->tag+"_statE";
+//						std::cout<<std::left<<std::setw(gap+6)<<"scale_factor";
+//					}
+//					std::cout<<std::endl;
+//
+//					for(int ib=1; ib<v.n_bins+1; ib++){
+////						if(data->GetBinContent(ib) < 10e-20) continue;
+//						std::cout<<std::left<<std::setw(5)<<ib;
+//						std::cout<<std::left<<std::setw(gap)<<data->GetBinContent(ib);
+//						std::cout<<std::left<<std::setw(gap+8)<<data->GetBinError(ib);
+//						for(size_t index = 0; index <num_MC; ++index){
+//							std::cout<<std::left<<std::setw(gap)<<MC[index]->GetBinContent(ib);
+//							std::cout<<std::left<<std::setw(gap+6)<<MC[index]->GetBinError(ib);
+//							std::cout<<std::left<<std::setw(gap+6)<<mc_scale_factor[index];
+//						}
+//						std::cout<<std::endl;
+//					}
 				}
 
 			}

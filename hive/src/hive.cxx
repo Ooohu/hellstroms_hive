@@ -1357,7 +1357,12 @@ return 0;
 
     if(which_stage == -1) which_stage = 1;
 
-	plot_var_allF(stack_bdt_files, onbeam_data_file, vars, false, which_stage,fbdtcuts, true);
+	if(number > -1 ){
+		vars = {vars[number]};//Check, this can be more intellegent for multiple variables;
+	}
+	bool spectator_var = false;
+	bool pure_shape = true;//normalize everything to the shape of the excess;
+	plot_var_allF(stack_bdt_files, onbeam_data_file, vars, systematics, which_stage,fbdtcuts, pure_shape);
 	//first bool indicates the variable is not a spectator variable.
 	//last bool set normalization, true - normalize the sum of each type as 1;
 //    for(int i=0; i< bdt_infos.size(); i++){

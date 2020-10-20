@@ -211,5 +211,13 @@ TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv);
 
 int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > output_binning);
 
-TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist, double outPOT);
+TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist, double outPOT, std::string tag);
+
+		/*
+		 * This function separate the matrix cov into shape, mixed, and norm three components.
+		 */
+		std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* cov, TH1* hist,TString label);
+
+
 #endif
+
