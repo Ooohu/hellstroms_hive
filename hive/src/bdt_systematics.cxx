@@ -204,7 +204,7 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
  */
 std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
 	
-	bool message = false;
+	bool message = true;
 
 	std::cout<<"Separate the fractional covaraince matrix."<<std::endl;
 	int nb = hist->GetNbinsX();
@@ -212,6 +212,7 @@ std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString 
 	double nh = hist->GetBinLowEdge(nb+1);
 
 	double total_event = hist->Integral();
+	std::cout<<"Total event "<<total_event<<std::endl;
 
 	TH2D* shape = new TH2D("shape", "shape", nb, nl, nh, nb, nl, nh);
 	TH2D* mixed = new TH2D("mixed", "mixed", nb, nl, nh, nb, nl, nh);
@@ -221,24 +222,24 @@ std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString 
 		for(int jndex=0; jndex< nb;jndex++){
 			double bini = hist->GetBinContent(index+1);
 			double binj = hist->GetBinContent(jndex+1);
-			double fm_ij = (*frac_cov)(index,jndex);
+			double fm_ij = hist->GetBinContent(index+1)*hist->GetBinContent(jndex+1)*(*frac_cov)(index,jndex);
 
 			double msum_ik = 0;
 			double msum_kj = 0;
 			double msum_kl = 0;
 			for(int kndex=0; kndex< nb;kndex++){
-				msum_ik += (*frac_cov)(index,kndex);
-				msum_kj += (*frac_cov)(kndex,jndex);
+				msum_ik += hist->GetBinContent(index+1)*hist->GetBinContent(kndex+1)*(*frac_cov)(index,kndex);
+				msum_kj += hist->GetBinContent(kndex+1)*hist->GetBinContent(jndex+1)*(*frac_cov)(kndex,jndex);
 				for(int lndex=0; lndex< nb;lndex++){
 
-					msum_kl += (*frac_cov)(kndex,lndex);
+					msum_kl += hist->GetBinContent(kndex+1)*hist->GetBinContent(lndex+1)*(*frac_cov)(kndex,lndex);
 				}
 			}
 			double shape_ij = fm_ij - binj/total_event*msum_ik - bini/total_event*msum_kj + bini*binj/pow(total_event,2)*msum_kl;
 			double mixed_ij = binj/total_event*msum_ik + bini/total_event*msum_kj - 2*bini*binj/pow(total_event,2)*msum_kl;
 			double norm_ij = bini*binj/pow(total_event,2)*msum_kl;
 			if(message){
-				std::cout<<"("<<index<<","<<jndex<<") fm_ij:"<<fm_ij;
+				std::cout<<"("<<index+1<<","<<jndex+1<<") fm_ij:"<<fm_ij;
 				std::cout<<" bini:"<<bini<<" binj:"<<binj;
 				std::cout<<" msum_ik:"<<msum_ik;
 				std::cout<<" msum_kj:"<<msum_kj;
@@ -248,9 +249,9 @@ std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString 
 				std::cout<<" norm_ij:"<<norm_ij<<std::endl;;
 			}
 
-			shape->SetBinContent(index,jndex, shape_ij);
-			mixed->SetBinContent(index,jndex, mixed_ij);
-			norm->SetBinContent(index,jndex, norm_ij);
+			shape->SetBinContent(index+1,jndex+1, shape_ij);
+			mixed->SetBinContent(index+1,jndex+1, mixed_ij);
+			norm->SetBinContent (index+1,jndex+1, norm_ij);
 		}
 	}
 	
@@ -1187,7 +1188,7 @@ void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss
 
 		bool rescale_out_hist = true;
 		bool smooth_unisims = true;
-//		hist2cov( *var1, rescale_out_hist, smooth_unisims);//tag_collection, tag2CVmap, tag2SWmap pointed to bdt_sys.
+		hist2cov( *var1, rescale_out_hist, smooth_unisims);//tag_collection, tag2CVmap, tag2SWmap pointed to bdt_sys.
 		hist_root->Close();//if close, reference to hists are lost.
 	}
 

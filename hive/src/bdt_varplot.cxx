@@ -29,6 +29,8 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
         int nv = 0;
 		for(auto &v: vars){
 
+			TString error_label = "";
+			if(v.has_covar) error_label = " w. Stat & Sys. Error";
 			double maxy = 0;
 			double miny = 0;
 
@@ -53,15 +55,19 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				MC[index] = MCfiles[index]->getTH1(v,"1",v.safe_name+"_MC_var" , datafile->pot);
 				
 				//adjust MC error using the Matrix;
-				TFile *covar_f = new TFile(v.covar_file.c_str(),"read");
-				TMatrixD * covar_collapsed = new TMatrixD(v.n_bins,v.n_bins);
-				*covar_collapsed = gadget_PrepareMatrix(syss, covar_f, MC[index] , datafile->pot, MCfiles[index]->tag);
-				//			std::vector< TH2D* > gadget_SeparateMatrix( covar_collapsed, MC[index], "vars/");
-				for(int jndex = 0; jndex < MC[index]->GetNbinsX() ; ++jndex){
+				std::vector< TH2D* > Matrices_set;
+				if(v.has_covar){
+					TFile *covar_f = new TFile(v.covar_file.c_str(),"read");
+					TMatrixD * covar_collapsed = new TMatrixD(v.n_bins,v.n_bins);
+					*covar_collapsed = gadget_PrepareMatrix(syss, covar_f, MC[index] , datafile->pot, MCfiles[index]->tag);
+					Matrices_set = gadget_SeparateMatrix( covar_collapsed, MC[index], "vars/");//0: shape-only, 1: mixed, 2: normalization-only
+				}
 
-					double temp_binErrSq = pow(MC[index]->GetBinError(jndex+1),2) + pow(MC[index]->GetBinContent(jndex+1),2)*(*covar_collapsed)(jndex,jndex);
+				for(int jndex = 0; jndex < MC[index]->GetNbinsX() ; ++jndex){
+					double mii = (v.has_covar)? Matrices_set[0]->GetBinContent(jndex,jndex)+Matrices_set[1]->GetBinContent(jndex,jndex) : 0;//(*covar_collapsed)(jndex,jndex);
+					double temp_binErrSq = pow(MC[index]->GetBinError(jndex+1),2) + mii;
 					std::cout<<"Update "<<MCfiles[index]->tag<<" Bin "<<1+jndex<<"/"<<MC[index]->GetNbinsX()<<" Error "<<MC[index]->GetBinError(jndex+1);
-					std::cout<<" to ErrSq: "<<temp_binErrSq<<" MC: "<<MC[index]->GetBinContent(jndex+1)<<" FM_ii:"<<(*covar_collapsed)(jndex,jndex)<< std::endl;
+					std::cout<<" to ErrSq: "<<temp_binErrSq<<" MC: "<<MC[index]->GetBinContent(jndex+1)<<" FM_ii:"<<mii<< std::endl;
 					MC[index]->SetBinError(jndex+1, sqrt(temp_binErrSq));
 				}
 				MC[index]->SetLineColor((MCfiles[index]->is_signal)? kBlack:MCfiles[index]->col);
@@ -88,14 +94,14 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				}
 			}
 
-			double maxy_of_data = data->GetBinContent(data->GetMaximumBin());
+			double maxy_of_data = data->GetBinContent(data->GetMaximumBin()) + data->GetBinError(data->GetMaximumBin());
 			//Canvas to be Drawn
 			TCanvas *c_var = new TCanvas(("cvar_"+v.name).c_str(), ("cvar_"+v.name).c_str(),1200,1200);
 
 			c_var->cd();
 
 			TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
-			legend_label += " w. Stat & Sys. Error";
+			legend_label += error_label;//" w. Stat & Sys. Error";
 			legend->AddEntry(data, legend_label, "lp" );
 
 
@@ -121,7 +127,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				MC[index]->Draw("hist same");
 			}
 			if( maxy < maxy_of_data ) maxy = maxy_of_data;
-			double miny_of_data = data->GetBinContent(data->GetMinimumBin());
+			double miny_of_data = data->GetBinContent(data->GetMinimumBin())-data->GetBinError(data->GetMinimumBin());
 			if(miny > miny_of_data ) miny = miny_of_data;
 
 
@@ -180,7 +186,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 //					le->AddEntry(MC[index], (MCfiles[index]->plot_name+" w. Stat & Sys. Error").c_str(),"lf");	
 
 					TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
-					legend_label += " w. Stat & Sys. Error";
+					legend_label += error_label;
 					le->AddEntry(data, legend_label,"lp");	
 					le->SetLineColor(kWhite);
 					le->SetFillStyle(0);
@@ -211,8 +217,6 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 //						double curchi = pow(dav-mcv,2)/(pow(mc_stat_err,2)+pow(mc_wgt_err,2));
 						double curchi = pow(dav-mcv,2)/(pow(data_err,2)+pow(mc_wgt_err,2));
 						if(debug_message) std::cout<<"Chi2 Bin "<<ib<<", data "<<dav<<", err "<<data_err<<",MC "<<mcv<<",err "<<mc_wgt_err<<",scale factor "<<mc_scale_factor[index]<<",chi2 "<<curchi<<std::endl;
-
-
 
 //						double curchi = pow(dav-mcv,2)/(dav);
 						mychi += curchi;
