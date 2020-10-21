@@ -29,8 +29,11 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
         int nv = 0;
 		for(auto &v: vars){
 
-			TString error_label = "";
-			if(v.has_covar) error_label = " w. Stat & Sys. Error";
+			TString measure_elabel = "";
+			if(v.has_covar){
+				measure_elabel = " w. Stat & Sys. Error";
+			}
+
 			double maxy = 0;
 			double miny = 0;
 
@@ -55,19 +58,20 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				MC[index] = MCfiles[index]->getTH1(v,"1",v.safe_name+"_MC_var" , datafile->pot);
 				
 				//adjust MC error using the Matrix;
-				std::vector< TH2D* > Matrices_set;
-				if(v.has_covar){
-					TFile *covar_f = new TFile(v.covar_file.c_str(),"read");
-					TMatrixD * covar_collapsed = new TMatrixD(v.n_bins,v.n_bins);
-					*covar_collapsed = gadget_PrepareMatrix(syss, covar_f, MC[index] , datafile->pot, MCfiles[index]->tag);
-					Matrices_set = gadget_SeparateMatrix( covar_collapsed, MC[index], "vars/");//0: shape-only, 1: mixed, 2: normalization-only
-				}
+//				std::vector< TH2D* > Matrices_set;
+//				if(v.has_covar){
+//					TFile *covar_f = new TFile(v.covar_file.c_str(),"read");
+//					TMatrixD * covar_collapsed = new TMatrixD(v.n_bins,v.n_bins);
+//					*covar_collapsed = gadget_PrepareMatrix(syss, covar_f, MC[index] , datafile->pot, MCfiles[index]->tag);
+//					Matrices_set = gadget_SeparateMatrix( covar_collapsed, MC[index], "vars/");//0: shape-only, 1: mixed, 2: normalization-only
+//				}
 
 				for(int jndex = 0; jndex < MC[index]->GetNbinsX() ; ++jndex){
-					double mii = (v.has_covar)? Matrices_set[0]->GetBinContent(jndex,jndex)+Matrices_set[1]->GetBinContent(jndex,jndex) : 0;//(*covar_collapsed)(jndex,jndex);
+					//mii reflects MC^2*frac_error;
+					double mii = 0;//(v.has_covar)? Matrices_set[0]->GetBinContent(jndex+1,jndex+1)+Matrices_set[1]->GetBinContent(jndex+1,jndex+1) : 0;//(*covar_collapsed)(jndex,jndex);
 					double temp_binErrSq = pow(MC[index]->GetBinError(jndex+1),2) + mii;
-					std::cout<<"Update "<<MCfiles[index]->tag<<" Bin "<<1+jndex<<"/"<<MC[index]->GetNbinsX()<<" Error "<<MC[index]->GetBinError(jndex+1);
-					std::cout<<" to ErrSq: "<<temp_binErrSq<<" MC: "<<MC[index]->GetBinContent(jndex+1)<<" FM_ii:"<<mii<< std::endl;
+					std::cout<<"Update "<<std::setw(9)<<MCfiles[index]->tag<<" Bin "<<1+jndex<<"/"<<MC[index]->GetNbinsX()<<" StatError "<<MC[index]->GetBinError(jndex+1);
+					std::cout<<" TotalErr: "<<sqrt(temp_binErrSq)<<" MC: "<<MC[index]->GetBinContent(jndex+1)<<" Shape& Mixed_ii:"<<mii<< std::endl;
 					MC[index]->SetBinError(jndex+1, sqrt(temp_binErrSq));
 				}
 				MC[index]->SetLineColor((MCfiles[index]->is_signal)? kBlack:MCfiles[index]->col);
@@ -89,10 +93,10 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 						AllNue_MC->Add(MC[index],1.0);
 
 					}
-					std::cout<<" data - "<< MCfiles[index]->tag <<std::endl;
-					data->Add(MC[index],-1.0);//Data - MC
 				}
 			}
+
+			data->Add(AllNue_MC,-1.0);//Calculate Data - MC
 
 			double maxy_of_data = data->GetBinContent(data->GetMaximumBin()) + data->GetBinError(data->GetMaximumBin());
 			//Canvas to be Drawn
@@ -101,14 +105,28 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 			c_var->cd();
 
 			TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
-			legend_label += error_label;//" w. Stat & Sys. Error";
+			legend_label += measure_elabel;//" w. Stat & Sys. Error";
 			legend->AddEntry(data, legend_label, "lp" );
 
 
-			//No need to adjust errors
+			//introduce systematic error;
+			std::vector< TH2D > Matrices_set;
+			if(v.has_covar){
+				TFile *covar_f = new TFile(v.covar_file.c_str(),"read");
+				TMatrixD * covar_collapsed = new TMatrixD(v.n_bins,v.n_bins);
+				*covar_collapsed = gadget_PrepareMatrix(syss, covar_f, AllNue_MC, datafile->pot, datafile->tag);
+				Matrices_set = gadget_SeparateMatrix( covar_collapsed, AllNue_MC, "vars/");//0: shape-only, 1: mixed, 2: normalization-only
+				covar_f->Close();
+			}
+
 			for(int ib=1; ib<v.n_bins+1; ib++){
-				if(debug_message)std::cout<<" rescaled NueMC "<<ib<<" bin has "<<AllNue_MC->GetBinContent(ib)<< " with error "<<AllNue_MC->GetBinError(ib)<<" and the excess Error "<<data->GetBinError(ib)<<std::endl; 
-//				data->SetBinError(ib, data_err);
+
+					double mii = (v.has_covar)? Matrices_set[0].GetBinContent(ib,ib)+Matrices_set[1].GetBinContent(ib,ib) : 0;//(*covar_collapsed)(jndex,jndex);
+					double temp_binErrSq = pow(AllNue_MC->GetBinError(ib),2) + mii;
+//					AllNue_MC->SetBinError(ib, sqrt(temp_binErrSq) );
+
+					data->SetBinError(ib, sqrt(temp_binErrSq));
+					if(debug_message)std::cout<<" All NueMC bin: "<<ib<<" has "<<AllNue_MC->GetBinContent(ib)<< " with error "<<data->GetBinError(ib)<<" from stat "<< AllNue_MC->GetBinError(ib) << " sys "<< sqrt(mii)<<" applied to Data-Nue."<<std::endl; 
 			}
 
 			data->Draw("E1");//black dot
@@ -116,7 +134,6 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 			//set max&min, and scale MC evnets if isNorm is true;
 			std::vector< double > mc_scale_factor(num_MC);
 			for(size_t index = 0; index <num_MC; ++index){//the data here means the excess;
-
 
 				mc_scale_factor[index] = data->Integral()/MC[index]->Integral();
 				if(isNorm) MC[index]->Scale( mc_scale_factor[index] );
@@ -150,7 +167,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 			//add double axis, specially for R^3
 			if((v.unit).find("R/500")!= std::string::npos){
-				std::cout<<"Draw extrax axis"<<std::endl;
+				std::cout<<"Draw extra x-axis"<<std::endl;
 				double minv = v.plot_min;
 				double maxv = v.plot_max;
 
@@ -186,7 +203,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 //					le->AddEntry(MC[index], (MCfiles[index]->plot_name+" w. Stat & Sys. Error").c_str(),"lf");	
 
 					TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
-					legend_label += error_label;
+					legend_label += measure_elabel;
 					le->AddEntry(data, legend_label,"lp");	
 					le->SetLineColor(kWhite);
 					le->SetFillStyle(0);
@@ -201,29 +218,48 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 					double mychi=0;
 					int ndof = v.n_bins - 1;
 
-					for(int ib=1; ib<v.n_bins+1; ib++){
-						double dav = data->GetBinContent(ib);//the excess
-						double mcv = MC[index]->GetBinContent(ib);
+					if(v.has_covar){
+						for(int ib=1; ib<v.n_bins+1; ib++){
+							for(int jb=1; jb<v.n_bins+1; jb++){//use Matrices_set to evaluate the chi^2;
+								double dav_i = data->GetBinContent(ib);//the excess
+								double mcv_i = MC[index]->GetBinContent(ib);
 
-						//data_err^2 = sigma_data^2+sigma_bkg^2, before substraction
-						double mc_wgt_err = MC[index]->GetBinError(ib);//This is sum of sqrt(wgt); after scaling;
-						double data_err = data->GetBinError(ib);
-//					double mc_stat_err = sqrt(MC[index]->GetBinContent(ib)/mc_scale_factor[index]);
-//						if(dav<1e-20){
-//							ndof--;
-//							continue;
-//						}
+								double dav_j = data->GetBinContent(jb);//the excess
+								double mcv_j = MC[index]->GetBinContent(jb);
 
-//						double curchi = pow(dav-mcv,2)/(pow(mc_stat_err,2)+pow(mc_wgt_err,2));
-						double curchi = pow(dav-mcv,2)/(pow(data_err,2)+pow(mc_wgt_err,2));
-						if(debug_message) std::cout<<"Chi2 Bin "<<ib<<", data "<<dav<<", err "<<data_err<<",MC "<<mcv<<",err "<<mc_wgt_err<<",scale factor "<<mc_scale_factor[index]<<",chi2 "<<curchi<<std::endl;
+								double numerator = (dav_i - mcv_i)*(dav_j - mcv_j);
+								if(dav_i < 0 || dav_j < 0) continue;
+								double denorm = Matrices_set[0].GetBinContent(ib,jb) + Matrices_set[1].GetBinContent(ib,jb); 
+								if(ib==jb) denorm = data->GetBinError(ib)*data->GetBinError(jb) + MC[index]->GetBinError(ib)*MC[index]->GetBinError(jb);
+								double curchi = (abs(denorm-0)<10e-10)? 0 : numerator/denorm;
+								if(ib==jb && debug_message){
+									std::cout<<"Chi2 Bini "<<ib<<", data "<<dav_i<<", err "<<data->GetBinError(ib)<<",MC "<<mcv_i<<",err "<<MC[index]->GetBinError(ib)<<",denorminator "<<Matrices_set[0].GetBinContent(ib,jb) + Matrices_set[1].GetBinContent(ib,jb)<<std::endl;
+									std::cout<<"Chi2 Binj "<<jb<<", data "<<dav_j<<", err "<<data->GetBinError(jb)<<",MC "<<mcv_j<<",err "<<MC[index]->GetBinError(jb)<<",denorminator "<<denorm<<std::endl;
+									std::cout<<"\t\t ---> Resulting chi2 "<<curchi<<std::endl;
+								mychi+=curchi;
+								}
+							}
+						}
+					} else{
+						for(int ib=1; ib<v.n_bins+1; ib++){
+							double dav = data->GetBinContent(ib);//the excess
+							double mcv = MC[index]->GetBinContent(ib);
 
-//						double curchi = pow(dav-mcv,2)/(dav);
-						mychi += curchi;
+							//data_err^2 = sigma_data^2+sigma_bkg^2, before substraction
+							double mc_wgt_err = MC[index]->GetBinError(ib);//This is sum of sqrt(wgt); after scaling;
+							double data_err = data->GetBinError(ib);
+
+							//						double curchi = pow(dav-mcv,2)/(pow(mc_stat_err,2)+pow(mc_wgt_err,2));
+							double curchi = pow(dav-mcv,2)/(pow(data_err,2)+pow(mc_wgt_err,2));
+							if(debug_message) std::cout<<"Chi2 Bin "<<ib<<", data "<<dav<<", err "<<data_err<<",MC "<<mcv<<",err "<<mc_wgt_err<<",scale factor "<<mc_scale_factor[index]<<",chi2 "<<curchi<<std::endl;
+
+							//						double curchi = pow(dav-mcv,2)/(dav);
+							mychi += curchi;
+						}
 					}
 
 					std::string chi_square = "#chi^{2}/n#it{DOF}: "+to_string_prec(mychi, 2) +"/"+to_string_prec(ndof)+", #chi^{2} P^{val}: "+to_string_prec(TMath::Prob(mychi,ndof),3);
-
+					std::cout<<chi_square<<std::endl;
 					//draw ks, chi_square
 					TLatex *estimators = new TLatex(0.34, 0.85,(ks+", "+chi_square).c_str());
 					estimators->SetNDC();

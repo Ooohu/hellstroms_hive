@@ -201,12 +201,13 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 
 /*
  * This function separate the matrix cov into shape, mixed, and norm three components.
+ * output: vector<TH2D> {shape, mixed, norm}
  */
-std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
+std::vector<TH2D> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
 	
-	bool message = true;
+	bool message = false;
 
-	std::cout<<"Separate the fractional covaraince matrix."<<std::endl;
+	std::cout<<"Handle and Separate the fractional covaraince matrix."<<std::endl;
 	int nb = hist->GetNbinsX();
 	double nl = hist->GetBinLowEdge(1);
 	double nh = hist->GetBinLowEdge(nb+1);
@@ -222,7 +223,7 @@ std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString 
 		for(int jndex=0; jndex< nb;jndex++){
 			double bini = hist->GetBinContent(index+1);
 			double binj = hist->GetBinContent(jndex+1);
-			double fm_ij = hist->GetBinContent(index+1)*hist->GetBinContent(jndex+1)*(*frac_cov)(index,jndex);
+			double fm_ij = bini*binj*(*frac_cov)(index,jndex);//-hist->GetBinError(index+1)*hist->GetBinError(jndex+1);//CHECK, statErr removed
 
 			double msum_ik = 0;
 			double msum_kj = 0;
@@ -235,9 +236,10 @@ std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString 
 					msum_kl += hist->GetBinContent(kndex+1)*hist->GetBinContent(lndex+1)*(*frac_cov)(kndex,lndex);
 				}
 			}
-			double shape_ij = fm_ij - binj/total_event*msum_ik - bini/total_event*msum_kj + bini*binj/pow(total_event,2)*msum_kl;
-			double mixed_ij = binj/total_event*msum_ik + bini/total_event*msum_kj - 2*bini*binj/pow(total_event,2)*msum_kl;
 			double norm_ij = bini*binj/pow(total_event,2)*msum_kl;
+			double mixed_ij = binj/total_event*msum_ik + bini/total_event*msum_kj - 2*norm_ij;
+
+			double shape_ij = fm_ij - mixed_ij - norm_ij;
 			if(message){
 				std::cout<<"("<<index+1<<","<<jndex+1<<") fm_ij:"<<fm_ij;
 				std::cout<<" bini:"<<bini<<" binj:"<<binj;
@@ -255,24 +257,24 @@ std::vector<TH2D*> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString 
 		}
 	}
 	
-	if(false){//print out?
+	if(true){//print out?
 	TCanvas *canvas_out = new TCanvas("tmp_3matrices","tmp_3matrices",1800,1600);
 	shape->SetStats(false);
 	shape->Draw("COLZ");
-	canvas_out->SaveAs((label+"_shape.pdf"),"pdf");
+	canvas_out->SaveAs((label+"m_shape.pdf"),"pdf");
 	canvas_out->Clear();
 
 	mixed->SetStats(false);
 	mixed->Draw("COLZ");
-	canvas_out->SaveAs((label+"_mixed.pdf"),"pdf");
+	canvas_out->SaveAs((label+"m_mixed.pdf"),"pdf");
 	canvas_out->Clear();
 
 	norm->SetStats(false);
 	norm->Draw("COLZ");
-	canvas_out->SaveAs((label+"_norm.pdf"),"pdf");
+	canvas_out->SaveAs((label+"m_norm.pdf"),"pdf");
 	canvas_out->Delete();
 	}
-	return {shape, mixed, norm};
+	return {*shape, *mixed, *norm};
 }
 
 
