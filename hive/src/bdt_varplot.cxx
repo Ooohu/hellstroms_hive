@@ -236,8 +236,8 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 									std::cout<<"Chi2 Bini "<<ib<<", data "<<dav_i<<", err "<<data->GetBinError(ib)<<",MC "<<mcv_i<<",err "<<MC[index]->GetBinError(ib)<<",denorminator "<<Matrices_set[0].GetBinContent(ib,jb) + Matrices_set[1].GetBinContent(ib,jb)<<std::endl;
 									std::cout<<"Chi2 Binj "<<jb<<", data "<<dav_j<<", err "<<data->GetBinError(jb)<<",MC "<<mcv_j<<",err "<<MC[index]->GetBinError(jb)<<",denorminator "<<denorm<<std::endl;
 									std::cout<<"\t\t ---> Resulting chi2 "<<curchi<<std::endl;
-								mychi+=curchi;
 								}
+								mychi+=curchi;
 							}
 						}
 					} else{
