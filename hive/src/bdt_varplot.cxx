@@ -227,7 +227,6 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 								double mcv_j = MC[index]->GetBinContent(jb);
 
 								double numerator = (dav_i - mcv_i)*(dav_j - mcv_j);
-								if(dav_i < 0 || dav_j < 0) continue;
 								double denorm = Matrices_set[0].GetBinContent(ib,jb) + Matrices_set[1].GetBinContent(ib,jb); 
 								if(ib==jb) denorm = data->GetBinError(ib)*data->GetBinError(jb) + MC[index]->GetBinError(ib)*MC[index]->GetBinError(jb);
 								double curchi = (abs(denorm-0)<10e-10)? 0 : numerator/denorm;
