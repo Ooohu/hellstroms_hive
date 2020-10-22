@@ -183,7 +183,6 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				//std::cout<<"min "<<minv<<" max "<<maxv<<" maxy "<<maxy<<std::endl;
 			}
 			c_var->Print(("vars/"+std::to_string(nv)+"_"+v.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
-			exit(0);
 
 			if(do_pair_plot){//data-NueMC vs each MC
 				c_var->Clear();
