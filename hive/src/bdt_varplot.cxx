@@ -102,8 +102,6 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 			//Canvas to be Drawn
 			TCanvas *c_var = new TCanvas(("cvar_"+v.name).c_str(), ("cvar_"+v.name).c_str(),1200,1200);
 
-			c_var->cd();
-
 			TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
 			legend_label += measure_elabel;//" w. Stat & Sys. Error";
 			legend->AddEntry(data, legend_label, "lp" );
@@ -129,6 +127,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 					if(debug_message)std::cout<<" All NueMC bin: "<<ib<<" has "<<AllNue_MC->GetBinContent(ib)<< " with error "<<data->GetBinError(ib)<<" from stat "<< AllNue_MC->GetBinError(ib) << " sys "<< sqrt(mii)<<" applied to Data-Nue."<<std::endl; 
 			}
 
+			c_var->cd();
 			data->Draw("E1");//black dot
 
 			//set max&min, and scale MC evnets if isNorm is true;
@@ -184,6 +183,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				//std::cout<<"min "<<minv<<" max "<<maxv<<" maxy "<<maxy<<std::endl;
 			}
 			c_var->Print(("vars/"+std::to_string(nv)+"_"+v.safe_unit+"_stage_"+std::to_string(stage)+".pdf").c_str(),"pdf");
+			exit(0);
 
 			if(do_pair_plot){//data-NueMC vs each MC
 				c_var->Clear();
