@@ -78,7 +78,7 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 	//Only the diagonal element matters.
 	
 	bool message = true;
-	bool adjustOM = true;
+	bool adjustOM = false;
 
 	int nb = MChist->GetNbinsX();
 	TMatrixD total_fm(nb,nb);
@@ -744,7 +744,7 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 			TString temp_sw_name = cur_tag +"_"+ hists_names[index];
 
 			bool do_smooth = ( (var.name).compare(3,5,"EnuQE")==0 )&& smooth_matrix && ((tempsCV->systag).Contains("Unisim"));
-//			if(cur_tag.Contains("Optical")) do_smooth = true;
+			if(cur_tag.Contains("Optical")) do_smooth = true;
 
 			TH2D* all_hist = new TH2D(temp_sw_name, temp_sw_name, nb, &(output_binning).front(), nby, 0, nby);//to store many throws SW
 			TH2D* covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix", temp_sw_name+"_CovarainceMatrix",nb,&(output_binning).front(), nb,&(output_binning).front());//to store covariance matrix, equal width;
