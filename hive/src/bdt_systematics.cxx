@@ -78,6 +78,7 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 	//Only the diagonal element matters.
 	
 	bool message = true;
+	bool adjustOM = true;
 
 	int nb = MChist->GetNbinsX();
 	TMatrixD total_fm(nb,nb);
@@ -155,7 +156,7 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 				}
 			}
 
-			if(cur_sys->its_OM){//modify the stat part of the matrix for Optical Model
+			if(cur_sys->its_OM && adjustOM ){//modify the stat part of the matrix for Optical Model
 				std::cout<<"\tAdjust Optical Model statistical error in the fractional matrix"<<std::endl;
 				for(int kndex =  0; kndex < nb; ++kndex){
 					double temp_mii = temp_matrix(kndex,kndex);//[kndex*nb+kndex];
@@ -203,9 +204,10 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
  * This function separate the matrix cov into shape, mixed, and norm three components.
  * output: vector<TH2D> {shape, mixed, norm}
  */
-std::vector<TH2D> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
+std::vector<TMatrixD> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString label){
 	
-	bool message = false;
+	bool message = true;
+	bool db_message = false;
 
 	std::cout<<"Handle and Separate the fractional covaraince matrix."<<std::endl;
 	int nb = hist->GetNbinsX();
@@ -219,6 +221,13 @@ std::vector<TH2D> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString l
 	TH2D* mixed = new TH2D("mixed", "mixed", nb, nl, nh, nb, nl, nh);
 	TH2D* norm = new TH2D("norm", "norm", nb, nl, nh, nb, nl, nh);
 
+	TMatrixD shapeM(nb,nb);
+	TMatrixD mixedM(nb,nb);
+	TMatrixD normM(nb,nb);
+
+	std::vector<std::stringstream> pshapeM(nb);
+	std::vector<std::stringstream> pmixedM(nb);
+	std::vector<std::stringstream> pnormM(nb);
 	for(int index=0; index< nb;index++){
 		for(int jndex=0; jndex< nb;jndex++){
 			double bini = hist->GetBinContent(index+1);
@@ -240,7 +249,7 @@ std::vector<TH2D> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString l
 			double mixed_ij = binj/total_event*msum_ik + bini/total_event*msum_kj - 2*norm_ij;
 
 			double shape_ij = fm_ij - mixed_ij - norm_ij;
-			if(message){
+			if(db_message){
 				std::cout<<"("<<index+1<<","<<jndex+1<<") fm_ij:"<<fm_ij;
 				std::cout<<" bini:"<<bini<<" binj:"<<binj;
 				std::cout<<" msum_ik:"<<msum_ik;
@@ -254,10 +263,33 @@ std::vector<TH2D> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString l
 			shape->SetBinContent(index+1,jndex+1, shape_ij);
 			mixed->SetBinContent(index+1,jndex+1, mixed_ij);
 			norm->SetBinContent (index+1,jndex+1, norm_ij);
+			shapeM(index,jndex) = shape_ij;
+			mixedM(index,jndex) =  mixed_ij;
+			normM(index,jndex) =  norm_ij;
+
+			pshapeM[index]<<std::setw(12)<<shape_ij<<" ";
+			pmixedM[index]<<std::setw(12)<<mixed_ij<<" ";
+			pnormM[index]<<std::setw(12)<<norm_ij<<" ";
 		}
 	}
+	if(message){
+		std::cout<<"Note: (1,1) is the top left "<<std::endl;
+		std::cout<<"Shape only"<<std::endl;
+		for(int printdex = 0; printdex < nb; ++printdex){
+		std::cout<<pshapeM[printdex].rdbuf()<<std::endl;
+		}
+		std::cout<<"Mixed only"<<std::endl;
+		for(int printdex = 0; printdex < nb; ++printdex){
+			std::cout<<pmixedM[printdex].rdbuf()<<std::endl;
+		}
+		std::cout<<"Norm only"<<std::endl;
+		for(int printdex = 0; printdex < nb; ++printdex){
+			std::cout<<pnormM[printdex].rdbuf()<<std::endl;
+		}
+
+	}
 	
-	if(true){//print out?
+	if(false){//print out?
 	TCanvas *canvas_out = new TCanvas("tmp_3matrices","tmp_3matrices",1800,1600);
 	shape->SetStats(false);
 	shape->Draw("COLZ");
@@ -274,7 +306,7 @@ std::vector<TH2D> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TString l
 	canvas_out->SaveAs((label+"m_norm.pdf"),"pdf");
 	canvas_out->Delete();
 	}
-	return {*shape, *mixed, *norm};
+	return {shapeM, mixedM, normM};
 }
 
 
@@ -629,9 +661,7 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 		//STEP 2.1 Find the bdt_sys syss that gives the CV; then find and draw up SW on the flight;
 		bdt_sys* tempsCV = tag2CVmap.find(cur_tag)->second;//bdt_sys that gives CV - tempsCV
 
-		bool do_smooth = ( (var.name).compare(3,5,"EnuQE")==0 )&& smooth_matrix && ((tempsCV->systag).Contains("Unisim"));
 
-		//		if(do_smooth) std::cout<<tempsCV->systag<<" might need smoothing as long as initial binning >1, current bins "<<var.int_n_bins<<std::endl;
 
 		//Got the CV! 
 		TH1D* cv_hist = (TH1D*) (tempsCV->hists[0][0])->Clone();
@@ -712,6 +742,10 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 		for(size_t index = 0; index < hists_names.size(); ++index){//loop over sets of independent histograms
 
 			TString temp_sw_name = cur_tag +"_"+ hists_names[index];
+
+			bool do_smooth = ( (var.name).compare(3,5,"EnuQE")==0 )&& smooth_matrix && ((tempsCV->systag).Contains("Unisim"));
+//			if(cur_tag.Contains("Optical")) do_smooth = true;
+
 			TH2D* all_hist = new TH2D(temp_sw_name, temp_sw_name, nb, &(output_binning).front(), nby, 0, nby);//to store many throws SW
 			TH2D* covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix", temp_sw_name+"_CovarainceMatrix",nb,&(output_binning).front(), nb,&(output_binning).front());//to store covariance matrix, equal width;
 
@@ -875,7 +909,7 @@ TH2D* MakeFracCov(TH2D* inputcov, TH1D* oldcv){
 			double cvj = oldcv->GetBinContent(jndex);
 			double cvk = oldcv->GetBinContent(kndex);
 			double covjk = inputcov->GetBinContent(jndex,kndex);
-			double fjk = covjk/(cvj*cvk);//not divide by nb;
+			double fjk = (cvj==0 || cvk ==0 )? 0 : covjk/(cvj*cvk);//not divide by nb;
 
 			fractional_cov->SetBinContent(jndex,kndex,fjk);
 		}
@@ -979,7 +1013,7 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 		
 		//proceed to smoothing
 
-		cout << "Smoothing bins "<< first_bin << "-" << Nbins << " (N=" << Nbins<< ", "<<cv->GetBinLowEdge(Nbins+1)<<") with pol "<<degree;
+		if(message) cout << "Smoothing bins "<< first_bin << "-" << Nbins << " (N=" << Nbins<< ", "<<cv->GetBinLowEdge(Nbins+1)<<") with pol "<<degree;
 		for (Int_t bin=0;bin<Nbins;bin++) {
 			//    cout <<cv->GetBinContent(bin+first_bin)<<"\t"<<sw->GetBinContent(bin+first_bin)<<endl;
 		}
@@ -1049,7 +1083,7 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 			}
 		}
 		double AIC = chi2+ 2*degree+ (2*degree)*(degree+1)/(Nbins-degree-1);
-		cout<<" Chi2: "<<chi2<<" AIC = "<<AIC<<" with degree "<<degree<<std::endl;
+		if(message) cout<<" Chi2: "<<chi2<<" AIC = "<<AIC<<" with degree "<<degree<<std::endl;
 		//the minimum AIC gives the best fitting result;
 
 
@@ -1073,14 +1107,10 @@ TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv){
  */
 
 void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss){
-	bool do_cov = false; //true - generate covariance matrix everytime, no matter what; false -this boolean is not functioning
+	bool do_cov = true; //true - generate covariance matrix everytime, no matter what; false -this boolean is not functioning
 	bool do_hist = false; //true - generate hist everytime, no matter what; false -this boolean is not functioning
 
 	bool skip_sysEvaluation = false;//true - do nothing;
-
-//	bool verbose = this->verbose;
-//	bool debug_verbose = this->debug_verbose;
-	
 
 	//the histogram goes two ways: 1dhist or 2dhist; 1dhist for now;
 	bdt_variable* var1 = &vars[0];

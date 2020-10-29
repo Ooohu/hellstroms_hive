@@ -71,7 +71,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 					double mii = 0;//(v.has_covar)? Matrices_set[0]->GetBinContent(jndex+1,jndex+1)+Matrices_set[1]->GetBinContent(jndex+1,jndex+1) : 0;//(*covar_collapsed)(jndex,jndex);
 					double temp_binErrSq = pow(MC[index]->GetBinError(jndex+1),2) + mii;
 					std::cout<<"Update "<<std::setw(9)<<MCfiles[index]->tag<<" Bin "<<1+jndex<<"/"<<MC[index]->GetNbinsX()<<" StatError "<<MC[index]->GetBinError(jndex+1);
-					std::cout<<" TotalErr: "<<sqrt(temp_binErrSq)<<" MC: "<<MC[index]->GetBinContent(jndex+1)<<" Shape& Mixed_ii:"<<mii<< std::endl;
+					std::cout<<" TotalErr: "<<sqrt(temp_binErrSq)<<" MC: "<<MC[index]->GetBinContent(jndex+1)<<std::endl;//" Shape& Mixed_ii:"<<mii<< std::endl;
 					MC[index]->SetBinError(jndex+1, sqrt(temp_binErrSq));
 				}
 				MC[index]->SetLineColor((MCfiles[index]->is_signal)? kBlack:MCfiles[index]->col);
@@ -108,7 +108,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 
 			//introduce systematic error;
-			std::vector< TH2D > Matrices_set;
+			std::vector< TMatrixD > Matrices_set(3);
 			if(v.has_covar){
 				TFile *covar_f = new TFile(v.covar_file.c_str(),"read");
 				TMatrixD * covar_collapsed = new TMatrixD(v.n_bins,v.n_bins);
@@ -119,12 +119,12 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 			for(int ib=1; ib<v.n_bins+1; ib++){
 
-					double mii = (v.has_covar)? Matrices_set[0].GetBinContent(ib,ib)+Matrices_set[1].GetBinContent(ib,ib) : 0;//(*covar_collapsed)(jndex,jndex);
-					double temp_binErrSq = pow(AllNue_MC->GetBinError(ib),2) + mii;
+					double mii = (v.has_covar)? Matrices_set[0](ib-1,ib-1)+Matrices_set[1](ib-1,ib-1) : 0;//(*covar_collapsed)(jndex,jndex);
+					double temp_binErrSq = (v.has_covar)? pow(AllNue_MC->GetBinError(ib),2) + mii :pow(AllNue_MC->GetBinError(ib),2)+pow(data->GetBinError(ib),2) ;
 //					AllNue_MC->SetBinError(ib, sqrt(temp_binErrSq) );
 
+					if(debug_message)std::cout<<"\tAll NueMC bin: "<<ib<<" has "<<AllNue_MC->GetBinContent(ib)<< " with statE "<< AllNue_MC->GetBinError(ib) << " sys "<< sqrt(mii)<<" data statE "<<data->GetBinError(ib)<<std::endl;
 					data->SetBinError(ib, sqrt(temp_binErrSq));
-					if(debug_message)std::cout<<" All NueMC bin: "<<ib<<" has "<<AllNue_MC->GetBinContent(ib)<< " with error "<<data->GetBinError(ib)<<" from stat "<< AllNue_MC->GetBinError(ib) << " sys "<< sqrt(mii)<<" applied to Data-Nue."<<std::endl; 
 			}
 
 			c_var->cd();
@@ -196,13 +196,13 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 					MC[index]->Draw("hist same");
 
-					//legend
-					TLegend *le = new TLegend(0.13,0.75,0.42,0.88);
-					le->AddEntry(MC[index], (MCfiles[index]->plot_name).c_str(),"lf");	
+					//legend for 1- 1 comparison
+					TLegend *le = new TLegend(0.52,0.56,0.88,0.80);//x1,y1,x2,y2
+					le->AddEntry(MC[index], (MCfiles[index]->plot_name+" scaled:x"+to_string_prec(mc_scale_factor[index],2)).c_str(),"lf");
 //					le->AddEntry(MC[index], (MCfiles[index]->plot_name+" w. Stat & Sys. Error").c_str(),"lf");	
 
 					TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
-					legend_label += measure_elabel;
+					legend_label = "#splitline{"+legend_label+"}{"+measure_elabel+"}";
 					le->AddEntry(data, legend_label,"lp");	
 					le->SetLineColor(kWhite);
 					le->SetFillStyle(0);
@@ -215,29 +215,60 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 					//get chi_square
 					double mychi=0;
+					double ML = 1;
+					double log_norm = 0;
 					int ndof = v.n_bins - 1;
+					//before proceed invese the Mtrices;
 
+					TMatrixD M_MixedShape_orig = Matrices_set[0]+Matrices_set[1];
+					TMatrixD M_MixedShape(v.n_bins,v.n_bins);
+					if(debug_message) std::cout<<" Working on "<<MCfiles[index]->tag<<std::endl;
 					if(v.has_covar){
+
+					std::vector<std::stringstream> chiMap(v.n_bins);
 						for(int ib=1; ib<v.n_bins+1; ib++){
-							for(int jb=1; jb<v.n_bins+1; jb++){//use Matrices_set to evaluate the chi^2;
-								double dav_i = data->GetBinContent(ib);//the excess
-								double mcv_i = MC[index]->GetBinContent(ib);
 
-								double dav_j = data->GetBinContent(jb);//the excess
-								double mcv_j = MC[index]->GetBinContent(jb);
+							M_MixedShape_orig(ib-1,ib-1) = data->GetBinError(ib)*data->GetBinError(ib) + MC[index]->GetBinError(ib)*MC[index]->GetBinError(ib);//data->Error contains systematics;
+						}
+						M_MixedShape = M_MixedShape_orig.Invert();
+						for(int ib=1; ib<v.n_bins+1; ib++){
+							if(true){//go for the chi^2
+								for(int jb=1; jb<v.n_bins+1; jb++){//use Matrices_set to evaluate the chi^2;
+									double dav_i = data->GetBinContent(ib);//the excess
+									double mcv_i = MC[index]->GetBinContent(ib);
 
-								double numerator = (dav_i - mcv_i)*(dav_j - mcv_j);
-								double denorm = Matrices_set[0].GetBinContent(ib,jb) + Matrices_set[1].GetBinContent(ib,jb); 
-								if(ib==jb) denorm = data->GetBinError(ib)*data->GetBinError(jb) + MC[index]->GetBinError(ib)*MC[index]->GetBinError(jb);
-								double curchi = (abs(denorm-0)<10e-10)? 0 : numerator/denorm;
-								if(ib==jb && debug_message){
-									std::cout<<"Chi2 Bini "<<ib<<", data "<<dav_i<<", err "<<data->GetBinError(ib)<<",MC "<<mcv_i<<",err "<<MC[index]->GetBinError(ib)<<",denorminator "<<Matrices_set[0].GetBinContent(ib,jb) + Matrices_set[1].GetBinContent(ib,jb)<<std::endl;
-									std::cout<<"Chi2 Binj "<<jb<<", data "<<dav_j<<", err "<<data->GetBinError(jb)<<",MC "<<mcv_j<<",err "<<MC[index]->GetBinError(jb)<<",denorminator "<<denorm<<std::endl;
-									std::cout<<"\t\t ---> Resulting chi2 "<<curchi<<std::endl;
+									double dav_j = data->GetBinContent(jb);//the excess
+									double mcv_j = MC[index]->GetBinContent(jb);
+
+									double numerator = (dav_i - mcv_i)*(dav_j - mcv_j);
+									double inv_M = M_MixedShape(ib-1,jb-1);
+									double curchi = numerator*inv_M;
+									if(jb-ib==1 && debug_message){
+										std::cout<<"Chi2 Bini "<<ib<<", data "<<dav_i<<", err "<<data->GetBinError(ib)<<",MC "<<mcv_i<<",err "<<MC[index]->GetBinError(ib)<<",inv_Matrix "<<M_MixedShape(ib-1,jb-1)<<std::endl;
+										std::cout<<"Chi2 Binj "<<jb<<", data "<<dav_j<<", err "<<data->GetBinError(jb)<<",MC "<<mcv_j<<",err "<<MC[index]->GetBinError(jb)<<",inv_Matrix "<<inv_M<<std::endl;
+										std::cout<<"\t\t ---> Resulting chi2 "<<curchi<<std::endl;
+									}
+									chiMap[ib-1]<<std::setw(12)<<curchi<<" ";
+									mychi+=curchi;
 								}
-								mychi+=curchi;
+							} 
+							if(true){//do Maximum Likelihood calculation;
+								double ErrSq = pow(data->GetBinError(ib),2) + pow(MC[index]->GetBinError(ib),2);
+								double curml = 1.0/sqrt(2*3.14*ErrSq);
+								curml *= exp( - pow(data->GetBinContent(ib)-MC[index]->GetBinContent(ib),2)/(2*ErrSq));
+								ML*=curml;	
+								log_norm += log(2*3.14*MC[index]->GetBinContent(ib));
 							}
 						}
+
+					if(debug_message){
+						std::cout<<"ChiSq values are "<<std::endl;
+						for(int printdex = 0; printdex < v.n_bins; ++printdex){
+						std::cout<<chiMap[printdex].rdbuf()<<std::endl;
+						}
+						
+						std::cout<<"ChiSq from Log(L): "<<2*(-0.5*log_norm-log(ML))<<std::endl;
+					}
 					} else{
 						for(int ib=1; ib<v.n_bins+1; ib++){
 							double dav = data->GetBinContent(ib);//the excess
@@ -256,10 +287,10 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 						}
 					}
 
-					std::string chi_square = "#chi^{2}/n#it{DOF}: "+to_string_prec(mychi, 2) +"/"+to_string_prec(ndof)+", #chi^{2} P^{val}: "+to_string_prec(TMath::Prob(mychi,ndof),3);
+					std::string chi_square = "#chi^{2}/n#it{DOF}: "+to_string_prec(mychi, 2) +"/"+to_string_prec(ndof)+", #chi^{2} P^{val}: "+to_string_prec(TMath::Prob(mychi,ndof),3) + " Log(L): " + to_string_prec(log(ML),2);
 					std::cout<<chi_square<<std::endl;
 					//draw ks, chi_square
-					TLatex *estimators = new TLatex(0.34, 0.85,(ks+", "+chi_square).c_str());
+					TLatex *estimators = new TLatex(0.12, 0.85,(ks+", "+chi_square).c_str());
 					estimators->SetNDC();
 					estimators->SetTextColor(kRed-7); 
 					estimators->SetTextSize(0.03);

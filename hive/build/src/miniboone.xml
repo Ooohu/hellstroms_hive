@@ -300,6 +300,7 @@
 
 <var def = "mu.F - el.F" binning= "(20,-0.1,1)" unit ="electron/muon log likelihood" type = "d" logplot = "false"  training = "" group ="1"/>
 <var def = "piFix.F - el.F" binning= "(20,-0.08,0.08)" unit ="electron/pion log likelihood" type = "d" logplot = "false"  training = "" group ="1"/>
+<var def = "pow(el.R/500.0,3)" binning="(10,0,1)" unit = "(R/500cm)^{3}" type = "d" logplot = "false"  training = "0" group = "0" />
 <!--
 <var def = "piNoFix.E1" binning="(24,100,1300)" unit = "pi0NoFix Energy1 [MeV]" type = "d" logplot = "false"  training = "0"/>
 <var def = "piFix.E1" binning="(24,100,1300)" unit = "pi0Fix Energy1 [MeV]" type = "d" logplot = "false"  training = "0"/>
