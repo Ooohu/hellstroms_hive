@@ -41,7 +41,6 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 
 			//Prepare data first, modified it according to MC and draw 
 			TH1* data = datafile->getTH1(v,"1",v.safe_name+"_data_var" ,datafile->pot);
-			double var_data =  pow(data->GetStdDev(),2);
 			TLegend *legend = new TLegend(0.13,0.73,0.89,0.88);
 
 			data->SetMarkerSize(3);
@@ -116,14 +115,6 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				*covar_collapsed = gadget_PrepareMatrix(syss, covar_f, AllNue_MC, datafile->pot, datafile->tag);
 				Matrices_set = gadget_SeparateMatrix( covar_collapsed, AllNue_MC, "vars/");//0: shape-only, 1: mixed, 2: normalization-only
 				covar_f->Close();
-			}
-
-			TMatrixD * Matrices_set_mod = new TMatrixD(v.n_bins,v.n_bins);
-
-			for(int ib=0; ib<v.n_bins; ib++){
-				for(int jb=0; jb<v.n_bins; jb++){
-					(*Matrices_set_mod)(ib,jb)= Matrices_set[0](ib,jb)+Matrices_set[1](ib,jb)+var_data;
-				}
 			}
 
 			for(int ib=1; ib<v.n_bins+1; ib++){
@@ -229,7 +220,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 					int ndof = v.n_bins - 1;
 					//before proceed invese the Mtrices;
 
-					TMatrixD M_MixedShape_orig = Matrices_set_mod;//Matrices_set[0]+Matrices_set[1];
+					TMatrixD M_MixedShape_orig = Matrices_set[0]+Matrices_set[1];
 					TMatrixD M_MixedShape(v.n_bins,v.n_bins);
 					if(debug_message) std::cout<<" Working on "<<MCfiles[index]->tag<<std::endl;
 					if(v.has_covar){
