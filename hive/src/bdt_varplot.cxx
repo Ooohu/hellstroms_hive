@@ -25,8 +25,8 @@ double gadget_getchi2(TH1* obser, TH1* hypo, TMatrixD cov){
 				double inv_M = covInverse(ib-1,jb-1);
 				double curchi = numerator*inv_M;
 				if(jb-ib==1 && debug_message){
-					std::cout<<"Chi2 Bini "<<ib<<", data "<<dav_i<<", err "<<obser->GetBinError(ib)<<",MC "<<mcv_i<<",err "<<hypo->GetBinError(ib)<<",inv_Matrix "<<covInverse(ib-1,jb-1)<<std::endl;
-					std::cout<<"Chi2 Binj "<<jb<<", data "<<dav_j<<", err "<<obser->GetBinError(jb)<<",MC "<<mcv_j<<",err "<<hypo->GetBinError(jb)<<",inv_Matrix "<<inv_M<<std::endl;
+					std::cout<<"Chi2 Bini "<<ib<<", excess "<<dav_i<<", err "<<obser->GetBinError(ib)<<",MC "<<mcv_i<<",err "<<hypo->GetBinError(ib)<<",inv_Matrix "<<covInverse(ib-1,jb-1)<<std::endl;
+					std::cout<<"Chi2 Binj "<<jb<<", excess "<<dav_j<<", err "<<obser->GetBinError(jb)<<",MC "<<mcv_j<<",err "<<hypo->GetBinError(jb)<<",inv_Matrix "<<inv_M<<std::endl;
 					std::cout<<"\t\t ---> Resulting chi2 "<<curchi<<std::endl;
 				}
 				chiMap[ib-1]<<std::setw(12)<<curchi<<" ";
@@ -50,7 +50,7 @@ double gadget_getchi2(TH1* obser, TH1* hypo, TMatrixD cov){
 			double mc_wgt_err = hypo->GetBinError(ib);//This is sum of sqrt(wgt); after scaling;
 
 			double curchi = pow(dav-mcv,2)/(pow(data_err,2)+pow(mc_wgt_err,2));
-			if(debug_message) std::cout<<"Chi2 Bin "<<ib<<", data "<<dav<<", err "<<data_err<<",MC "<<mcv<<",err "<<mc_wgt_err<<",chi2 "<<curchi<<std::endl;
+			if(debug_message) std::cout<<"Chi2 Bin "<<ib<<", excess "<<dav<<", err "<<data_err<<",MC "<<mcv<<",err "<<mc_wgt_err<<",chi2 "<<curchi<<std::endl;
 
 			mychi += curchi;
 		}
