@@ -306,6 +306,20 @@ std::vector<TMatrixD> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TStri
 	canvas_out->SaveAs((label+"m_norm.pdf"),"pdf");
 	canvas_out->Delete();
 	}
+
+	if(true){	
+		TMatrixD test(nb,nb);
+		TVectorD eigenv(nb);
+		test = shapeM+mixedM+normM;
+		test.EigenVectors(eigenv);
+
+		std::cout<<"Check eigen values:";
+		for(int index=0; index< nb;index++){
+			std::cout<<eigenv(index)<<" ";
+		}
+		std::cout<<"\n"<<std::endl;
+	}
+
 	return {shapeM, mixedM, normM};
 }
 
@@ -648,7 +662,7 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 	TFile *finalcov_root = (TFile*) TFile::Open(final_covroot_name,"RECREATE");//one final covariance matrix output for plotting;
 
 	//final covariance matrix that sums up all systematics;
-	TH2D* finalcov =  new TH2D((var.safe_name).c_str(), (var.safe_name).c_str() ,nb,&(output_binning).front(),nb,&(output_binning).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+//	TH2D* finalcov =  new TH2D((var.safe_name).c_str(), (var.safe_name).c_str() ,nb,&(output_binning).front(),nb,&(output_binning).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 
 	TCanvas *drawCanvas = new TCanvas("drawCanvas", "", 600, 400);//Cavans to draw;
 
@@ -744,10 +758,11 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 			TString temp_sw_name = cur_tag +"_"+ hists_names[index];
 
 			bool do_smooth = ( (var.name).compare(3,5,"EnuQE")==0 )&& smooth_matrix && ((tempsCV->systag).Contains("Unisim"));
-			if(cur_tag.Contains("Optical")) do_smooth = true;
+		if(cur_tag.Contains("Optical")) do_smooth = true;
 
 			TH2D* all_hist = new TH2D(temp_sw_name, temp_sw_name, nb, &(output_binning).front(), nby, 0, nby);//to store many throws SW
 			TH2D* covmatrices =  new TH2D(temp_sw_name+"_CovarianceMatrix", temp_sw_name+"_CovarainceMatrix",nb,&(output_binning).front(), nb,&(output_binning).front());//to store covariance matrix, equal width;
+			TH2D* cormatrices =  new TH2D(temp_sw_name+"_CorrelationMatrix", temp_sw_name+"_CorrelationMatrix",nb,&(output_binning).front(), nb,&(output_binning).front());//to store covariance matrix, equal width;
 
 			int hist_counter = 1;
 			for(auto cur_hist : sw_hists_coll[index]){//ok, take out SW hist and add them to all_hists, covmatrices;
@@ -778,6 +793,7 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 
 				//std::cout<<cur_hist->GetNbinsX()<<std::endl;
 				TH2D* cov_temp = MakeCov(cur_hist, cv_hist);
+				TH2D* cor_temp = MakeCor(cov_temp, cur_hist, cv_hist);
 				double extra_factor = 1;
 				//Special! By doing so, we can blow upthe KpProd;
 				if(temp_sw_name.Contains("KpProd")){ 
@@ -786,6 +802,9 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 				}
 
 				covmatrices->Add(cov_temp, hist2tscalemap[cur_hist]*extra_factor);//throw rescaling;
+				cormatrices->Add(cor_temp, hist2tscalemap[cur_hist]);//throw rescaling;
+
+
 			}
 			if(verbose) std::cout<<std::endl;
 			//finish handlig sw_hist;
@@ -818,6 +837,19 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
 
 			cov_root->cd();
 			covmatrices->Write();
+
+			//Correlation matrix;
+			drawCanvas->Clear();
+			cormatrices->SetStats(false);
+			cormatrices->GetXaxis()->SetTitle(var.unit.c_str());
+			cormatrices->GetYaxis()->SetTitle(var.unit.c_str());
+			cormatrices->Draw("COLZ");
+			cormatrices->SetTitle(temp_sw_name + " Correlation Matrix");
+			drawCanvas->SaveAs( drawn_dir + cov_prefix + "_"+temp_sw_name+"_cor.pdf" ,"pdf");
+
+//			cov_root->cd();
+			cormatrices->Write();
+
 
 			//Fractional Covariance matrix;
 			drawCanvas->Clear();
@@ -892,6 +924,39 @@ TH2D* MakeCov(TH1D* hist, TH1D* cv){
 }
 
 /*
+ * Make one correlation matrix
+ */
+TH2D* MakeCor(TH2D* twodhist, TH1D* hist, TH1D* cv){
+
+	int nb=hist->GetNbinsX();
+
+	//	int nl=hist->GetBinLowEdge(1);
+	//	int nh=hist->GetBinLowEdge(nb+1);
+	//in case of customized binnings; use vector..
+	std::vector<double> bins;
+	for( int index = 1; index < nb+2; index++){
+
+		bins.push_back(hist->GetBinLowEdge(index));//1st bin to n+1th bin
+	}
+
+//	int counter = 0;
+//	delete gROOT->FindObject("tmp");
+	TH2D* covmatrix = new TH2D(("tmp"+to_string_prec(global_index++,0)).c_str() ,"tmp",nb, &(bins.front()),nb, &(bins.front()) );//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
+	for(int index = 1; index<nb+1; ++index){
+		for(int jndex = 1; jndex<nb+1; ++jndex){
+		double entry = twodhist->GetBinContent(index,jndex)/sqrt(twodhist->GetBinContent(index,index)*twodhist->GetBinContent(jndex,jndex));
+//			double entry = twodhist->GetBinContent(index,jndex)/sqrt((pow(hist->GetBinError(index),2)+pow(cv->GetBinError(index),2))*(pow(hist->GetBinError(jndex),2)+pow(cv->GetBinError(jndex),2)));
+
+			covmatrix->SetBinContent(index,jndex,entry);
+
+		}
+	}
+	return covmatrix;
+}
+
+
+
+/*
  * Create a fractional covariance matrix;
  */
 TH2D* MakeFracCov(TH2D* inputcov, TH1D* oldcv){
@@ -929,9 +994,10 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 	using namespace std;
 	//use the special option for the old (but effective) smoothing strategy
 	
-	bool message = false;
+	bool message = true;
 	bool print_ratio = false;
 	bool ec_smoothing = false;
+	Int_t degree = 2;
 
 	std::vector<double> sm_binning ={200, 250, 300, 375, 475, 550, 600, 675, 750, 800, 950, 1100, 1150, 1250, 1300, 1500, 1700, 1900, 3000};
 
@@ -966,7 +1032,6 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 //		sw = (TH1D*) gDirectory->Get(cur_tag+"smSW");
 	}
 
-	Int_t degree = 2;
 	Int_t first_bin = 1;
 //	Int_t last_bin = sw->GetNbinsX()-1;//1;
 //	while(sw->GetBinLowEdge(last_bin)<1275){//dont smooth bins with EnuE>1899

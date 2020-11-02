@@ -8,7 +8,6 @@ double gadget_getchi2(TH1* obser, TH1* hypo, TMatrixD cov){
 	
 	int bins = cov.GetNrows();
 
-	if(include_sys){
 
 		std::vector<std::stringstream> chiMap(bins);
 
@@ -24,8 +23,8 @@ double gadget_getchi2(TH1* obser, TH1* hypo, TMatrixD cov){
 				double numerator = (dav_i - mcv_i)*(dav_j - mcv_j);
 				double inv_M = covInverse(ib-1,jb-1);
 				double curchi = numerator*inv_M;
-				if(jb-ib==1 && debug_message){
-					std::cout<<"Chi2 Bini "<<ib<<", excess "<<dav_i<<", err "<<obser->GetBinError(ib)<<",MC "<<mcv_i<<",err "<<hypo->GetBinError(ib)<<",inv_Matrix "<<covInverse(ib-1,jb-1)<<std::endl;
+				if(ib==1 && debug_message){
+//					std::cout<<"Chi2 Bini "<<ib<<", excess "<<dav_i<<", err "<<obser->GetBinError(ib)<<",MC "<<mcv_i<<",err "<<hypo->GetBinError(ib)<<",inv_Matrix "<<covInverse(ib-1,jb-1)<<std::endl;
 					std::cout<<"Chi2 Binj "<<jb<<", excess "<<dav_j<<", err "<<obser->GetBinError(jb)<<",MC "<<mcv_j<<",err "<<hypo->GetBinError(jb)<<",inv_Matrix "<<inv_M<<std::endl;
 					std::cout<<"\t\t ---> Resulting chi2 "<<curchi<<std::endl;
 				}
@@ -40,21 +39,6 @@ double gadget_getchi2(TH1* obser, TH1* hypo, TMatrixD cov){
 				std::cout<<chiMap[printdex].rdbuf()<<std::endl;
 			}
 		}
-	} else{
-		for(int ib=1; ib<bins+1; ib++){
-			double dav = obser->GetBinContent(ib);//the obser
-			double mcv = hypo->GetBinContent(ib);
-
-			//data_err^2 = sigma_data^2+sigma_bkg^2, before substraction
-			double data_err = obser->GetBinError(ib);//data w. AllNue error
-			double mc_wgt_err = hypo->GetBinError(ib);//This is sum of sqrt(wgt); after scaling;
-
-			double curchi = pow(dav-mcv,2)/(pow(data_err,2)+pow(mc_wgt_err,2));
-			if(debug_message) std::cout<<"Chi2 Bin "<<ib<<", excess "<<dav<<", err "<<data_err<<",MC "<<mcv<<",err "<<mc_wgt_err<<",chi2 "<<curchi<<std::endl;
-
-			mychi += curchi;
-		}
-	}
 	return mychi;
 }
 
@@ -65,31 +49,26 @@ double gadget_getlikelihood(TH1* obser, TH1* hypo, TMatrixD cov){
 	bool include_sys = false;
 	double ML = 1;
 	double log_norm = 0;
+	double temp_chi2 = 0;
 	
 	int bins = cov.GetNrows();
 
-	if(include_sys){
+//	if(include_sys){
 
-		for(int ib=1; ib<bins+1; ib++){
+//		TMatrixD covInverse = cov.Invert();
+	for(int ib=1; ib<bins+1; ib++){
+		double ErrSq = cov(ib-1,ib-1);
+		double curml = 1.0/sqrt(2*3.14*ErrSq);
+		double chi2i = pow(obser->GetBinContent(ib)-hypo->GetBinContent(ib),2)/(ErrSq);
+		temp_chi2+=chi2i;
+		curml *= exp( - chi2i/2);
+		ML*=curml;	
+		log_norm += log(2*3.14*ErrSq);
+	}
 
-			cov(ib-1,ib-1) = obser->GetBinError(ib)*obser->GetBinError(ib) + hypo->GetBinError(ib)*hypo->GetBinError(ib);//obser->Error contains systematics;
-		}
-		TMatrixD covInverse = cov.Invert();
-		for(int ib=1; ib<bins+1; ib++){
-			if(true){//do Maximum Likelihood calculation;
-				double ErrSq = pow(obser->GetBinError(ib),2) + pow(hypo->GetBinError(ib),2);
-				double curml = 1.0/sqrt(2*3.14*ErrSq);
-				curml *= exp( - pow(obser->GetBinContent(ib)-hypo->GetBinContent(ib),2)/(2*ErrSq));
-				ML*=curml;	
-				log_norm += log(2*3.14*hypo->GetBinContent(ib));
-			}
-		}
-
-		if(debug_message){
-			std::cout<<"ChiSq from Log(L): "<<2*(-0.5*log_norm-log(ML))<<std::endl;
-		}
-	} else{
-
+	if(debug_message){
+		std::cout<<"ChiSq from Log(L): "<<2*(-0.5*log_norm-log(ML))<<std::endl;
+		std::cout<<"Should be equal to :"<<temp_chi2<<std::endl;
 	}
 	return ML;
 }
@@ -123,10 +102,10 @@ std::vector<double> gadget_getYranges(std::vector<TH1*> hists, TH1* hist){
 
 	for( auto hs : hists){
 
-		double maxy_of_hs = hs->GetBinContent(hs->GetMaximumBin());
+		double maxy_of_hs = hs->GetBinContent(hs->GetMaximumBin())+hs->GetBinError(hs->GetMaximumBin());
 		if( maxy < maxy_of_hs ) maxy = maxy_of_hs;
 
-		double miny_of_hs = hs->GetBinContent(hs->GetMinimumBin());
+		double miny_of_hs = hs->GetBinContent(hs->GetMinimumBin())-hs->GetBinError(hs->GetMaximumBin());
 		if( miny > miny_of_hs ) miny = miny_of_hs;
 
 	}
@@ -148,7 +127,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 		bool draw_estimator = true;
 		bool debug_message = true;
 
-		double yaxis_factor = 1.6;
+		double yaxis_factor = 1.2;
 		TString legend_title = "MiniBooNE Preliminary";
 
 		std::cout<<"on stage : "<<stage<<"\n"<<"Setting sig stage entry lists."<<std::endl;
@@ -248,7 +227,8 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				TMatrixD Mall = M_orig;
 
 				for(int ib=1; ib<nbins+1; ib++){
-					double addonvalues = (using_sys)? pow(cur_th1->GetBinError(ib),2) : pow(data_original->GetBinError(ib),2) + pow(cur_th1->GetBinError(ib), 2);
+					double addonvalues = pow(cur_th1->GetBinError(ib),2);
+//					double addonvalues = (using_sys)? pow(cur_th1->GetBinError(ib),2) : pow(data_original->GetBinError(ib),2) + pow(cur_th1->GetBinError(ib), 2);
 					Mms(ib-1,ib-1) += addonvalues;
 					Mall(ib-1,ib-1) += addonvalues;
 				}
@@ -258,7 +238,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				estimators[index] = ks +"#chi^{2}/n#it{DOF}: "+to_string_prec(mychi, 2) +"/"+to_string_prec(nbins-1)
 					+", #chi^{2} P^{val}: "+to_string_prec(TMath::Prob(mychi, nbins - 1 ),3) //-1 is due to the normalization factor
 					+ " Log(L): " + to_string_prec(log(ML),2);
-				std::cout<<"Summary: "<<estimators[index]<<" Scale factor "<<mc_scale_factor[index]<<std::endl;
+				std::cout<<MCfiles[index]->tag<<" summary: "<<estimators[index]<<" Scale factor "<<mc_scale_factor[index]<<std::endl;
 //				std::cout<<"ori data bin1 "<<data_original->GetBinError(1)<<std::endl;
 //				std::cout<<"ori data bin1 "<<AllNue_MC->GetBinError(1)<<std::endl;
 			}
@@ -285,13 +265,14 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 					excess->SetBinError(ib, sqrt(datapErrSq));//now data has AllNue sys + AllNue stat (+ data Stat)
 //					std::cout<<"Bin "<<ib<<" statErr "<<cur_th1->GetBinError(ib)<<" data point Error "<<excess->GetBinError(ib)<<std::endl;
 				}
+				excess->SetTitle(" ");
 				excess->SetMarkerSize(3);
 				excess->SetMarkerStyle(20);
 				excess->SetLineColor(kBlack);
 
 				excess->GetYaxis()->SetTitle((isNorm)? "Events [MC Rescaled]" : "Events");
 				excess->GetYaxis()->SetTitleOffset(1.5);
-				excess->SetMaximum(Yrange[1]);
+				excess->SetMaximum(Yrange[1]*yaxis_factor);
 				excess->SetMinimum(Yrange[0]);
 
 				excess->Draw("E1");

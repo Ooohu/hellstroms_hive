@@ -816,7 +816,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 				//NOTE, all pure_bkg_hist in this part was tsum; CHECK
 				*covar_collapsed = gadget_PrepareMatrix(systematics, covar_f, pure_bkg_hist, data_file->pot, data_file->tag);
 
-//				gadget_SeparateMatrix(covar_collapsed, pure_bkg_hist, "datamc/"+this->tag+var.safe_unit+"_stage_"+std::to_string(stage)+"_ThreeFracM_");
+				gadget_SeparateMatrix(covar_collapsed, pure_bkg_hist, "datamc/"+this->tag+var.safe_unit+"_stage_"+std::to_string(stage)+"_ThreeFracM_");
 
 				double temp_sys_err2 = 0;
 				double temp_all_err2 = 0;

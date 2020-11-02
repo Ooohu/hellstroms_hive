@@ -192,6 +192,8 @@ class bdt_sys : public sys_env, public bdt_file{
  */
 TH2D* MakeCov(TH1D* hist, TH1D* cv);
 
+TH2D* MakeCor(TH2D* twodhist, TH1D* hist, TH1D* cv);
+
 /*
  * covariane matrix propagation, create a fractional covariance matrix;
  */
