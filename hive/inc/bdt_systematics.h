@@ -47,7 +47,8 @@ class sys_env{
 		std::vector<TString> tag_collection;//tags = systags[?]+"_"+bdtftags[?];
 		std::multimap< TString, bdt_sys* > tag2SWmap;
 		std::map< TString, bdt_sys* > tag2CVmap;
-		std::vector<double> output_binning;
+		std::vector<double> xoutput_binning;
+		std::vector<double> youtput_binning;
 
 		//set directories and POT;
 		void setEnv(TString input_top_dir, TString subdir_root, TString subdir_drawn){
@@ -99,6 +100,7 @@ class sys_env{
 		 * make covariance matrix according to the histograms;
 		 */
 		void hist2cov( bdt_variable var, bool rescale, bool smooth_matrix);
+		void hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smooth_matrix);
 		
 		//combine
 //		TH2D combine_sw(TH1D* cv_hist, std::vector<TH1D*> sw_hists);//no need scaling
@@ -178,10 +180,10 @@ class bdt_sys : public sys_env, public bdt_file{
 		 * this fills hist;
 		 */
 //		void Make1dhist(TString histfilename, bdt_variable* var);//,  double plot_pot,std::vector<double> bdt_cuts);
-		void Make1dhist(bdt_variable *var, TFile* out_root);//,  double plot_pot,std::vector<double> bdt_cuts);
+		void Make1dhist(std::vector<bdt_variable> vars, TFile* out_root, bool twovars);//,  double plot_pot,std::vector<double> bdt_cuts);
 
 //		void Load1dhist(TString histfilename, bdt_variable* var);
-		bool Load1dhist(TFile* cur_file);
+		bool Load1dhist(TFile* cur_file, TString label);
 
 
 };
@@ -191,6 +193,7 @@ class bdt_sys : public sys_env, public bdt_file{
  *
  */
 TH2D* MakeCov(TH1D* hist, TH1D* cv);
+TH2D* Make2VarCov(TH1D* hist, TH1D* cv, int one_set_bins);
 
 TH2D* MakeCor(TH2D* twodhist, TH1D* hist, TH1D* cv);
 

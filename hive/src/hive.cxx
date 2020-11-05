@@ -240,7 +240,7 @@ int main (int argc, char *argv[]){
 
 	//systematic files; its follows each bdt_file;
 	sys_env sysConfig;
-	sysConfig.setVerbose(1);//2 - all messge; 1- no debug message;
+	sysConfig.setVerbose(2);//2 - all messge; 1- no debug message;
 	sysConfig.setEnv(analysis_tag, "roots", "drawn");
 	gadget_buildfolder(std::string(sysConfig.top_dir));
 	gadget_buildfolder(std::string(sysConfig.root_dir));
@@ -799,6 +799,7 @@ int main (int argc, char *argv[]){
     else if(mode_option == "var2D"){
 		gadget_buildfolder( mode_option);
 
+
         TFile * ftest = new TFile(("test+"+analysis_tag+".root").c_str(),"recreate");
 
         bdt_stack *histogram_stack = new bdt_stack(analysis_tag+"_var2D");
@@ -813,23 +814,25 @@ int main (int argc, char *argv[]){
             std::cout<<"adding to stack"<<stack_bdt_files[f]->name<<std::endl;
         }
 
+
+
         //make the datamc object 
         bdt_datamc real_datamc(onbeam_data_file, histogram_stack, analysis_tag+"_var2D");	
         real_datamc.setPlotStage(which_stage);                
 
-        if (vector != ""){//if passed specific variables
-            std::vector<bdt_variable> tmp_var =  real_datamc.GetSelectVars(vector, vars);
+		if (vector != ""){//if passed specific variables
+			std::vector<bdt_variable> tmp_var =  real_datamc.GetSelectVars(vector, vars);
 
-			if(tmp_var.size() == 2){ 
-					if(true){ //do systematics
-//					InitSys(tmp_var,vec_precuts, systematics, onbeam_data_file->pot, fbdtcuts, sys_root.c_str(), sys_draw.c_str());//prepare 1dhist, save them in systematics
-					}
-			} else{
-				std::cout<<"No systematics because there are not exact 2 variables as inputs "<<std::endl;
+			//do systematics
+			if(tmp_var[0].has_covar&&tmp_var[1].has_covar){
+
+				sysConfig.setStageHash(which_stage, stack_bdt_files[0],fbdtcuts);
+				sysConfig.InitSys(tmp_var, systematics);//prepare 1dhist, save them in systematics
 			}
+
 			real_datamc.plot2D_DataMinusMC(ftest, tmp_var, fbdtcuts);
-            real_datamc.plot2D(ftest, tmp_var, fbdtcuts);
-        }else{
+			real_datamc.plot2D(ftest, tmp_var, fbdtcuts);
+		}else{
             real_datamc.plot2D(ftest, vars, fbdtcuts); //warning this will make a lot of plots
         }//if passed a vector
     }
