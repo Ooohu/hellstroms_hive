@@ -81,7 +81,7 @@ void gadget_addDoubleAxis(bdt_variable var, TString express, double y_coord){
 	double maxv = var.plot_max;
 
 	//						double mapped_maxv = pow(maxv,(1/3.0))*500;
-	TF1 *temp_axis = new TF1("temp_axis","pow(x,3)",0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
+	TF1 *temp_axis = new TF1("temp_axis",experss,0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
 	//						TF1 *temp_axis = new TF1("temp_axis","pow(x,3.0)",0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
 
 	TGaxis *new_axis = new TGaxis(minv, y_coord, maxv, y_coord, "temp_axis", 403, "-");//This says where to draw axis (xmin,ymin,xmax,ymax,TF1,num_division =N1 + 100*N2 + 10000*N3 [by default, ROOT will take numbers not larger than these to optimize the axis] ,option"-");https://root.cern.ch/doc/master/classTGaxis.html

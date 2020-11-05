@@ -161,8 +161,8 @@ class bdt_sys : public sys_env, public bdt_file{
 		std::vector< TString> TdirNames;
 		std::vector< std::vector<TH1D*> > hists;
 		std::vector< std::vector<TString> > histNames;
-		std::vector< std::vector<TH2D*> > twodhists;
-		std::vector< std::vector<TString> > twodhistNames;
+//		std::vector< std::vector<TH2D*> > twodhists;
+//		std::vector< std::vector<TString> > twodhistNames;
 		std::vector< TMatrixD > CVhists;
 		std::vector< TMatrixD > FracMatrices;
 
@@ -183,7 +183,7 @@ class bdt_sys : public sys_env, public bdt_file{
 		void Make1dhist(std::vector<bdt_variable> vars, TFile* out_root, bool twovars);//,  double plot_pot,std::vector<double> bdt_cuts);
 
 //		void Load1dhist(TString histfilename, bdt_variable* var);
-		bool Load1dhist(TFile* cur_file, TString label);
+		bool Load1dhist(TFile* cur_file);
 
 
 };

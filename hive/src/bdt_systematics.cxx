@@ -418,9 +418,9 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inf
 		//members that need to be derived slightly;
 		num_vars = vars.size();
 		hists.resize(num_vars);
-		twodhists.resize(num_vars);
+//		twodhists.resize(num_vars);
 		histNames.resize(num_vars);
-		twodhistNames.resize(num_vars);
+//		twodhistNames.resize(num_vars);
 		TdirNames.resize(num_vars);
 
 		loads.assign(num_vars, false);
@@ -431,7 +431,7 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inf
 				TString hist_name = vars_name[index];
 				if(its_multithrows) hist_name += std::to_string(jndex);
 				histNames[index].push_back(hist_name);
-				twodhistNames[index].push_back(hist_name);
+//				twodhistNames[index].push_back(hist_name);
 			}//next throw
 		}//next weight
 
@@ -439,7 +439,7 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inf
 
 
 
-bool bdt_sys::Load1dhist(TFile* cur_file, TString label){
+bool bdt_sys::Load1dhist(TFile* cur_file){
 	
 	//bdt_sys has boolean: loaded & fullyloaded 
 	//it is loaded, unless NULL TH1D is found.
@@ -454,10 +454,10 @@ bool bdt_sys::Load1dhist(TFile* cur_file, TString label){
 			TString nth_label = (this->its_multithrows)? std::to_string(jndex) : "";
 			TString hist_name = this->vars_name[index]+nth_label;
 
-			TH1D* temp_th1 =  (TH1D*) cur_file->Get(this->TdirNames[index]+label+"/"+hist_name);
+			TH1D* temp_th1 =  (TH1D*) cur_file->Get(this->TdirNames[index]+"/"+hist_name);
 
 			if(temp_th1 == NULL){//oops, some histograms are missing, label it and redo the previous one and the rest;
-				if(verbose) std::cout<<"\t"<<this->tag+"_"+hist_name+" does not exist. Next";
+				if(verbose) std::cout<<"\t"<<this->TdirNames[index]+"/"+hist_name<<" does not exist. Next";
 				this->loads[index] = false;
 				this->fullyloaded = false;
 				break;
@@ -705,10 +705,12 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 
 		for(int jndex = 0; jndex < xnb+1; jndex++){
 			xoutput_binning.push_back(bin_left);
+//			std::cout<<bin_left<<" ";
 			bin_left+=bingap;
 		}
 	}
-	int nb = nb-1;//totalbins on xaxis;
+//	std::cout<<std::endl;
+	int nb = xoutput_binning.size()-1;//totalbins on xaxis;
 
 	if(ydo_rebin){//binnings are set in the xml
 		youtput_binning = vars[1].edges;
@@ -726,10 +728,10 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 	//adjust xoutput_binning; (1,2)x(100,200,300)->(1,2,3,4);
 	std::vector<double> origin_xout_binning(xoutput_binning);
 	for(int index = 1; index < ynb; index ++){
-	std::cout<<"Add "<<index<<"th copy"<<std::endl;
+		std::cout<<"Add "<<index<<"th copy"<<std::endl;
 		for(int jndex = 0; jndex < xnb; jndex ++){
-		xoutput_binning.push_back(origin_xout_binning[jndex+1]+index*xnh);
-		std::cout<<origin_xout_binning[jndex+1]+index*xnh<<" ";
+			xoutput_binning.push_back(origin_xout_binning[jndex+1]+index*xnh);
+			std::cout<<origin_xout_binning[jndex+1]+index*xnh<<" ";
 		}
 		std::cout<<std::endl;
 	}
@@ -743,10 +745,7 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 	TString final_covroot_name = top_dir + final_prefix +".root";
 	TFile *finalcov_root = (TFile*) TFile::Open(final_covroot_name,"RECREATE");//one final covariance matrix output for plotting;
 
-	//final covariance matrix that sums up all systematics;
-//	TH2D* finalcov =  new TH2D((vars.safe_name).c_str(), (vars.safe_name).c_str() ,nb,&(xoutput_binning).front(),nb,&(xoutput_binning).front());//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
-
-	TCanvas *drawhistCanvas = new TCanvas("drawCanvas", "", 1200, 400);//Cavans to draw;
+	TCanvas *drawhistCanvas = new TCanvas("drawhistCanvas", "", 1200, 400);//Cavans to draw;
 	TCanvas *drawCanvas = new TCanvas("drawCanvas", "", 800, 400);//Cavans to draw;
 
 	//STEP 2 Get histograms, rebin (if is_custombin is true) and rescale with POT; then make covariance matrices;
@@ -759,9 +758,8 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 		bdt_sys* tempsCV = tag2CVmap.find(cur_tag)->second;//bdt_sys that gives CV - tempsCV
 
 
-
 		//Got the CV! 
-		TH1D* cv_hist = (TH1D*) (tempsCV->twodhists[0][0])->Clone();
+		TH1D* cv_hist = (TH1D*) (tempsCV->hists[0][0])->Clone();
 		if(force_rebin) cv_hist->Rebin(2);
 
 		if(checkbins){//check syss's hisogram bin edges; it is good, if all xoutput_binning edges are found.
@@ -966,6 +964,7 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 					if(debug_verbose) std::cout<<nums[jndex*nb+index]<<", ";
 				}
 			}
+			std::cout<<__LINE__<<std::endl;
 			if(debug_verbose) std::cout<<std::endl;
 			covMatrix.SetMatrixArray(nums.GetArray());
 			cvhistM.SetMatrixArray(numsCV.GetArray());
@@ -1261,6 +1260,7 @@ void sys_env::hist2cov( bdt_variable var, bool rescale, bool smooth_matrix){//, 
  */
 TH2D* Make2VarCov(TH1D* hist, TH1D* cv, int one_set_bins){
 
+	bool db_message = false;
 	int totalbins=hist->GetNbinsX();
 	int x_ini = 1;
 	int y_ini = 1;
@@ -1277,17 +1277,18 @@ TH2D* Make2VarCov(TH1D* hist, TH1D* cv, int one_set_bins){
 //	delete gROOT->FindObject("tmp");
 	TH2D* covmatrix = new TH2D(("tmp"+to_string_prec(global_index++,0)).c_str() ,"tmp",totalbins, &(bins.front()),totalbins, &(bins.front()) );//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 	for(int index = x_ini; index<one_set_bins+1; ++index){
+		if(db_message)	std::cout<<"Make2VarCov check: Onesetbins :"<<one_set_bins<<" total bins :"<<totalbins<<std::endl;
 		for(int jndex = y_ini; jndex<one_set_bins+1; ++jndex){
 			double entry = (hist->GetBinContent(index)-cv->GetBinContent(index) )*(hist->GetBinContent(jndex)-cv->GetBinContent(jndex) );
 			covmatrix->SetBinContent(index,jndex,entry);
-
+			if(db_message) std::cout<<"x: "<<index<<" y: "<<jndex<<std::endl;
 		}
-		if(x_ini == one_set_bins){//update index for 2nd blocks;
+		if( index == totalbins) break;
+		if(index == one_set_bins){//update index for 2nd blocks;
 			x_ini = one_set_bins+1;
 			y_ini = one_set_bins+1;
 			one_set_bins*=2;
 		}
-		if(totalbins == x_ini) break;
 	}
 	return covmatrix;
 }
@@ -1570,7 +1571,7 @@ TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv){
 
 void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss){
 	bool do_cov = true; //true - generate covariance matrix everytime, no matter what; false -this boolean is not functioning
-	bool do_hist = true; //true - generate hist everytime, no matter what; false -this boolean is not functioning
+	bool do_hist = false; //true - generate hist everytime, no matter what; false -this boolean is not functioning
 
 	bool skip_sysEvaluation = false;//true - do nothing;
 
@@ -1640,7 +1641,7 @@ void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss
 		for(auto cur_sys : syss){
 			for(int index = 0; index < cur_sys->num_vars; index ++){
 				cur_sys->TdirNames[index]+=twodlabel ;//add to vars_name[index], TdirNames[index];
-				cur_sys->vars_name[index]+=twodlabel ;//add to vars_name[index], TdirNames[index];
+				cur_sys->vars_name[index] ;//add to vars_name[index], TdirNames[index];
 			}
 			TString temptag = cur_sys->tag;
 
@@ -1664,13 +1665,13 @@ void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss
 				cur_sys->fullyloaded = true;
 			}
 
-			if(!do_hist && !(cur_sys->Load1dhist(hist_root, twodlabel) )) all_good = false ;//mark!;
+			if(!do_hist && !(cur_sys->Load1dhist(hist_root) )) all_good = false ;//mark!;
 		}
 
 		if(!all_good){//now need to Make any histograms if false
-			std::cout<<"SHOULD NOT BE HERE"<<__LINE__<<std::endl;
+//			std::cout<<"SHOULD NOT BE HERE"<<__LINE__<<std::endl;
 			hist_root->Close();
-			exit(0);
+//			exit(0);
 			hist_root = (TFile*) TFile::Open(histfilename,"UPDATE");//reopen the file, but in UPDATE mode;
 			for(auto cur_sys : syss){
 				if(verbose) std::cout<<"Updating "<<histfilename<<std::endl;
@@ -1680,7 +1681,7 @@ void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss
 					cur_sys->Make1dhist(vars, hist_root, do_2dhist);
 					cur_sys->fullyloaded = true;
 				}
-				cur_sys->Load1dhist(hist_root, twodlabel);
+				cur_sys->Load1dhist(hist_root);
 			}
 			hist_root->Write();
 		}

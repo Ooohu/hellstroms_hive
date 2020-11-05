@@ -829,6 +829,7 @@ int main (int argc, char *argv[]){
 				sysConfig.setStageHash(which_stage, stack_bdt_files[0],fbdtcuts);
 				sysConfig.InitSys(tmp_var, systematics);//prepare 1dhist, save them in systematics
 			}
+			exit(0);
 
 			real_datamc.plot2D_DataMinusMC(ftest, tmp_var, fbdtcuts);
 			real_datamc.plot2D(ftest, tmp_var, fbdtcuts);
