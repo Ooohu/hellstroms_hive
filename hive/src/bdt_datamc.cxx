@@ -31,44 +31,10 @@ void gadget_summary(bdt_variable var, std::vector<bdt_file*>  bdtfiles, std::vec
 	}
 }
 
-//This is called in the hive.cxx. It is used var2D for reading var1,var2,var3 argument
-std::vector<bdt_variable> bdt_datamc::GetSelectVars(std::string vector, std::vector<bdt_variable> vars){
-    std::vector<bdt_variable> select_vars = {};
-    //first parse string as a vector
-
-    std::vector<int> vect;
-    std::stringstream ss(vector);
-
-    //for each character in the string add the ints
-    for (int i; ss >> i;) {
-        vect.push_back(i);    
-        if (ss.peek() == ',')
-            ss.ignore();
-    }
-
-    //then for each number, add that variable to the vars list
-    for (std::size_t i = 0; i < vect.size(); i++){
-        select_vars.push_back(vars[vect[i]]);
-    }
-
-    for(auto vars: select_vars){
-        std::cout<<"added vars to list "<<vars.safe_unit<<std::endl;
-
-    }
-
-    return select_vars;
-}
 
 
 int bdt_datamc::printPassingDataEvents(std::string outfilename, int stage, std::vector<double> cuts){
 
-    //data_file->calcCosmicBDTEntryList(c1, c2);
-    //data_file->calcBNBBDTEntryList(c1, c2);
-    //data_file->setStageEntryList(3);
-
-    //   std::string fake = "fake_bnbbdt_list_"+std::to_string(c1)+"_"+std::to_string(c2)+"_" +data_file->tag;
-
-    // data_file=  mc_stack->stack[0];
     std::string fake = "";
     data_file->tvertex->Draw((">>"+fake).c_str(), data_file->getStageCuts(stage,cuts).c_str() , "entrylist");
     TEntryList * fake_list = (TEntryList*)gDirectory->Get(fake.c_str());
@@ -133,42 +99,120 @@ int bdt_datamc::printPassingDataEvents(std::string outfilename, int stage, std::
     return 0;
 }
 
+//th2hist = {data-MC, data, MC};
+void gadget_DrawhistProjections(std::vector<TH2*> th2hist, std::string xlabel, std::string ylabel, TString plot_title){
+	//need to create Canvas before calling this function:
+	//	TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
 
-//int bdt_datamc::printPassingDataEvents(std::string outfilename, int stage, double c1, double c2){
-//
-//    data_file->calcCosmicBDTEntryList(c1, c2);
-//    data_file->calcBNBBDTEntryList(c1, c2);
-//    data_file->setStageEntryList(3);
-//
-//    std::string fake = "fake_bnbbdt_list_"+std::to_string(c1)+"_"+std::to_string(c2)+"_" +data_file->tag;
-//
-//    data_file->tvertex->Draw((">>"+fake).c_str(), data_file->getStageCuts(3,c1,c2).c_str() , "entrylist");
-//    TEntryList * fake_list = (TEntryList*)gDirectory->Get(fake.c_str());
-//
-//
-//    int n_run_number = 0;
-//    int n_subrun_number = 0;
-//    int n_event_number = 0;
-//    double n_vertex_z =0;
-//
-//    data_file->tvertex->SetBranchAddress("run_number",    &n_run_number);
-//    data_file->tvertex->SetBranchAddress("subrun_number", &n_subrun_number);
-//    data_file->tvertex->SetBranchAddress("event_number",  &n_event_number);
-//    data_file->tvertex->SetBranchAddress("reco_vertex_z", &n_vertex_z);
-//
-//    std::cout<<"Starting printPassingDataEvents() for "<<data_file->name<<std::endl;
-//
-//    for(int i=0;i < fake_list->GetN(); i++ ){
-//        data_file->tvertex->GetEntry( fake_list->GetEntry(i));
-//        std::cout<<i<<" "<<fake_list->GetEntry(i)<<" "<<n_run_number<<" "<<n_subrun_number<<" "<<n_event_number<<" "<<n_vertex_z<<std::endl;
-//    }
-//    std::cout<<"End printPassingDataEvents() for "<<data_file->name<<std::endl;
-//
-//
-//    return 0;
-//}
+	TH1D* projected_data = th2hist[1]->ProjectionX();//Projected TH2
+	TH1D* projected_datay = th2hist[1]->ProjectionY();//Projected TH2
+	TH1D* projected_MC = th2hist[2]->ProjectionX();//Projected TH2
+	TH1D* projected_MCy = th2hist[2]->ProjectionY();//Projected TH2
+
+	//STEP 4, put the (data-MC) and projections on top and right together;
+	//Create a TCanvas and prepare a TPad.
+
+	TPad *main_pad =		new TPad("mainpad_" , "mainpad_", 0, 0, 0.49, 0.49);
+	main_pad->Draw();
+
+	TPad *top_pad =			new TPad("toppad_"  , "toppad_", 0, 0.51, 0.49, 1.0);
+	top_pad->Draw();
+
+	TPad *right_pad =		new TPad("rightpad_", "rightpad_", 0.51, 0, 1.0, 0.49);
+	right_pad->Draw();
+
+	TPad *upperright_pad =	new TPad("rightpad_", "rightpad_", 0.51, 0.51, 1.0, 1.0);
+	upperright_pad->Draw();
+
+	//STEP 4.1, draw the mainpad (bottom left)
+	main_pad->cd();
+	th2hist[0]->Draw("COLZ");
+	th2hist[0]->SetTitle(plot_title);
+	th2hist[0]->GetXaxis()->SetTitle((xlabel).c_str());
+	th2hist[0]->GetXaxis()->SetTitleSize(0.04);
+	//                    th2hist[0]->GetXaxis()->SetTitleOffset(1.2);
+	th2hist[0]->GetYaxis()->SetTitle((ylabel).c_str());
+	th2hist[0]->GetYaxis()->SetTitleSize(0.04);
+	th2hist[0]->GetYaxis()->SetTitleOffset(1.2);
+	//                    main_pad->SetRightMargin(0.3);
+
+	//STEP 4.2, draw the toppad (upper left)
+	top_pad->cd();//draw on the top panel
+	projected_MC->SetFillColor(kRed-2);
+	projected_MC->SetTitle(("Spectrum of "+xlabel).c_str());
+	projected_MC->GetYaxis()->SetTitle("Event Rate");
+	projected_MC->GetXaxis()->SetTitleOffset(1.1);
+	projected_MC->GetXaxis()->SetTitleSize(0.04);
+	double max1 = 1.2*std::max(projected_MC->GetMaximum(),projected_data->GetMaximum());
+	projected_MC->SetMaximum(max1);
+	projected_MC->SetMinimum(0);
+	projected_MC->SetStats(false);
+	projected_MC->Draw("hist");
+
+	projected_data->SetMarkerStyle(20);
+	projected_data->SetMarkerSize(2);
+	projected_data->Draw("same E");
+
+	//STEP 4.3, draw the rightpad (bottom right)
+	right_pad->cd();//draw on the right panel
+	projected_MCy->SetFillColor(kRed-2);
+	projected_MCy->SetTitle(("Spectrum of "+ylabel).c_str());
+	projected_MCy->GetYaxis()->SetTitle("Event Rate");
+	projected_MCy->GetXaxis()->SetTitleOffset(1.1);
+	projected_MCy->GetXaxis()->SetTitleSize(0.04);
+	double max2 = 1.2*std::max(projected_MCy->GetMaximum(),projected_datay->GetMaximum());
+	projected_MCy->SetMaximum(max2);
+	projected_MCy->SetMinimum(0);
+	projected_MCy->SetStats(false);
+	projected_MCy->Draw("hist");
+
+	projected_datay->SetMarkerStyle(20);
+	projected_datay->SetMarkerSize(2);
+	projected_datay->SetLineColor(kBlack);
+	//					projected_datay->SetBinErrorOption(TH1::kPoisson);
+	projected_datay->Draw("same");//CHECK, dont know how to draw horizontal dot
+
+	//STEP 4.4 Add POT info. to the upper right pad.
+	upperright_pad->cd();
+	TLatex pottex;
+	pottex.SetTextSize(0.06);
+	pottex.SetTextAlign(13);  //align at top
+	pottex.SetNDC();
+
+//	double pot_unit = 1e20;
+//	std::string pot_unit_s = "e20";
+//	std::string pot_draw = data_file->topo_name+" "+to_string_prec(plot_pot/pot_unit,1)+ pot_unit_s+" POT";
+//	std::string description = "Stage " + std::to_string(s)+" "+stage_names[s];
+	//					pottex.DrawLatex(.10,.40, description.c_str());
+//	pottex.DrawLatex(.20,.30, pot_draw.c_str());
+	//legend
+	TLegend *legend = new TLegend(0, 0.1,0.8,0.2);
+	legend->SetNColumns(2);
+	legend->AddEntry(projected_datay, "Data","P");
+
+//	if(count_signal){
+//		legend->AddEntry(projected_MCy, "MC = BkgMC+bestFit","F");
+//	} else{
+//		legend->AddEntry(projected_MCy, "MC = BkgMC","F");
+//	}
+	legend->Draw();
 
 
+	delete projected_MC;
+	delete projected_MCy;
+	delete projected_data;
+	delete projected_datay;
+
+}
+
+
+int bdt_datamc::plot2DSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics){
+
+//Load up systemaitcs
+
+//make 1dhistograms;
+
+}
 
 
 //This gives out 2D comparison; each slot contains information of (Data-MC)/sqrt(MC)
@@ -283,7 +327,11 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
 						std::cout<<"Bin "<<xaxis<<" has # events "<<count_y<<std::endl;
 						}
 					}
-
+                    TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
+					cobs->cd();
+					TString ptitle = "[Data-MC]/#sqrt{MC}";
+					gadget_DrawhistProjections({DataMinusMC,d0, non_d0}, var1.unit, var2.unit, ptitle);
+/*
 				//STEP 3, Prepare side plots (top and right)
 					TH1D* projected_MC = non_d0->ProjectionX();//Projected TH2
 					TH1D* projected_MCy = non_d0->ProjectionY();//Projected TH2
@@ -292,7 +340,6 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
 
 				//STEP 4, put DataMinusMC and projections on top and right together;
                     //Create a TCanvas and prepare a TPad.
-                    TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
                     cobs->cd();
 
 					TPad *main_pad = new TPad(("mainpad_"+stage_names.at(s)).c_str(), ("mainpad_"+stage_names.at(s)).c_str(), 0, 0, 0.49, 0.49);
@@ -373,12 +420,12 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
 					legend->SetNColumns(2);
 					legend->AddEntry(projected_datay, "Data","P");
 					if(count_signal){
-					legend->AddEntry(projected_MCy, "MC = BkgMC+bestFit","F");
+						legend->AddEntry(projected_MCy, "MC = BkgMC+bestFit","F");
 					} else{
-					legend->AddEntry(projected_MCy, "MC = BkgMC","F");
+						legend->AddEntry(projected_MCy, "MC = BkgMC","F");
 					}
 					legend->Draw();
-
+*/
                     std::cout<<"Writing png and pdf."<<std::endl;
                     cobs->Write();
                     cobs->SaveAs(("var2D/"+tag+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_DataMinusMC_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
@@ -389,10 +436,6 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
                     delete cobs;
                     delete d0;//data
                     delete non_d0;//MC
-					delete projected_MC;
-                    delete projected_MCy;
-                    delete projected_data;
-                    delete projected_datay;
                 }//if different variables and haven't already used the combo
             }//end of var2 loop
         }//end of var1 loop
@@ -400,6 +443,7 @@ int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars,
 
     return 0;
 }
+
 
 
 //ordinary 2D comparison for each samples;
@@ -508,10 +552,11 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 					//now repeat for all of the MC files
 
 					TH2* grouped_2dhist;
+
 					bool first_time = true;
 					TString tem_output_name;
 					std::string tem_title;
-
+					
 					for(auto &f: mc_stack->stack){
 
 						std::cout<<"Stack "<<f->tag<<" level "<<s<<std::endl;
@@ -536,9 +581,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 							} else{
 								grouped_2dhist->Add(mc);
 							}
-						}
-
-						//End of grouping
+						}//End of grouping
 
 						mc->Draw("COLZ");
 						if(setmax)mc->SetMaximum(zmax);
@@ -586,15 +629,14 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 						delete grouped_2dhist;
 					}
 
-
 				}//if different variables and haven't already used the combo
-
             }//var2
         }//var1
     }//stage
 
     return 0;
 }
+
 
 //systematic friendly plotStacks for MiniBooNE.
 int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics){
@@ -1904,99 +1946,99 @@ int bdt_datamc::simpleCollapse(TMatrixD * Min, TMatrixD * Mout, bdt_variable & v
 
 
 
-int bdt_datamc::printPassingPi0DataEvents(std::string outfilename, int stage, std::vector<double> cuts){
-
-    //data_file->calcCosmicBDTEntryList(c1, c2);
-    //data_file->calcBNBBDTEntryList(c1, c2);
-    //data_file->setStageEntryList(3);
-
-    //   std::string fake = "fake_bnbbdt_list_"+std::to_string(c1)+"_"+std::to_string(c2)+"_" +data_file->tag;
-
-    // data_file=  mc_stack->stack[0];
-    std::string fake = "";
-    data_file->tvertex->Draw((">>"+fake).c_str(), data_file->getStageCuts(stage,cuts).c_str() , "entrylist");
-    TEntryList * fake_list = (TEntryList*)gDirectory->Get(fake.c_str());
-
-    int n_run_number = 0;
-    int n_subrun_number = 0;
-    int n_event_number = 0;
-    double n_vertex_x = 0;
-    double n_vertex_y = 0;
-    double n_vertex_z = 0;
-    std::vector<unsigned long> *i_shr = 0;
-    std::vector<unsigned long> *i_trk = 0;
-    std::vector<double> *reco_shower_energy_max = 0;
-    std::vector<double> *reco_shower_dirx = 0;
-    std::vector<double> *reco_shower_diry = 0;
-    std::vector<double> *reco_shower_dirz = 0;
-    std::vector<double> *reco_track_displacement = 0;
-    std::vector<double> *reco_track_proton_kinetic_energy = 0;
-
-    // Necessary for vectors, for some reason
-    TBranch *bi_shr = 0;
-    TBranch *bi_trk = 0;
-    TBranch *breco_shower_energy_max = 0;
-    TBranch *bsim_shower_energy = 0;
-    TBranch *breco_shower_dirx = 0;
-    TBranch *breco_shower_diry = 0;
-    TBranch *breco_shower_dirz = 0;
-    TBranch *breco_track_displacement = 0;
-    TBranch *breco_track_proton_kinetic_energy = 0;
-    
-    data_file->tvertex->SetBranchAddress("run_number",    &n_run_number);
-    data_file->tvertex->SetBranchAddress("subrun_number", &n_subrun_number);
-    data_file->tvertex->SetBranchAddress("event_number",  &n_event_number);
-    data_file->tvertex->SetBranchAddress("reco_vertex_x", &n_vertex_x);
-    data_file->tvertex->SetBranchAddress("reco_vertex_y", &n_vertex_y);
-    data_file->tvertex->SetBranchAddress("reco_vertex_z", &n_vertex_z);
-
-    data_file->tvertex->SetBranchAddress("i_shr", &i_shr, &bi_shr);
-    data_file->tvertex->SetBranchAddress("i_trk", &i_trk, &bi_trk);
-    data_file->tvertex->SetBranchAddress("reco_shower_energy_max", &reco_shower_energy_max, &breco_shower_energy_max);
-    data_file->tvertex->SetBranchAddress("reco_shower_dirx", &reco_shower_dirx, &breco_shower_dirx);
-    data_file->tvertex->SetBranchAddress("reco_shower_diry", &reco_shower_diry, &breco_shower_diry);
-    data_file->tvertex->SetBranchAddress("reco_shower_dirz", &reco_shower_dirz, &breco_shower_dirz);
-    data_file->tvertex->SetBranchAddress("reco_track_displacement", &reco_track_displacement, &breco_track_displacement);
-    data_file->tvertex->SetBranchAddress("reco_track_proton_kinetic_energy", &reco_track_proton_kinetic_energy, &breco_track_proton_kinetic_energy);
-
-    std::cout<<"Starting printPassingPi0DataEvents() for "<<data_file->name<<std::endl;
-
-    for(int i=0;i < fake_list->GetN(); i++ ){
-        data_file->tvertex->GetEntry( fake_list->GetEntry(i));
-
-        // Shower kinematics
-        double E1 = reco_shower_energy_max->at(i_shr->at(0));
-        double E2 = reco_shower_energy_max->at(i_shr->at(1));
-        // Correction factors from output of energy correction script in hive/other/
-        E1 = 1.24607*E1 + 4.11138;
-        E2 = 1.24607*E2 + 4.11138;
-
-        double opAng = TMath::ACos(reco_shower_dirx->at(0)*reco_shower_dirx->at(1)+
-                       reco_shower_diry->at(0)*reco_shower_diry->at(1)+
-                       reco_shower_dirz->at(0)*reco_shower_dirz->at(1)) ;
-        double invMass = sqrt(2*E1*E2*(1 - opAng) );
-
-        // Track kinematics
-
-        // Print kinematics
-        /*
-        std::cout<<i<<" "<<fake_list->GetEntry(i)<<" "<<n_run_number <<" "
-                        <<n_subrun_number<<" "
-                        << n_event_number <<" ("
-                        <<n_vertex_x<<", "<<n_vertex_y<<", "<<n_vertex_z<< ")"<<" " 
-                        << E1 << " " 
-                        << E2 << " "
-                        << opAng << " " 
-                        << invMass << " " 
-                        << reco_track_displacement->at(i_trk->at(0)) << " " 
-                        << reco_track_proton_kinetic_energy->at(i_trk->at(0)) << " " << std::endl;
-        */
-        std::cout <<  opAng*57.2958 << std::endl;
-    }
-    std::cout<<"End printPassingDataEvents()  for "<<data_file->name<<std::endl;
-
-
-    return 0;
-}
+//int bdt_datamc::printPassingPi0DataEvents(std::string outfilename, int stage, std::vector<double> cuts){
+//
+//    //data_file->calcCosmicBDTEntryList(c1, c2);
+//    //data_file->calcBNBBDTEntryList(c1, c2);
+//    //data_file->setStageEntryList(3);
+//
+//    //   std::string fake = "fake_bnbbdt_list_"+std::to_string(c1)+"_"+std::to_string(c2)+"_" +data_file->tag;
+//
+//    // data_file=  mc_stack->stack[0];
+//    std::string fake = "";
+//    data_file->tvertex->Draw((">>"+fake).c_str(), data_file->getStageCuts(stage,cuts).c_str() , "entrylist");
+//    TEntryList * fake_list = (TEntryList*)gDirectory->Get(fake.c_str());
+//
+//    int n_run_number = 0;
+//    int n_subrun_number = 0;
+//    int n_event_number = 0;
+//    double n_vertex_x = 0;
+//    double n_vertex_y = 0;
+//    double n_vertex_z = 0;
+//    std::vector<unsigned long> *i_shr = 0;
+//    std::vector<unsigned long> *i_trk = 0;
+//    std::vector<double> *reco_shower_energy_max = 0;
+//    std::vector<double> *reco_shower_dirx = 0;
+//    std::vector<double> *reco_shower_diry = 0;
+//    std::vector<double> *reco_shower_dirz = 0;
+//    std::vector<double> *reco_track_displacement = 0;
+//    std::vector<double> *reco_track_proton_kinetic_energy = 0;
+//
+//    // Necessary for vectors, for some reason
+//    TBranch *bi_shr = 0;
+//    TBranch *bi_trk = 0;
+//    TBranch *breco_shower_energy_max = 0;
+//    TBranch *bsim_shower_energy = 0;
+//    TBranch *breco_shower_dirx = 0;
+//    TBranch *breco_shower_diry = 0;
+//    TBranch *breco_shower_dirz = 0;
+//    TBranch *breco_track_displacement = 0;
+//    TBranch *breco_track_proton_kinetic_energy = 0;
+//    
+//    data_file->tvertex->SetBranchAddress("run_number",    &n_run_number);
+//    data_file->tvertex->SetBranchAddress("subrun_number", &n_subrun_number);
+//    data_file->tvertex->SetBranchAddress("event_number",  &n_event_number);
+//    data_file->tvertex->SetBranchAddress("reco_vertex_x", &n_vertex_x);
+//    data_file->tvertex->SetBranchAddress("reco_vertex_y", &n_vertex_y);
+//    data_file->tvertex->SetBranchAddress("reco_vertex_z", &n_vertex_z);
+//
+//    data_file->tvertex->SetBranchAddress("i_shr", &i_shr, &bi_shr);
+//    data_file->tvertex->SetBranchAddress("i_trk", &i_trk, &bi_trk);
+//    data_file->tvertex->SetBranchAddress("reco_shower_energy_max", &reco_shower_energy_max, &breco_shower_energy_max);
+//    data_file->tvertex->SetBranchAddress("reco_shower_dirx", &reco_shower_dirx, &breco_shower_dirx);
+//    data_file->tvertex->SetBranchAddress("reco_shower_diry", &reco_shower_diry, &breco_shower_diry);
+//    data_file->tvertex->SetBranchAddress("reco_shower_dirz", &reco_shower_dirz, &breco_shower_dirz);
+//    data_file->tvertex->SetBranchAddress("reco_track_displacement", &reco_track_displacement, &breco_track_displacement);
+//    data_file->tvertex->SetBranchAddress("reco_track_proton_kinetic_energy", &reco_track_proton_kinetic_energy, &breco_track_proton_kinetic_energy);
+//
+//    std::cout<<"Starting printPassingPi0DataEvents() for "<<data_file->name<<std::endl;
+//
+//    for(int i=0;i < fake_list->GetN(); i++ ){
+//        data_file->tvertex->GetEntry( fake_list->GetEntry(i));
+//
+//        // Shower kinematics
+//        double E1 = reco_shower_energy_max->at(i_shr->at(0));
+//        double E2 = reco_shower_energy_max->at(i_shr->at(1));
+//        // Correction factors from output of energy correction script in hive/other/
+//        E1 = 1.24607*E1 + 4.11138;
+//        E2 = 1.24607*E2 + 4.11138;
+//
+//        double opAng = TMath::ACos(reco_shower_dirx->at(0)*reco_shower_dirx->at(1)+
+//                       reco_shower_diry->at(0)*reco_shower_diry->at(1)+
+//                       reco_shower_dirz->at(0)*reco_shower_dirz->at(1)) ;
+//        double invMass = sqrt(2*E1*E2*(1 - opAng) );
+//
+//        // Track kinematics
+//
+//        // Print kinematics
+//        /*
+//        std::cout<<i<<" "<<fake_list->GetEntry(i)<<" "<<n_run_number <<" "
+//                        <<n_subrun_number<<" "
+//                        << n_event_number <<" ("
+//                        <<n_vertex_x<<", "<<n_vertex_y<<", "<<n_vertex_z<< ")"<<" " 
+//                        << E1 << " " 
+//                        << E2 << " "
+//                        << opAng << " " 
+//                        << invMass << " " 
+//                        << reco_track_displacement->at(i_trk->at(0)) << " " 
+//                        << reco_track_proton_kinetic_energy->at(i_trk->at(0)) << " " << std::endl;
+//        */
+//        std::cout <<  opAng*57.2958 << std::endl;
+//    }
+//    std::cout<<"End printPassingDataEvents()  for "<<data_file->name<<std::endl;
+//
+//
+//    return 0;
+//}
 
 

@@ -81,7 +81,7 @@ void gadget_addDoubleAxis(bdt_variable var, TString express, double y_coord){
 	double maxv = var.plot_max;
 
 	//						double mapped_maxv = pow(maxv,(1/3.0))*500;
-	TF1 *temp_axis = new TF1("temp_axis",experss,0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
+	TF1 *temp_axis = new TF1("temp_axis",express,0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
 	//						TF1 *temp_axis = new TF1("temp_axis","pow(x,3.0)",0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
 
 	TGaxis *new_axis = new TGaxis(minv, y_coord, maxv, y_coord, "temp_axis", 403, "-");//This says where to draw axis (xmin,ymin,xmax,ymax,TF1,num_division =N1 + 100*N2 + 10000*N3 [by default, ROOT will take numbers not larger than these to optimize the axis] ,option"-");https://root.cern.ch/doc/master/classTGaxis.html
@@ -124,7 +124,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 		int num_MC = MCfiles.size();
 		double is_bestfit_in = false;//false - not include signal in the output;
 //		bool do_pair_plot = true;//true - excess vs each MC;
-		bool draw_estimator = true;
+		bool draw_estimator = false;
 		bool debug_message = true;
 
 		double yaxis_factor = 1.2;
@@ -227,8 +227,8 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				TMatrixD Mall = M_orig;
 
 				for(int ib=1; ib<nbins+1; ib++){
-					double addonvalues = pow(cur_th1->GetBinError(ib),2);
-//					double addonvalues = (using_sys)? pow(cur_th1->GetBinError(ib),2) : pow(data_original->GetBinError(ib),2) + pow(cur_th1->GetBinError(ib), 2);
+//					double addonvalues = pow(cur_th1->GetBinError(ib),2);
+					double addonvalues = (using_sys)? pow(cur_th1->GetBinError(ib),2) : pow(data_original->GetBinError(ib),2) + pow(cur_th1->GetBinError(ib), 2);
 					Mms(ib-1,ib-1) += addonvalues;
 					Mall(ib-1,ib-1) += addonvalues;
 				}
@@ -283,17 +283,22 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				if((v.unit).find("R/500")!= std::string::npos) gadget_addDoubleAxis(v, "pow(x,3)" , Yrange[1]*yaxis_factor);
 
 				//Legend
-				TLegend *legend = new TLegend(0.52,0.56,0.88,0.80);//x1,y1,x2,y2
+				TLegend *legend = new TLegend(0.51,0.60,0.88,0.83);//x1,y1,x2,y2
 
-				TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Data - NueMC";
+				TString legend_label = (is_bestfit_in)? "Data - (NueMC+Best Fit)": "Excess";
 				legend_label += using_sys? " w. Stat & Sys. Error" : "";//" w. Stat & Sys. Error";
 
 				legend->AddEntry(excess, legend_label, "lp" );
-				legend->AddEntry(MC[index], (MCfiles[index]->plot_name+" scaled:x"+to_string_prec(mc_scale_factor[index],2)).c_str(),"lf");
+				if(draw_estimator){
+					legend->AddEntry(MC[index], (MCfiles[index]->plot_name+" scaled:x"+to_string_prec(mc_scale_factor[index],2)).c_str(),"lf");
+				} else{
+					legend->AddEntry(MC[index], (MCfiles[index]->plot_name).c_str(),"lf");
+				}
 
-				legend->SetHeader(legend_title,"C");
+//				legend->SetHeader(legend_title,"C");
 				legend->SetBorderSize(0);
-				legend->SetLineColor(kWhite);
+				if(!draw_estimator)legend->SetTextSize(0.045);
+				legend->SetLineColor(kBlack);
 				legend->SetFillStyle(0);
 				legend->SetNColumns(1);
 

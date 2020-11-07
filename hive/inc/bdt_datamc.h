@@ -78,14 +78,17 @@ class bdt_datamc{
             do_subtraction=true;
             return 0;
         }
-        std::vector<bdt_variable> GetSelectVars(std::string vector, std::vector<bdt_variable> vars);
+//        std::vector<bdt_variable> GetSelectVars(std::string vector, std::vector<bdt_variable> vars);
+
+int plot2DSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics);
+
         int plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts);
 		int plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts);
 //        int plotStacks(TFile *ftest, std::vector<bdt_variable> vars, double c1, double c2);
         int plotStacks(TFile*f,std::vector<bdt_variable> vars, std::vector<double> cuts, std::vector<bdt_info> bdt_infos);
 
 // add the systematic friendly version for MiniBooNE;
-int plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics);
+		int plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics);
 
 //TMatrixD PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root, TH1* MChist);
 
@@ -100,7 +103,7 @@ int plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<doub
 
 //        int printPassingDataEvents(std::string outfilename, int stage, double c1, double c2);
         int printPassingDataEvents(std::string outfilename, int stage, std::vector<double> cuts);
-        int printPassingPi0DataEvents(std::string outfilename, int stage, std::vector<double> cuts);
+//        int printPassingPi0DataEvents(std::string outfilename, int stage, std::vector<double> cuts);
 
 //        int calcChi2(std::vector<bdt_file> *stack_files, bdt_file *data_file);
 //        int scaleNorm(std::vector<bdt_file> *stack_files, bdt_file data_file, double scaleLow, double scaleHigh, double scaleStep);
