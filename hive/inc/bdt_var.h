@@ -131,10 +131,10 @@ struct bdt_variable{
 					n_bins = (int)std::stod(token);
 					break;
 				case 2:
-					plot_min = (int)std::stod(token);
+					plot_min = (double)std::stod(token);
 					break;
 				case 3:
-					plot_max = (int)std::stod(token);
+					plot_max = (double)std::stod(token);
 					break;
 			}
 

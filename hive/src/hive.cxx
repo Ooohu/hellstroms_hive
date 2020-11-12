@@ -838,7 +838,8 @@ int main (int argc, char *argv[]){
 //        bdt_datamc real_datamc(onbeam_data_file, histogram_stack, analysis_tag+"_var2D");	
 //        real_datamc->setPlotStage(which_stage);                
 
-		if (vvector != ""){//if passed specific variables in -v 1,2,3,etc.
+//            real_datamc->plot2D(ftest, use_vars, fbdtcuts); //warning this will make a lot of plots
+//		if (vvector != ""){//if passed specific variables in -v 1,2,3,etc.
 //			std::vector<bdt_variable> tmp_var =  real_datamc->GetSelectVars(vector, vars);
 
 			//do systematics
@@ -849,12 +850,12 @@ int main (int argc, char *argv[]){
 			}
 
 //			real_datamc->setPlotStage(which_stage);//set through -s option;
-			real_datamc->plot2DSys(ftest, use_vars, fbdtcuts, bdt_infos, systematics);
+//			real_datamc->plot2DSys(ftest, use_vars, fbdtcuts, bdt_infos, systematics);
 //			real_datamc->plot2D_DataMinusMC(ftest, use_vars, fbdtcuts);
 			//real_datamc->plot2D(ftest, use_vars, fbdtcuts);
-		}else{//no specific variables, means all variables are considered.
-            real_datamc->plot2D(ftest, vars, fbdtcuts); //warning this will make a lot of plots
-        }//if passed a vector
+//		}else{//no specific variables, means all variables are considered.
+            real_datamc->plot2D(ftest, use_vars, fbdtcuts, systematics); //warning this will make a lot of plots
+//        }//if passed a vector
     }
     else if(mode_option == "superdatamc"){
         std::cout<<"Starting superdatamc "<<std::endl;

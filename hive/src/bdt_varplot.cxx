@@ -73,26 +73,6 @@ double gadget_getlikelihood(TH1* obser, TH1* hypo, TMatrixD cov){
 	return ML;
 }
 
-//void gadget_addDoubleAxis(v, "pow(x,3)" , maxy*yaxis_factor);
-
-void gadget_addDoubleAxis(bdt_variable var, TString express, double y_coord){
-//	std::cout<<"Draw extra x-axis"<<std::endl;
-	double minv = var.plot_min;
-	double maxv = var.plot_max;
-
-	//						double mapped_maxv = pow(maxv,(1/3.0))*500;
-	TF1 *temp_axis = new TF1("temp_axis",express,0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
-	//						TF1 *temp_axis = new TF1("temp_axis","pow(x,3.0)",0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
-
-	TGaxis *new_axis = new TGaxis(minv, y_coord, maxv, y_coord, "temp_axis", 403, "-");//This says where to draw axis (xmin,ymin,xmax,ymax,TF1,num_division =N1 + 100*N2 + 10000*N3 [by default, ROOT will take numbers not larger than these to optimize the axis] ,option"-");https://root.cern.ch/doc/master/classTGaxis.html
-	new_axis->SetTitle("Radius [cm]");
-	new_axis->SetLabelSize(0.03);
-	new_axis->SetTitleSize(0.03);
-	new_axis->SetTitleOffset(1.3);
-	new_axis->Draw();
-	//std::cout<<"min "<<minv<<" max "<<maxv<<" maxy "<<maxy<<std::endl;
-}
-
 std::vector<double> gadget_getYranges(std::vector<TH1*> hists, TH1* hist){
 
 	double maxy = 0;
@@ -280,7 +260,11 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 				cur_th1->Draw("hist same");
 				
 
-				if((v.unit).find("R/500")!= std::string::npos) gadget_addDoubleAxis(v, "pow(x,3)" , Yrange[1]*yaxis_factor);
+	//ticks formula: ndiv=N1 + 100*N2 + 10000*N3
+				if((v.unit).find("R/500")!= std::string::npos){
+				double ticks = 403;
+				gadget_addDoubleAxis("R [cm]", "pow(x,3)" , Yrange[1]*yaxis_factor, 0, 1, 0,500, ticks);
+				}
 
 				//Legend
 				TLegend *legend = new TLegend(0.51,0.60,0.88,0.83);//x1,y1,x2,y2

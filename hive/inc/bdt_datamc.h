@@ -34,6 +34,7 @@
 #include "TGraphAsymmErrors.h"
 #include "TF1.h"
 #include "TMath.h"
+#include "TGaxis.h"
 
 class bdt_datamc{
     public:
@@ -80,9 +81,8 @@ class bdt_datamc{
         }
 //        std::vector<bdt_variable> GetSelectVars(std::string vector, std::vector<bdt_variable> vars);
 
-int plot2DSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics);
 
-        int plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts);
+        int plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts,std::vector<bdt_sys*> systematics );
 		int plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts);
 //        int plotStacks(TFile *ftest, std::vector<bdt_variable> vars, double c1, double c2);
         int plotStacks(TFile*f,std::vector<bdt_variable> vars, std::vector<double> cuts, std::vector<bdt_info> bdt_infos);
@@ -117,5 +117,7 @@ int plot2DSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> 
 };
 
 void gadget_summary(bdt_variable var, std::vector<bdt_file*>  bdtfiles, std::vector<TH1*> hists);
+
+void gadget_addDoubleAxis(std::string name, TString express, double y_coord, double minv, double maxv, double domain_min, double domain_max, double ticks);
 
 #endif

@@ -32,7 +32,7 @@ TH1D gadget_vrebin(TH1D* hist, std::vector<double > binning){
  */
 int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > xoutput_binning){
 
-			bool debug_message = false;
+			bool debug_message = true;
 
 			int binchecker = 0;//monitor if there are difference between var binning and histogram binning;
 			int mis_count = 0;
@@ -40,8 +40,9 @@ int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > xoutput_binning){
 			int histnb = cv_hist->GetNbinsX();
 			int bindex_starter = 1;
 			for(double binedge : xoutput_binning){//go through each bin in xoutput_binning;
+					if(debug_message)std::cout<<binedge<<" vs ";
 				for(int bindex = bindex_starter; bindex < histnb+2; ++bindex){//loop through lowegdes of cv_hist 
-					if(debug_message)std::cout<<cv_hist->GetBinLowEdge(bindex)<<" vs "<<binedge;
+					if(debug_message)std::cout<<cv_hist->GetBinLowEdge(bindex)<<",";
 					if(abs(cv_hist->GetBinLowEdge(bindex) - binedge) < 10e-10){//edge matches;
 						binchecker++;
 						bindex_starter = bindex+1;
@@ -49,7 +50,7 @@ int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > xoutput_binning){
 						break;
 					}
 					if(binchecker>1 && binchecker < edges) mis_count++;
-					if(debug_message) std::cout<<std::endl;
+					//if(debug_message) std::cout<<std::endl;
 				}
 			}
 
@@ -100,6 +101,11 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 
 			TMatrixD* read_matrix = (TMatrixD*) matrix_root->Get(temp_tag + "_FracMatrix");
 			TMatrixD* read_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
+
+			if(read_CV->GetNcols() != nb){
+				std::cout<<"Pls check input matrix: cov. has dimension "<<read_CV->GetNcols()<<" vs histogram "<<nb<<std::endl;
+				exit(EXIT_FAILURE);
+			}
 
 			if(read_matrix == NULL){
 				std::cout<<"\tSkip loading matrix for "<<temp_tag+ "_FracMatrix"<<std::endl;
@@ -379,21 +385,6 @@ TString gadget_updateindex(TString varname, int nth){
 	return nam;
 }
 
-//unsigned long  gadget_jenkins_hash(std::string key) {
-//    size_t length = key.size();
-//    size_t i = 0;
-//    unsigned long hash = 0;
-//    while (i != length) {
-//        hash += key[i++];
-//        hash += hash << 10;
-//        hash ^= hash >> 6;
-//    }
-//    hash += hash << 3;
-//    hash ^= hash >> 11;
-//    hash += hash << 15;
-//    return hash;
-//}
-
 /*
  * Constructor for struct bdt_sys, 
  *
@@ -561,13 +552,13 @@ void bdt_sys::Make1dhist(std::vector<bdt_variable> vars, TFile* out_root, bool t
 				//			TString hist_name = (its_multithrows)? this->vars_name[index]+std::to_string(lndex+1) :this->vars_name[index];
 
 				if(kndex==0){
-					std::cout<<"\nCreate hist for "<<this->histNames[index][lndex]<<std::endl;
-					hist1d[lndex] = new TH1D(this->histNames[index][lndex],this->histNames[index][lndex], nbins*(twod_histext), lowbinedge, highbinedge*(twod_histext));//Will be rebinned later for variable binning;
+//					std::cout<<"\nCreate hist for "<<this->histNames[index][lndex]<<std::endl;
+					hist1d[lndex] = new TH1D(this->histNames[index][lndex],this->histNames[index][lndex], nbins*(twod_histext), lowbinedge, highbinedge+(highbinedge-lowbinedge)*(twod_histext-1));//Will be rebinned later for variable binning;
 
-		std::cout<<" Use hist "<<hist1d[lndex]<<std::endl;
+//		std::cout<<" Use hist "<<hist1d[lndex]<<std::endl;
 				} else{
-		std::cout<<"\n Not creating hist."<<std::endl;
-		std::cout<<" Use hist "<<hist1d[lndex]<<std::endl;
+//		std::cout<<"\n Not creating hist."<<std::endl;
+//		std::cout<<" Use hist "<<hist1d[lndex]<<std::endl;
 				}
 				count_hist++;
 
@@ -729,9 +720,9 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 	std::vector<double> origin_xout_binning(xoutput_binning);
 	for(int index = 1; index < ynb; index ++){
 		std::cout<<"Add "<<index<<"th copy"<<std::endl;
-		for(int jndex = 0; jndex < xnb; jndex ++){
-			xoutput_binning.push_back(origin_xout_binning[jndex+1]+index*xnh);
-			std::cout<<origin_xout_binning[jndex+1]+index*xnh<<" ";
+		for(int jndex = 1; jndex < xnb+1; jndex ++){
+			xoutput_binning.push_back(origin_xout_binning[jndex]+index*(xnh-xnl));
+			std::cout<<xoutput_binning.back()<<" ";
 		}
 		std::cout<<std::endl;
 	}
@@ -773,7 +764,7 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 			 *4 - BAD: bins edge not found in cv_hist (1,2,5) - (1,2,3,4)
 			 */
 			if(matching_code > 2){	
-				std::cout<<"BinMatcher Code "<<matching_code<<std::endl;
+				std::cout<<"BinMatcher Code "<<matching_code<<" plothist bins "<<xoutput_binning.size()-1<<" cv bins "<<cv_hist->GetNbinsX()<<std::endl;
 				std::cout<<"Please check the input the binning of hist_*.root."<<std::endl; 
 				exit(EXIT_FAILURE);
 			} else if( matching_code > 0){
@@ -1634,6 +1625,7 @@ void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss
 
 		if(do_hist || hist_root == NULL){
 			hist_root = (TFile*) TFile::Open(histfilename,"RECREATE");
+			hist_root->Close();
 		}
 		
 		//Group bdt_sys, and load histograms; mark empty bdt_sys;
@@ -1662,10 +1654,13 @@ void sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss
 
 			if(do_hist){ 
 				cur_sys->Make1dhist(vars, hist_root, do_2dhist);
+				hist_root->Write();
 				cur_sys->fullyloaded = true;
 			}
 
-			if(!do_hist && !(cur_sys->Load1dhist(hist_root) )) all_good = false ;//mark!;
+			if(!do_hist){ 
+				if(!(cur_sys->Load1dhist(hist_root) )) all_good = false ;//mark!;
+			}
 		}
 
 		if(!all_good){//now need to Make any histograms if false

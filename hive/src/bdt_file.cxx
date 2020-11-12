@@ -715,8 +715,8 @@ TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, doubl
     //std::cout<<"Starting to get for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
     TCanvas *ctmp = new TCanvas();
    // this->CheckWeights();
-	std::string tem_binning = "("+to_string_prec(var.int_n_bins,0)+","+to_string_prec(var.plot_min,0)+","+to_string_prec(var.plot_max,0)+")";
-//	std::cout<<var.name+">>"+nam+ tem_binning<<std::endl;
+	std::string tem_binning ="("+std::to_string(var.int_n_bins)+","+std::to_string(var.plot_min)+","+std::to_string(var.plot_max)+")";
+	std::cout<<var.name+">>"+nam+ tem_binning<<std::endl;
 //	std::cout<<"("+cuts+"&&"+in_bins+")*"+this->weight_branch<<std::endl;
 
     this->tvertex->Draw((var.name+">>"+nam+ tem_binning).c_str() , ("("+cuts+"&&"+in_bins+")*"+this->weight_branch).c_str(),"goff");

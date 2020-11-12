@@ -37,7 +37,6 @@
 #include "TText.h"
 #include "TMath.h"
 #include "TF1.h"
-#include "TGaxis.h"
 
 /*
  * plot_var_allF function overlays allMC & Excesss, option to normalized/not normalized

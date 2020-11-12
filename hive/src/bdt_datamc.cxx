@@ -99,39 +99,102 @@ int bdt_datamc::printPassingDataEvents(std::string outfilename, int stage, std::
     return 0;
 }
 
+
+//group bdt_files and update the maps;
+std::map< std::vector< std::string >  , TH2* > gadget_groupfiles( std::vector<bdt_file* > bdt_files,  std::map< std::vector<std::string> , TH2* > input_maps){
+
+	std::cout<<" CHECK "<<__FILE__<<__LINE__<<" if you want to group bdt_files"<<std::endl;
+	int findex = 0;//for locating bdt_file
+	std::map< std::vector< std::string >  , TH2* > output_maps;
+
+	std::map<int, TH2*> gnum2th2;//group index to th2*
+	for(auto it = input_maps.begin(); it != input_maps.end(); ++it){//iterate maps;
+		findex = findex % bdt_files.size();//update index for bdt_files;
+		if(findex == 0){
+			gnum2th2.clear();
+		}
+
+		TH2* temp_th2 = it->second;
+		auto next = it;
+		next++;
+		
+		int groupN = bdt_files[findex]->group;
+		if( groupN == -1){//no groups;
+			output_maps.insert(it,next);
+		} else{//need to group this;
+			if(gnum2th2.find(groupN) == gnum2th2.end() ){//Not found; new group number
+				output_maps.insert(it, next);
+				gnum2th2.insert( std::make_pair(groupN, it->second ) );
+			}else{//group exists, group the current input_maps;
+				(gnum2th2.find(groupN)->second)->Add(it->second);//add current th2 to the good one, but not added to the output map
+			}
+		}
+
+	}
+	return output_maps;
+}
+
+//names = {file, varx, vary, stage};
+void gadget_Draw2dhists( std::vector< std::string > names , TH2* tmpth2, double maxheight){
+
+		bool message = true;
+
+		TPad *padmc = new TPad("main1pad_", "main1pad_", 0, 0, 1, 1.0);
+		if(message) std::cout<<"Drawing "<<names[0]+"_"+names[1]+"_"+names[2]<<std::endl;
+		tmpth2->Draw("COLZ");
+		tmpth2->SetTitle( (names[0] + " stage "+ names[3]).c_str() );
+
+		if(maxheight>0) tmpth2->SetMaximum(maxheight);
+		tmpth2->GetXaxis()->SetTitle( names[1].c_str());
+		tmpth2->GetXaxis()->SetTitleSize(0.05);
+		tmpth2->GetXaxis()->SetTitleOffset(0.9);
+		tmpth2->GetYaxis()->SetTitle( names[2].c_str());
+		tmpth2->GetYaxis()->SetTitleSize(0.05);
+		tmpth2->GetYaxis()->SetTitleOffset(0.9);
+
+		padmc->SetRightMargin(0.15);
+		padmc->Draw();
+
+
+		delete padmc;
+}
+
 //th2hist = {data-MC, data, MC};
-void gadget_DrawhistProjections(std::vector<TH2*> th2hist, std::string xlabel, std::string ylabel, TString plot_title){
+void gadget_DrawhistProjections(std::vector<TH2*> th2hist, TString plot_title, TString xlabel, TString ylabel){
 	//need to create Canvas before calling this function:
 	//	TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
+	
+	if(th2hist.size() < 3){
+		std::cout<<"Need 3 th2ds.Please come check "<<__FILE__<<__LINE__<<std::endl;
+		exit(EXIT_FAILURE);
 
-	TH1D* projected_data = th2hist[1]->ProjectionX();//Projected TH2
-	TH1D* projected_datay = th2hist[1]->ProjectionY();//Projected TH2
-	TH1D* projected_MC = th2hist[2]->ProjectionX();//Projected TH2
-	TH1D* projected_MCy = th2hist[2]->ProjectionY();//Projected TH2
+	}
+	TH1D* projected_data = th2hist[1]->ProjectionX("x1");//Projected TH2
+	TH1D* projected_datay = th2hist[1]->ProjectionY("y1");//Projected TH2
+	TH1D* projected_MC = th2hist[2]->ProjectionX("x2");//Projected TH2
+	TH1D* projected_MCy = th2hist[2]->ProjectionY("y2");//Projected TH2
 
 	//STEP 4, put the (data-MC) and projections on top and right together;
 	//Create a TCanvas and prepare a TPad.
 
 	TPad *main_pad =		new TPad("mainpad_" , "mainpad_", 0, 0, 0.49, 0.49);
-	main_pad->Draw();
-
 	TPad *top_pad =			new TPad("toppad_"  , "toppad_", 0, 0.51, 0.49, 1.0);
-	top_pad->Draw();
-
 	TPad *right_pad =		new TPad("rightpad_", "rightpad_", 0.51, 0, 1.0, 0.49);
-	right_pad->Draw();
-
 	TPad *upperright_pad =	new TPad("rightpad_", "rightpad_", 0.51, 0.51, 1.0, 1.0);
+
+	main_pad->Draw();
+	top_pad->Draw();
+	right_pad->Draw();
 	upperright_pad->Draw();
 
 	//STEP 4.1, draw the mainpad (bottom left)
 	main_pad->cd();
 	th2hist[0]->Draw("COLZ");
 	th2hist[0]->SetTitle(plot_title);
-	th2hist[0]->GetXaxis()->SetTitle((xlabel).c_str());
+	th2hist[0]->GetXaxis()->SetTitle(xlabel);
 	th2hist[0]->GetXaxis()->SetTitleSize(0.04);
 	//                    th2hist[0]->GetXaxis()->SetTitleOffset(1.2);
-	th2hist[0]->GetYaxis()->SetTitle((ylabel).c_str());
+	th2hist[0]->GetYaxis()->SetTitle(ylabel);
 	th2hist[0]->GetYaxis()->SetTitleSize(0.04);
 	th2hist[0]->GetYaxis()->SetTitleOffset(1.2);
 	//                    main_pad->SetRightMargin(0.3);
@@ -139,7 +202,7 @@ void gadget_DrawhistProjections(std::vector<TH2*> th2hist, std::string xlabel, s
 	//STEP 4.2, draw the toppad (upper left)
 	top_pad->cd();//draw on the top panel
 	projected_MC->SetFillColor(kRed-2);
-	projected_MC->SetTitle(("Spectrum of "+xlabel).c_str());
+	projected_MC->SetTitle("Spectrum of "+xlabel);
 	projected_MC->GetYaxis()->SetTitle("Event Rate");
 	projected_MC->GetXaxis()->SetTitleOffset(1.1);
 	projected_MC->GetXaxis()->SetTitleSize(0.04);
@@ -156,7 +219,7 @@ void gadget_DrawhistProjections(std::vector<TH2*> th2hist, std::string xlabel, s
 	//STEP 4.3, draw the rightpad (bottom right)
 	right_pad->cd();//draw on the right panel
 	projected_MCy->SetFillColor(kRed-2);
-	projected_MCy->SetTitle(("Spectrum of "+ylabel).c_str());
+	projected_MCy->SetTitle("Spectrum of "+ylabel);
 	projected_MCy->GetYaxis()->SetTitle("Event Rate");
 	projected_MCy->GetXaxis()->SetTitleOffset(1.1);
 	projected_MCy->GetXaxis()->SetTitleSize(0.04);
@@ -189,6 +252,7 @@ void gadget_DrawhistProjections(std::vector<TH2*> th2hist, std::string xlabel, s
 	TLegend *legend = new TLegend(0, 0.1,0.8,0.2);
 	legend->SetNColumns(2);
 	legend->AddEntry(projected_datay, "Data","P");
+	legend->AddEntry(projected_MCy, "NueMC","F");
 
 //	if(count_signal){
 //		legend->AddEntry(projected_MCy, "MC = BkgMC+bestFit","F");
@@ -196,445 +260,608 @@ void gadget_DrawhistProjections(std::vector<TH2*> th2hist, std::string xlabel, s
 //		legend->AddEntry(projected_MCy, "MC = BkgMC","F");
 //	}
 	legend->Draw();
+}
+
+//map file name to a side-by-side th1ds
+//in2dhist gives the content, mode gives the template;
+TH1D gadget_Draw1dfrom2d(std::string label, TH2* in2dhist, TH1D* mode){
+
+	TH1D* outhist = new TH1D( label.c_str(), label.c_str(), mode->GetNbinsX(), mode->GetBinLowEdge(1), mode->GetBinLowEdge(mode->GetNbinsX()+1));
+	
+	int dim = in2dhist->GetNbinsX();
+	for(int index = 0; index < outhist->GetNbinsX(); index ++){
+		int bindex = index +1;
+		double bcontent = in2dhist->GetBinContent(  index % dim+1,(index/dim)+1);
+//		std::cout<<label<<" Get "<<(index) % dim+1<<","<<( (index)/dim)+1<< " to bin "<<bindex<<" content "<<bcontent<<std::endl;
+
+		outhist->SetBinContent(bindex, bcontent);
+
+	}
+	return (*outhist);
+}
 
 
-	delete projected_MC;
-	delete projected_MCy;
-	delete projected_data;
-	delete projected_datay;
+//make stacked histograms from stacing up hists;
+THStack* gadget_GetStackhists(std::string title, bdt_stack* stackinfo, std::vector<std::string> labels, std::vector<TH1D> hists, TLegend *leg){
+
+    THStack *stacked = new THStack((title).c_str(), (title).c_str());
+	std::vector<bdt_file*> files = stackinfo->stack;
+	for(int index = 0; index< hists.size(); ++index){
+		int jndex = 0;
+		while( files[jndex]->tag!= labels[index]){ 
+			jndex++;
+			//		std::cout<<"check "<<(stackinfo->stack).at(jndex)->tag<<","<<labels[index]<<std::endl;
+		}//alright, we know which files to look at;
+		//		std::cout<<"Select "<<files[jndex]->tag<<std::endl;
+
+		//have to use TH1* for stacked, ikr, stupid.
+		//CHECK
+		TH1F* curth1 = new TH1F(labels[index].c_str(), (labels[index]+"s").c_str(), hists[0].GetNbinsX(),hists[0].GetBinLowEdge(1), hists[0].GetBinLowEdge( hists[0].GetNbinsX()+1) );
+		for(int kndex = 1; kndex < hists[0].GetNbinsX()+1; kndex ++){
+			curth1->SetBinContent( kndex, hists[index].GetBinContent(kndex));	
+			curth1->SetBinError( kndex, hists[index].GetBinError(kndex));	
+		}
+
+		bdt_file* curf = files[jndex];
+
+		curth1->SetLineColor(kBlack);
+		curth1->SetLineWidth(1);
+		curth1->SetStats(0);
+		curth1->SetFillColor(curf->col);
+		curth1->SetLineStyle(curf->linestyle);
+		curth1->SetFillStyle(curf->fillstyle);
+		//        curth1.Scale();
+
+		stacked->Add(curth1);
+		leg->AddEntry(curth1, curf->plot_name.c_str(), "f");
+
+		std::cout<<"Add stack "<<labels[index]<<" ";
+
+	}
+	std::cout<<std::endl;
+	return stacked;
+}
+
+//add double axis; added to bdt_datamc.h
+void gadget_addDoubleAxis(std::string unit, TString express, double y_coord, double minv, double maxv, double domain_min, double domain_max, double ticks){
+//	std::cout<<"Draw extra x-axis"<<std::endl;
+
+	//						double mapped_maxv = pow(maxv,(1/3.0))*500;
+	TF1 *temp_axis = new TF1("temp_axis",express, domain_min, domain_max);//What to draw on the given empty axis: name, function, range of the function;
+	//						TF1 *temp_axis = new TF1("temp_axis","pow(x,3.0)",0,maxv*500);//What to draw on the given empty axis: name, function, range of the function;
+
+	TGaxis *new_axis = new TGaxis(minv, y_coord, maxv, y_coord, "temp_axis", ticks, "-");//This says where to draw axis (xmin,ymin,xmax,ymax,TF1,num_division =N1 + 100*N2 + 10000*N3 [by default, ROOT will take numbers not larger than these to optimize the axis] ,option"-");https://root.cern.ch/doc/master/classTGaxis.html
+	new_axis->SetTitle(unit.c_str());
+	new_axis->SetLabelSize(0.03);
+	new_axis->SetTitleSize(0.04);
+	new_axis->SetTitleOffset(1.1);
+	new_axis->Draw();
+	//std::cout<<"min "<<minv<<" max "<<maxv<<" maxy "<<maxy<<std::endl;
+}
+
+
+//Set labels of the plot;
+void gadget_SetPlotlabels(THStack* stk, TH1D* tsum, TH1D& d0, bdt_variable var1, bdt_variable var2){
+
+	stk->SetTitle("");
+
+	//note that stk must have been drawn in order to get the axies;
+	stk->GetYaxis()->SetTitle("Events");
+	stk->GetYaxis()->SetTitleSize(0.04);
+	stk->GetYaxis()->SetTitleOffset(1);
+	//			stk->GetXaxis()->SetTickLength(2);
+	stk->GetXaxis()->SetLabelOffset(999);
+
+	TF1 *axis_labels = new TF1("axis_labels","x",var1.plot_min, var1.plot_max);
+	double ticks = var1.n_bins;//+ 10*100;
+	TGaxis *dlabels_axis = new TGaxis(var1.plot_min,0,var1.plot_max,0, "axis_labels", ticks, "");
+	dlabels_axis->SetTickLength(0);
+	dlabels_axis->SetLabelSize(0.03);
+	dlabels_axis->SetTitleSize(0.04);
+	dlabels_axis->SetTitle(var1.unit.c_str());
+	dlabels_axis->Draw("same");
+
+
+	double tsummax = tsum->GetBinContent(tsum->GetMaximumBin());
+	double d0max = d0.GetBinContent(d0.GetMaximumBin());
+	double use_max = std::max(tsummax, d0max)*1.3;
+	stk->SetMaximum( use_max);
+//	std::cout<<"Maximum is "<<use_max<<std::endl;
+
+	tsum->SetMarkerSize(0);
+	tsum->SetLineWidth(0);
+	tsum->SetFillColor(kGray+3);
+	tsum->SetFillStyle(3145);
+
+	d0.SetMarkerSize(3);
+	gStyle->SetEndErrorSize(3);
+	d0.SetMarkerStyle(20);
+	d0.SetLineColor(kBlack);
+	d0.SetBinErrorOption(TH1::kPoisson);
+
 
 }
 
 
-int bdt_datamc::plot2DSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics){
 
-//Load up systemaitcs
-
-//make 1dhistograms;
-
-}
 
 
 //This gives out 2D comparison; each slot contains information of (Data-MC)/sqrt(MC)
 //It aims to identify data excess region in given two variables.
 //modified based on plot2D() function;
 int bdt_datamc::plot2D_DataMinusMC(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts){
-    if (vars.size() < 2){
-        std::cout<<"Need min 2 vars to make DataMinusMC 2D plots, try again!"<<std::endl;
-        return 0;
-    }
-	bool count_signal = true;
-
-    double plot_pot=data_file->pot;
-    if(stack_mode) plot_pot = stack_pot;
-
-    std::cout<<"DATAMC PLOT POT "<<plot_pot<<std::endl;
-
-    double title_size_ratio=0.1;
-    double label_size_ratio=0.1;
-    double title_offset_ratioY = 0.3 ;
-    double title_offset_ratioX = 1.1;
-
-    double title_size_upper=0.15;
-    double label_size_upper=0.05;
-    double title_offset_upper = 1.45;
-
-    ftest->cd();
-
-    std::vector<std::string> stage_names = {"Topological Selection","Pre-Selection Cuts","Cosmic BDT Cut","BNB BDT cut","NCPi0 BDT Cut","NUE BDT Cut","tmp"};
-    //Loop over all stages
-
-    int s_min = 0;
-    int s_max = bdt_cuts.size()+2;
-    if(plot_stage >=0){
-        s_min = plot_stage;
-        s_max = plot_stage+1;
-    }
-
-
-    for(int s = s_min; s< s_max; s++){//stage loop
-
-        std::cout<<"On stage: "<<s<<std::endl;
-        //First set the files at this stage
-        for(auto &f: mc_stack->stack){
-            std::cout<<"Calculating any necessary EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
-            if(s>1) f->calcBDTEntryList(s,bdt_cuts);//I think the weight branch is taken care here, Keng.
-            std::cout<<"Setting up EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
-            f->setStageEntryList(s);
-        }
-
-        std::cout<<"Done with computations on TTrees and bdt_stacks"<<std::endl;
-
-        if(s>1) data_file->calcBDTEntryList(s,bdt_cuts);
-
-        data_file->setStageEntryList(s);
-
-
-        //And all variables in the vector var
-        //make pairs of all combos
-        for(int i = 0; i < vars.size(); i++){
-            bdt_variable var1 = vars[i];
-
-            for(int j = 0; j < vars.size(); j++){//only want to plot different variables, but also not duplicate i.e. 12 and 21
-                if (i!= j && i < j){//Create TH2* for data, then substract mc events from that TH2*.
-				//STEP 1, prepare d0, data; mc's, all non-data files;
-                    bdt_variable var2= vars[j];
-                    std::cout<<"Starting on variable "<<var1.unit<<" and "<<var2.unit<<std::endl;
-
-					//Set up data histogram ,d0, from data_file
-                    TH2 * d0 = (TH2*)data_file->getTH2(var1,var2, "1", std::to_string(s)+"_d0_"+std::to_string(bdt_cuts[s])+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
-					TH2 * non_d0;//fill in non_d0 histogram from the following loop
-					
-					bool copy_this = true;
-					for(auto &f: mc_stack->stack){//introduce MC's and substract them from d0;
-						if(!count_signal && f->is_signal) continue;
-						std::cout<<"Stack "<<f->tag<<" level "<<s<<std::endl;
-						
-
-						TH2* this_mc= (TH2*) f->getTH2(var1,var2, "1", std::to_string(s)+"_mc_"+std::to_string(bdt_cuts[s])+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
-
-						if(copy_this){//first TH2 histogram is created through Clone(), note Clone() guarantees the original TH2 unchanged.
-							non_d0 = (TH2*) this_mc->Clone();
-							copy_this = false;
-						}else{
-							non_d0->Add(this_mc,1.);//add this_mc histogram.
-						}
-						this_mc = 0;
-					}//for each item in the mc stack
-
-				//STEP 2, do substractions;
-					TH2* DataMinusMC = (TH2*)d0->Clone();//Make a new TH2 and add d0, pure data;
-					DataMinusMC->Add(non_d0,-1.);//do the substraction; not done yet, need to weight the excess according to d0;
-				
-				//STEP 2.5, weight the excess according to # of predicted events, i.e. (#data-#MC)/sqrt(#MC);
-					if(true){//true, do the weighting
-						//std::cout<<"Weight the th2d"<<std::endl;
-						Int_t xbin = d0->GetNbinsX();
-						Int_t ybin = d0->GetNbinsY();
-
-						for(Int_t xaxis = 1; xaxis<xbin+1; ++xaxis){//fill along x-axis
-						double count_y = 0;
-							for(Int_t yaxis = 1; yaxis<ybin+1; ++yaxis){//fill along y-axis
-								double num_DataMinusMC = DataMinusMC->GetBinContent(xaxis,yaxis);
-								double num_mc = non_d0->GetBinContent(xaxis,yaxis);
-								double slot_value = (num_mc==0)?0:num_DataMinusMC/sqrt(num_mc);
-//								std::cout<<"data: "<< num_DataMinusMC<<" mc: "<<num_mc;
-//								std::cout<<"(DataMinusMC)/sqrt(mc) = "<< slot_value<<" "<<std::endl;
-								DataMinusMC->SetBinContent(xaxis,yaxis,slot_value);
-								count_y+= d0->GetBinContent(xaxis,yaxis);
-//								count_y+= num_mc;
-							}
-						std::cout<<"Bin "<<xaxis<<" has # events "<<count_y<<std::endl;
-						}
-					}
-                    TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
-					cobs->cd();
-					TString ptitle = "[Data-MC]/#sqrt{MC}";
-					gadget_DrawhistProjections({DataMinusMC,d0, non_d0}, var1.unit, var2.unit, ptitle);
-/*
-				//STEP 3, Prepare side plots (top and right)
-					TH1D* projected_MC = non_d0->ProjectionX();//Projected TH2
-					TH1D* projected_MCy = non_d0->ProjectionY();//Projected TH2
-					TH1D* projected_data = d0->ProjectionX();//Projected TH2
-					TH1D* projected_datay = d0->ProjectionY();//Projected TH2
-
-				//STEP 4, put DataMinusMC and projections on top and right together;
-                    //Create a TCanvas and prepare a TPad.
-                    cobs->cd();
-
-					TPad *main_pad = new TPad(("mainpad_"+stage_names.at(s)).c_str(), ("mainpad_"+stage_names.at(s)).c_str(), 0, 0, 0.49, 0.49);
-					main_pad->Draw();
-
-					TPad *top_pad = new TPad(("toppad_"+stage_names.at(s)).c_str(), ("toppad_"+stage_names.at(s)).c_str(), 0, 0.51, 0.49, 1.0);
-					top_pad->Draw();
-
-					TPad *right_pad = new TPad(("rightpad_"+stage_names.at(s)).c_str(), ("rightpad_"+stage_names.at(s)).c_str(), 0.51, 0, 1.0, 0.49);
-					right_pad->Draw();
-
-					TPad *upperright_pad = new TPad(("rightpad_"+stage_names.at(s)).c_str(), ("rightpad_"+stage_names.at(s)).c_str(), 0.51, 0.51, 1.0, 1.0);
-					upperright_pad->Draw();
-
-				//STEP 4.1, draw the mainpad (bottom left)
-					main_pad->cd();
-                    DataMinusMC->Draw("COLZ");
-                    DataMinusMC->SetTitle("[Data-MC)]/#sqrt{MC}");
-                    DataMinusMC->GetXaxis()->SetTitle((var1.unit).c_str());
-                    DataMinusMC->GetXaxis()->SetTitleSize(0.04);
-//                    DataMinusMC->GetXaxis()->SetTitleOffset(1.2);
-                    DataMinusMC->GetYaxis()->SetTitle((var2.unit).c_str());
-                    DataMinusMC->GetYaxis()->SetTitleSize(0.04);
-                    DataMinusMC->GetYaxis()->SetTitleOffset(1.2);
-//                    main_pad->SetRightMargin(0.3);
-				
-				//STEP 4.2, draw the toppad (upper left)
-					top_pad->cd();//draw on the top panel
-					projected_MC->SetFillColor(kRed-2);
-					projected_MC->SetTitle(("Spectrum of "+var1.unit).c_str());
-                    projected_MC->GetYaxis()->SetTitle("Event Rate");
-                    projected_MC->GetXaxis()->SetTitleOffset(1.1);
-                    projected_MC->GetXaxis()->SetTitleSize(0.04);
-					double max1 = 1.2*std::max(projected_MC->GetMaximum(),projected_data->GetMaximum());
-					projected_MC->SetMaximum(max1);
-					projected_MC->SetMinimum(0);
-					projected_MC->SetStats(false);
-					projected_MC->Draw("hist");
-
-					projected_data->SetMarkerStyle(20);
-					projected_data->SetMarkerSize(2);
-					projected_data->Draw("same E");
-
-				//STEP 4.3, draw the rightpad (bottom right)
-					right_pad->cd();//draw on the right panel
-					projected_MCy->SetFillColor(kRed-2);
-					projected_MCy->SetTitle(("Spectrum of "+var2.unit).c_str());
-					projected_MCy->GetYaxis()->SetTitle("Event Rate");
-                    projected_MCy->GetXaxis()->SetTitleOffset(1.1);
-                    projected_MCy->GetXaxis()->SetTitleSize(0.04);
-					double max2 = 1.2*std::max(projected_MCy->GetMaximum(),projected_datay->GetMaximum());
-					projected_MCy->SetMaximum(max2);
-					projected_MCy->SetMinimum(0);
-					projected_MCy->SetStats(false);
-					projected_MCy->Draw("hist");
-
-					projected_datay->SetMarkerStyle(20);
-					projected_datay->SetMarkerSize(2);
-					projected_datay->SetLineColor(kBlack);
-//					projected_datay->SetBinErrorOption(TH1::kPoisson);
-					projected_datay->Draw("same");//CHECK, dont know how to draw horizontal dot
-				
-				//STEP 4.4 Add POT info. to the upper right pad.
-					upperright_pad->cd();
-					TLatex pottex;
-					pottex.SetTextSize(0.06);
-					pottex.SetTextAlign(13);  //align at top
-					pottex.SetNDC();
-
-					double pot_unit = 1e20;
-					std::string pot_unit_s = "e20";
-					std::string pot_draw = data_file->topo_name+" "+to_string_prec(plot_pot/pot_unit,1)+ pot_unit_s+" POT";
-					std::string description = "Stage " + std::to_string(s)+" "+stage_names[s];
-//					pottex.DrawLatex(.10,.40, description.c_str());
-					 pottex.DrawLatex(.20,.30, pot_draw.c_str());
-					//legend
-					TLegend *legend = new TLegend(0, 0.1,0.8,0.2);
-					legend->SetNColumns(2);
-					legend->AddEntry(projected_datay, "Data","P");
-					if(count_signal){
-						legend->AddEntry(projected_MCy, "MC = BkgMC+bestFit","F");
-					} else{
-						legend->AddEntry(projected_MCy, "MC = BkgMC","F");
-					}
-					legend->Draw();
-*/
-                    std::cout<<"Writing png and pdf."<<std::endl;
-                    cobs->Write();
-                    cobs->SaveAs(("var2D/"+tag+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_DataMinusMC_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
-                    cobs->SaveAs(("var2D/"+tag+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_DataMinusMC_stage_"+std::to_string(s)+".png").c_str(),"png");
-
-					//delete DataMinusMC;//DataMinusMC
-					DataMinusMC = 0;
-                    delete cobs;
-                    delete d0;//data
-                    delete non_d0;//MC
-                }//if different variables and haven't already used the combo
-            }//end of var2 loop
-        }//end of var1 loop
-    }//end of stage loop
-
-    return 0;
+//
+//    if (vars.size() < 2){
+//        std::cout<<"Need min 2 vars to make DataMinusMC 2D plots, try again!"<<std::endl;
+//        return 0;
+//    }
+//	bool count_signal = true;
+//
+//    double plot_pot=data_file->pot;
+//    if(stack_mode) plot_pot = stack_pot;
+//
+//    std::cout<<"DATAMC PLOT POT "<<plot_pot<<std::endl;
+//
+//    double title_size_ratio=0.1;
+//    double label_size_ratio=0.1;
+//    double title_offset_ratioY = 0.3 ;
+//    double title_offset_ratioX = 1.1;
+//
+//    double title_size_upper=0.15;
+//    double label_size_upper=0.05;
+//    double title_offset_upper = 1.45;
+//
+//    ftest->cd();
+//
+//    std::vector<std::string> stage_names = {"Topological Selection","Pre-Selection Cuts","Cosmic BDT Cut","BNB BDT cut","NCPi0 BDT Cut","NUE BDT Cut","tmp"};
+//    //Loop over all stages
+//
+//    int s_min = 0;
+//    int s_max = bdt_cuts.size()+2;
+//    if(plot_stage >=0){
+//        s_min = plot_stage;
+//        s_max = plot_stage+1;
+//    }
+//
+//
+//    for(int s = s_min; s< s_max; s++){//stage loop
+//
+//        std::cout<<"On stage: "<<s<<std::endl;
+//        //First set the files at this stage
+//        for(auto &f: mc_stack->stack){
+//            std::cout<<"Calculating any necessary EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
+//            if(s>1) f->calcBDTEntryList(s,bdt_cuts);//I think the weight branch is taken care here, Keng.
+//            std::cout<<"Setting up EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
+//            f->setStageEntryList(s);
+//        }
+//
+//        std::cout<<"Done with computations on TTrees and bdt_stacks"<<std::endl;
+//
+//        if(s>1) data_file->calcBDTEntryList(s,bdt_cuts);
+//
+//        data_file->setStageEntryList(s);
+//
+//
+//        //And all variables in the vector var
+//        //make pairs of all combos
+//        for(int i = 0; i < vars.size(); i++){
+//            bdt_variable var1 = vars[i];
+//
+//            for(int j = 0; j < vars.size(); j++){//only want to plot different variables, but also not duplicate i.e. 12 and 21
+//                if (i!= j && i < j){//Create TH2* for data, then substract mc events from that TH2*.
+//				//STEP 1, prepare d0, data; mc's, all non-data files;
+//                    bdt_variable var2= vars[j];
+//                    std::cout<<"Starting on variable "<<var1.unit<<" and "<<var2.unit<<std::endl;
+//
+//					//Set up data histogram ,d0, from data_file
+//                    TH2 * d0 = (TH2*)data_file->getTH2(var1,var2, "1", std::to_string(s)+"_d0_"+std::to_string(bdt_cuts[s])+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
+//					TH2 * non_d0;//fill in non_d0 histogram from the following loop
+//					
+//					bool copy_this = true;
+//					for(auto &f: mc_stack->stack){//introduce MC's and substract them from d0;
+//						if(!count_signal && f->is_signal) continue;
+//						std::cout<<"Stack "<<f->tag<<" level "<<s<<std::endl;
+//						
+//
+//						TH2* this_mc= (TH2*) f->getTH2(var1,var2, "1", std::to_string(s)+"_mc_"+std::to_string(bdt_cuts[s])+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
+//
+//						if(copy_this){//first TH2 histogram is created through Clone(), note Clone() guarantees the original TH2 unchanged.
+//							non_d0 = (TH2*) this_mc->Clone();
+//							copy_this = false;
+//						}else{
+//							non_d0->Add(this_mc,1.);//add this_mc histogram.
+//						}
+//						this_mc = 0;
+//					}//for each item in the mc stack
+//
+//				//STEP 2, do substractions;
+//					TH2* DataMinusMC = (TH2*)d0->Clone();//Make a new TH2 and add d0, pure data;
+//					DataMinusMC->Add(non_d0,-1.);//do the substraction; not done yet, need to weight the excess according to d0;
+//				
+//				//STEP 2.5, weight the excess according to # of predicted events, i.e. (#data-#MC)/sqrt(#MC);
+//					if(true){//true, do the weighting
+//						//std::cout<<"Weight the th2d"<<std::endl;
+//						Int_t xbin = d0->GetNbinsX();
+//						Int_t ybin = d0->GetNbinsY();
+//
+//						for(Int_t xaxis = 1; xaxis<xbin+1; ++xaxis){//fill along x-axis
+//						double count_y = 0;
+//							for(Int_t yaxis = 1; yaxis<ybin+1; ++yaxis){//fill along y-axis
+//								double num_DataMinusMC = DataMinusMC->GetBinContent(xaxis,yaxis);
+//								double num_mc = non_d0->GetBinContent(xaxis,yaxis);
+//								double slot_value = (num_mc==0)?0:num_DataMinusMC/sqrt(num_mc);
+////								std::cout<<"data: "<< num_DataMinusMC<<" mc: "<<num_mc;
+////								std::cout<<"(DataMinusMC)/sqrt(mc) = "<< slot_value<<" "<<std::endl;
+//								DataMinusMC->SetBinContent(xaxis,yaxis,slot_value);
+//								count_y+= d0->GetBinContent(xaxis,yaxis);
+////								count_y+= num_mc;
+//							}
+//						std::cout<<"Bin "<<xaxis<<" has # events "<<count_y<<std::endl;
+//						}
+//					}
+//                    TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
+//					cobs->cd();
+//					TString ptitle = "[Data-MC]/#sqrt{MC}";
+//					gadget_DrawhistProjections({DataMinusMC,d0, non_d0}, var1.unit, var2.unit, ptitle);
+///*
+//				//STEP 3, Prepare side plots (top and right)
+//					TH1D* projected_MC = non_d0->ProjectionX();//Projected TH2
+//					TH1D* projected_MCy = non_d0->ProjectionY();//Projected TH2
+//					TH1D* projected_data = d0->ProjectionX();//Projected TH2
+//					TH1D* projected_datay = d0->ProjectionY();//Projected TH2
+//
+//				//STEP 4, put DataMinusMC and projections on top and right together;
+//                    //Create a TCanvas and prepare a TPad.
+//                    cobs->cd();
+//
+//					TPad *main_pad = new TPad(("mainpad_"+stage_names.at(s)).c_str(), ("mainpad_"+stage_names.at(s)).c_str(), 0, 0, 0.49, 0.49);
+//					main_pad->Draw();
+//
+//					TPad *top_pad = new TPad(("toppad_"+stage_names.at(s)).c_str(), ("toppad_"+stage_names.at(s)).c_str(), 0, 0.51, 0.49, 1.0);
+//					top_pad->Draw();
+//
+//					TPad *right_pad = new TPad(("rightpad_"+stage_names.at(s)).c_str(), ("rightpad_"+stage_names.at(s)).c_str(), 0.51, 0, 1.0, 0.49);
+//					right_pad->Draw();
+//
+//					TPad *upperright_pad = new TPad(("rightpad_"+stage_names.at(s)).c_str(), ("rightpad_"+stage_names.at(s)).c_str(), 0.51, 0.51, 1.0, 1.0);
+//					upperright_pad->Draw();
+//
+//				//STEP 4.1, draw the mainpad (bottom left)
+//					main_pad->cd();
+//                    DataMinusMC->Draw("COLZ");
+//                    DataMinusMC->SetTitle("[Data-MC)]/#sqrt{MC}");
+//                    DataMinusMC->GetXaxis()->SetTitle((var1.unit).c_str());
+//                    DataMinusMC->GetXaxis()->SetTitleSize(0.04);
+////                    DataMinusMC->GetXaxis()->SetTitleOffset(1.2);
+//                    DataMinusMC->GetYaxis()->SetTitle((var2.unit).c_str());
+//                    DataMinusMC->GetYaxis()->SetTitleSize(0.04);
+//                    DataMinusMC->GetYaxis()->SetTitleOffset(1.2);
+////                    main_pad->SetRightMargin(0.3);
+//				
+//				//STEP 4.2, draw the toppad (upper left)
+//					top_pad->cd();//draw on the top panel
+//					projected_MC->SetFillColor(kRed-2);
+//					projected_MC->SetTitle(("Spectrum of "+var1.unit).c_str());
+//                    projected_MC->GetYaxis()->SetTitle("Event Rate");
+//                    projected_MC->GetXaxis()->SetTitleOffset(1.1);
+//                    projected_MC->GetXaxis()->SetTitleSize(0.04);
+//					double max1 = 1.2*std::max(projected_MC->GetMaximum(),projected_data->GetMaximum());
+//					projected_MC->SetMaximum(max1);
+//					projected_MC->SetMinimum(0);
+//					projected_MC->SetStats(false);
+//					projected_MC->Draw("hist");
+//
+//					projected_data->SetMarkerStyle(20);
+//					projected_data->SetMarkerSize(2);
+//					projected_data->Draw("same E");
+//
+//				//STEP 4.3, draw the rightpad (bottom right)
+//					right_pad->cd();//draw on the right panel
+//					projected_MCy->SetFillColor(kRed-2);
+//					projected_MCy->SetTitle(("Spectrum of "+var2.unit).c_str());
+//					projected_MCy->GetYaxis()->SetTitle("Event Rate");
+//                    projected_MCy->GetXaxis()->SetTitleOffset(1.1);
+//                    projected_MCy->GetXaxis()->SetTitleSize(0.04);
+//					double max2 = 1.2*std::max(projected_MCy->GetMaximum(),projected_datay->GetMaximum());
+//					projected_MCy->SetMaximum(max2);
+//					projected_MCy->SetMinimum(0);
+//					projected_MCy->SetStats(false);
+//					projected_MCy->Draw("hist");
+//
+//					projected_datay->SetMarkerStyle(20);
+//					projected_datay->SetMarkerSize(2);
+//					projected_datay->SetLineColor(kBlack);
+////					projected_datay->SetBinErrorOption(TH1::kPoisson);
+//					projected_datay->Draw("same");//CHECK, dont know how to draw horizontal dot
+//				
+//				//STEP 4.4 Add POT info. to the upper right pad.
+//					upperright_pad->cd();
+//					TLatex pottex;
+//					pottex.SetTextSize(0.06);
+//					pottex.SetTextAlign(13);  //align at top
+//					pottex.SetNDC();
+//
+//					double pot_unit = 1e20;
+//					std::string pot_unit_s = "e20";
+//					std::string pot_draw = data_file->topo_name+" "+to_string_prec(plot_pot/pot_unit,1)+ pot_unit_s+" POT";
+//					std::string description = "Stage " + std::to_string(s)+" "+stage_names[s];
+////					pottex.DrawLatex(.10,.40, description.c_str());
+//					 pottex.DrawLatex(.20,.30, pot_draw.c_str());
+//					//legend
+//					TLegend *legend = new TLegend(0, 0.1,0.8,0.2);
+//					legend->SetNColumns(2);
+//					legend->AddEntry(projected_datay, "Data","P");
+//					if(count_signal){
+//						legend->AddEntry(projected_MCy, "MC = BkgMC+bestFit","F");
+//					} else{
+//						legend->AddEntry(projected_MCy, "MC = BkgMC","F");
+//					}
+//					legend->Draw();
+//*/
+//                    std::cout<<"Writing png and pdf."<<std::endl;
+//                    cobs->Write();
+//                    cobs->SaveAs(("var2D/"+tag+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_DataMinusMC_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
+//                    cobs->SaveAs(("var2D/"+tag+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_DataMinusMC_stage_"+std::to_string(s)+".png").c_str(),"png");
+//
+//					//delete DataMinusMC;//DataMinusMC
+//					DataMinusMC = 0;
+//                    delete cobs;
+//                    delete d0;//data
+//                    delete non_d0;//MC
+//                }//if different variables and haven't already used the combo
+//            }//end of var2 loop
+//        }//end of var1 loop
+//    }//end of stage loop
+//
+//    return 0;
 }
 
 
 
 //ordinary 2D comparison for each samples;
-int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts){
-    if (vars.size() < 2){
-        std::cout<<"need min 2 vars to make 2D plots"<<std::endl;
-        return 0;
-    }
+int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_sys*> systematics){
 
-    // NEW ONE
+	if (vars.size() < 2){
+		std::cout<<"need min 2 vars to make 2D plots"<<std::endl;
+		return 0;
+
+	}
+
+	// NEW ONE
+	bool use_excess = true;
+	bool draw1d = true;
+
 	bool setmax = false;
-	double zmax = 60;
-    double plot_pot=data_file->pot;
-    if(stack_mode) plot_pot = stack_pot;
+	double zmax = 0;
+	if(setmax) zmax = 60;
+	double plot_pot=data_file->pot;
+	if(stack_mode) plot_pot = stack_pot;
 
-    std::cout<<"DATAMC PLOT POT "<<plot_pot<<std::endl;
+	std::cout<<"DATAMC PLOT POT "<<plot_pot<<std::endl;
 
-    double title_size_ratio=0.1;
-    double label_size_ratio=0.1;
-    double title_offset_ratioY = 0.3 ;
-    double title_offset_ratioX = 1.1;
+	ftest->cd();
 
-    double title_size_upper=0.15;
-    double label_size_upper=0.05;
-    double title_offset_upper = 1.45;
-
-
-    ftest->cd();
-
-    std::vector<std::string> stage_names = {"Topological Selection","Pre-Selection Cuts","Final Selection","BNB BDT cut","NCPi0 BDT Cut","NUE BDT Cut","tmp"};
-    //Loop over all stages
-
-    int s_min = 0;
-    int s_max = bdt_cuts.size()+2;
-    if(plot_stage >=0){
-        s_min = plot_stage;
-        s_max = plot_stage+1;
-    }
+	int s_min = 0;
+	int s_max = bdt_cuts.size()+2;
+	if(plot_stage >=0){
+		s_min = plot_stage;
+		s_max = plot_stage+1;
+	}
 
 
-    //for each stage
-    for(int s = s_min; s< s_max; s++){
+	//for each stage; then var1, var2;
+	for(int s = s_min; s< s_max; s++){
 
-        std::cout<<"On stage: "<<s<<std::endl;
-        //First set the files at this stage
-        for(auto &f: mc_stack->stack){
-            std::cout<<"Calculating any necessary EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
-            if(s>1) f->calcBDTEntryList(s,bdt_cuts);
-            std::cout<<"Setting up EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
-            f->setStageEntryList(s);
-        }	
+		std::cout<<"On stage: "<<s<<std::endl;
+		//First set the files at this stage
+		for(auto &f: mc_stack->stack){
+			std::cout<<"Calculating any necessary EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
+			if(s>1) f->calcBDTEntryList(s,bdt_cuts);
+			std::cout<<"Setting up EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
+			f->setStageEntryList(s);
+		}
 
-        std::cout<<"Done with computations on TTrees and bdt_stacks"<<std::endl;
+		std::cout<<"Done with computations on TTrees and bdt_stacks"<<std::endl;
 
-        if(s>1) data_file->calcBDTEntryList(s,bdt_cuts);
+		if(s>1) data_file->calcBDTEntryList(s,bdt_cuts);
 
-        data_file->setStageEntryList(s);
+		data_file->setStageEntryList(s);
 
-        //And all variables in the vector var
-        //make pairs of all combos
-        for(int i = 0; i < vars.size(); i++){
-            bdt_variable var1 = vars[i];
+		//make pairs of all combos; make TH2 only;
+		// data_file; mc_stack are the members of datamc that contains data/MC information.
 
-            for(int j = 0; j < vars.size(); j++){
+		//<var1.name>_<var2.name>_<file.tag>
+		std::map< std::vector<std::string> , TH2* > datamap;
+		std::map< std::vector<std::string> , TH2* > excessmap;
+		std::map< std::vector<std::string> , TH2* > mcmap;
 
-                //only want to plot different variables, but also not duplicate i.e. 12 and 21
-				if (i!= j && i < j){
+		for(int i = 0; i < vars.size(); i++){
+			bdt_variable var1 = vars[i];
+
+			for(int j = i+1; j < vars.size(); j++){
+				bdt_variable var2= vars[j];
+
+
+				std::cout<<"Preparing TH2D on variables "<<var1.name<<" and "<<var2.name<<std::endl;
+
+				TH2 * excess = (TH2*)data_file->getTH2(var1,var2, "1", std::to_string(s)+"_d0_"+std::to_string(bdt_cuts[s])+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
+				TH2 * d0 = (TH2*) excess->Clone();
+
+				for(auto &f: mc_stack->stack){
+					TH2 * mc = (TH2*)f->getTH2(var1,var2, "1", std::to_string(s)+"_mc_"+std::to_string(bdt_cuts[s])+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
+					std::vector<std::string> tmp_string = { f->tag, var1.name, var2.name, std::to_string(s), var1.safe_unit+"_"+var2.safe_unit};
+					mcmap.insert( std::make_pair(tmp_string, mc) );
+					if(f->is_signal) continue;//skip signal; not contribute to the excess evaluation;
+					excess->Add(mc, -1.0);
+				}
+
+				std::vector<std::string> tmpe_string = { "excess", var1.name, var2.name, std::to_string(s), var1.safe_unit+"_"+var2.safe_unit};
+				excessmap.insert( std::make_pair(tmpe_string, excess) );
+
+				std::vector<std::string> tmpd_string = { data_file->tag, var1.name, var2.name, std::to_string(s), var1.safe_unit+"_"+var2.safe_unit};
+				datamap.insert( std::make_pair(tmpd_string, d0) );
+			}
+		}
+		//excessmap are prepared at this point;
+
+		//group MCs; sort out mcmap;
+		std::map< std::vector<std::string> , TH2* > gmcmap = gadget_groupfiles( mc_stack->stack, mcmap);
+
+		std::map< std::vector<std::string> , TH2* > allmaps = (use_excess)? excessmap: datamap;
+		allmaps.insert( gmcmap.begin(), gmcmap.end());
+
+
+		TCanvas *cobsmc = new TCanvas("th2can","th2can_",1800,1600);
+		if(use_excess){
+
+			for( auto const& exit : excessmap){
+
+				TH2* mcs = (TH2*) (exit.second)->Clone();
+				mcs->Reset("ICESM");
+
+				for( auto const& mcit : mcmap){
+					if(exit.first[4] != mcit.first[4]) continue;//only proceed when using the same variables;
+					mcs->Add(mcit.second, 1.0);
+				}
+
+				for( auto const& dait : datamap){
+					if(exit.first[4] != dait.first[4]) continue;//only proceed when using the same variables;
+					cobsmc->Clear();
+					cobsmc->cd();
+					gadget_DrawhistProjections({exit.second, dait.second , mcs },exit.first[0] , exit.first[1] , exit.first[2]);
+
+					cobsmc->SaveAs(("var2D/"+tag+"_"+exit.first[0]+"_"+exit.first[4]+"_proj_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
+				}
+			}
+
+		}else{
+			for( auto const& it : allmaps){
+				cobsmc->Clear();
+				cobsmc->cd();
+				gadget_Draw2dhists( it.first, it.second , zmax);//all draw setting is here;
+
+				cobsmc->SaveAs(("var2D/"+tag+"_"+it.first[0]+"_"+it.first[4]+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
+			}
+		}
+
+		if(draw1d){
+			//draw 1dhists, but side by side with constrained from the other variable
+
+			cobsmc = new TCanvas("th2can_wide","th2can_wide",4200,1600);
+
+			for(int i = 0; i < vars.size(); i++){
+				bdt_variable var1 = vars[i];
+
+				for(int j = i+1; j < vars.size(); j++){
 					bdt_variable var2= vars[j];
 
+					TString tsum_name = ("sbshist1d_"+var1.safe_unit+"_"+var2.safe_unit).c_str();
+					//tsum as a template for th1d
+					double lastbinredge = var1.plot_max + (var1.plot_max-var1.plot_min)*(var2.n_bins-1);
+					TH1D* tsum2d = new TH1D( tsum_name, tsum_name, var1.n_bins*(var2.n_bins), var1.plot_min, lastbinredge);
+					std::vector< std::string > labels;
+					std::vector< TH1D > sbs1dhists;
 
-					std::cout<<"Starting on variable "<<var1.name<<std::endl;
+					for( auto const& dait : datamap){//build on sbs1dhists & add to tsum; one var1&var2, one content;
+						if(dait.first[4] !=  var1.safe_unit+"_"+var2.safe_unit) continue;//only proceed when using current variables;
+						for( auto const& mcit : mcmap){
+							if(mcit.first[4] !=  var1.safe_unit+"_"+var2.safe_unit) continue;//only proceed when using current variables;
+							TH1D twod1dhistmaps = gadget_Draw1dfrom2d(mcit.first[0]+mcit.first[3]+mcit.first[4], mcit.second, tsum2d);
+							tsum2d->Add( &twod1dhistmaps);
+							//							std::cout<<tsum2d->GetBinContent(4)<<std::endl;
 
-					//make file for data
-					TCanvas *cobs = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
-					cobs->cd();
+							labels.push_back(mcit.first[0]);
+							//							std::cout<<"Tsum add "<<mcit.first[0]<<" from th1 "<<twod1dhistmaps.GetBinContent(4)<<std::endl;
+							sbs1dhists.push_back(twod1dhistmaps);
+						}
+						//Set systematic error here?
 
-					TPad *pad = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
-					pad->Draw();
-					pad->cd();
+						TMatrixD * covar_collapsed = new TMatrixD(tsum2d->GetNbinsX(),tsum2d->GetNbinsX());
+						covar_collapsed->Zero();//set all elements to 0;
+						if(var1.has_covar && var2.has_covar){
 
-					//THStack *stk = (THStack*)mc_stack->getEntryStack(var,s);
-					//TH1 * tsum = (TH1*)mc_stack->getEntrySum(var,s);
-					TH2 * d0 = (TH2*)data_file->getTH2(var1,var2, "1", std::to_string(s)+"_d0_"+std::to_string(bdt_cuts[s])+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
+							TFile *covar_f = new TFile(var1.covar_file.c_str(),"read");//Take first variable's cov matrix file
+							//				TMatrixD * covar_full = (TMatrixD*)covar_f->Get(var.covar_name.c_str());
+							std::cout<<"Reading a covariance matrix "<<var1.covar_file<<std::endl;
 
-					pad->cd();
-
-					d0->Draw("COLZ");
-					if(setmax) d0->SetMaximum(zmax);
-					d0->SetTitle((data_file->plot_name).c_str());
-//					d0->SetTitle((data_file->tag + ", stage " + std::to_string(s)).c_str());
-					d0->GetYaxis()->SetTitleSize(0.05);
-					d0->GetYaxis()->SetTitleOffset(0.9);
-					d0->GetXaxis()->SetTitleSize(0.05);
-					d0->GetXaxis()->SetTitleOffset(0.9);
-					pad->SetRightMargin(0.15);
-
-					std::cout<<"Writing pdf."<<std::endl;
-					cobs->Write();
-					cobs->SaveAs(("var2D/"+tag+"_"+data_file->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
-
-
-					delete cobs;
-					delete d0;
-
-
-					//now repeat for all of the MC files
-
-					TH2* grouped_2dhist;
-
-					bool first_time = true;
-					TString tem_output_name;
-					std::string tem_title;
-					
-					for(auto &f: mc_stack->stack){
-
-						std::cout<<"Stack "<<f->tag<<" level "<<s<<std::endl;
-						TCanvas *cobsmc = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
-						cobsmc->cd();
-
-						TPad *padmc = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
-						padmc->Draw();
-						padmc->cd();
-
-
-						TH2 * mc = (TH2*)f->getTH2(var1,var2, "1", std::to_string(s)+"_mc_"+std::to_string(bdt_cuts[s])+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit, plot_pot);
-						padmc->cd();
-
-						//to group or not to group
-						if( f->group != -1 ){//any group number != -1 will be considered as the same group;
-							if(first_time){
-								grouped_2dhist = (TH2*) mc->Clone();
-								tem_output_name =  "var2D/"+tag+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+"grouped.pdf";
-								first_time = false;
-								tem_title = f->plot_name;
-							} else{
-								grouped_2dhist->Add(mc);
+							//NOTE, all pure_bkg_hist in this part was tsum; CHECK
+							*covar_collapsed = gadget_PrepareMatrix(systematics, covar_f, tsum2d, data_file->pot, data_file->tag);//CHECK, no fullosc included.
+							for(int c=0; c< tsum2d->GetNbinsX();c++){
+								double mc_stats_error = tsum2d->GetBinError(c+1);
+								double mc_sys_error = sqrt((*covar_collapsed)(c,c))*tsum2d->GetBinContent(c+1);
+								//					std::cout<<(*covar_collapsed)(c,c)<<" check "<<pure_bkg_hist->GetBinError(c+1)<<std::endl;
+								double tot_error = sqrt(mc_stats_error*mc_stats_error+mc_sys_error*mc_sys_error);
+								std::cout<<"--- Yarp: "<<mc_sys_error<<"; and BkgMC: "<<mc_stats_error<<" total: "<<tot_error<<std::endl;
+								tsum2d->SetBinError(c+1, tot_error);
+								//And add on the systematic error that is MC stats
+								//               (*covar_collapsed)(c,c) += mc_stats_error*mc_stats_error;
 							}
-						}//End of grouping
+						}
 
-						mc->Draw("COLZ");
-						if(setmax)mc->SetMaximum(zmax);
-//						mc ->SetTitle((f->tag + ", stage " + std::to_string(s)).c_str());
-						mc ->SetTitle((f->plot_name).c_str());
-						mc->GetYaxis()->SetTitleSize(0.05);
-						mc->GetYaxis()->SetTitleOffset(0.9);
-						mc->GetXaxis()->SetTitleSize(0.05);
-						mc->GetXaxis()->SetTitleOffset(0.9);
-						padmc->SetRightMargin(0.15);
-						std::cout<<"Writing pdf."<<std::endl;
-						cobsmc->Write();
-						cobsmc->SaveAs(("var2D/"+tag+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
 
-						//                    cobsmc->SaveAs(("var2D/"+tag+"_"+f->tag+"_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)+".png").c_str(),"png");
 
-						delete cobsmc;
-						delete mc;
+						TLegend *legend = new TLegend(0.25,0.65,0.75,0.84);//Legend
 
-					}//for each item in the mc stack
-
-					if(!first_time){//make up the grouped 2dhist;
-						TCanvas *cobsmc = new TCanvas(("can_"+var1.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var1.safe_unit+"_"+var2.safe_unit+"_stage_"+std::to_string(s)).c_str(),1800,1600);
+						TH1D d02d = gadget_Draw1dfrom2d(dait.first[0]+dait.first[3]+dait.first[4], dait.second, tsum2d);
+//						std::cout<<"Bins of th1d :"<<d02d.GetNbinsX()<<std::endl;
+						//make stacked from sbs1dhists;
+						THStack* allmc = gadget_GetStackhists("stacked_"+dait.first[4],mc_stack, labels, sbs1dhists, legend);//add stacked legends here;
+						cobsmc->Clear();
 						cobsmc->cd();
 
-						TPad *padmc = new TPad(("pad_"+stage_names.at(s)).c_str(), ("pad_"+stage_names.at(s)).c_str(), 0, 0, 1, 1.0);
-						padmc->Draw();
-						padmc->cd();
+						//draw
+						allmc->Draw("hist");
+						gadget_SetPlotlabels(allmc, tsum2d, d02d, var1, var2);//draw first, then we can get the axies
+						tsum2d->DrawCopy("Same E2");
+						d02d.Draw("same E1 E0");
+
+						cobsmc->Update();
+						double plotheight = gPad->GetUymax();//allmc->GetMaximum();//Yaxis()->GetYmax();
+//						std::cout<<"yaxis height "<<plotheight<<std::endl;
+
+						if(true){//edit axies
+							TString v2formula = "x*("+to_string_prec(var2.plot_max-var2.plot_min,5)+")/("+to_string_prec(var1.plot_max-var1.plot_min,5)+")+"+to_string_prec(var2.plot_min,5);//y=k(var2)+b
+							//							std::cout<<"formula "<<v2formula<<std::endl;
+							//ticks formula: ndiv=N1 + 100*N2 + 10000*N3
+							double ticks = var2.n_bins + 400;
+							gadget_addDoubleAxis(var2.name+" (step function)", v2formula , plotheight, var1.plot_min, tsum2d->GetBinLowEdge( tsum2d->GetNbinsX()+1), var2.plot_min, var2.plot_max, ticks);
+							//draw TLine,
+							std::vector<TLine *> lines(var2.n_bins);
+//							std::cout<<" var2 has bins: "<<var2.n_bins<<std::endl;
+							for( int nndex = 0; nndex < var2.n_bins-1; ++nndex){
+								double locate_x = var1.plot_max+(var1.plot_max-var1.plot_min)*(nndex);
+//								std::cout<<"Draw lines at "<<locate_x<<std::endl;
+								lines[nndex] = new TLine(locate_x,0, locate_x,plotheight);//xmin,ymin,xmax,ymax
+								lines[nndex]->Draw("same");
+							}
+						}
+
+						//add the remaining legends;
+						legend->AddEntry(tsum2d, "Stat Error","f");
+						legend->AddEntry(&d02d, "Data","lp");
+
+						legend->Draw();
+//						legend->SetFillStyle(4050);
+						legend->SetLineWidth(0);
+//						legend->SetLineColor(0);
+						legend->SetFillColorAlpha(kWhite,0.8);
+						legend->SetNColumns(3);
+
+						//						std::cout<<tsum2d->GetBinContent(1)<<std::endl;
+						//						std::cout<<tsum2d->GetBinContent(2)<<std::endl;
+						//						std::cout<<tsum2d->GetBinContent(3)<<std::endl;
+						//						std::cout<<tsum2d->GetBinContent(4)<<std::endl;
 
 
-						grouped_2dhist->Draw("COLZ");
-						if(setmax)grouped_2dhist->SetMaximum(zmax);
-						grouped_2dhist->SetTitle(tem_title.c_str());
-//						grouped_2dhist ->SetTitle((tem_title + ", stage " + std::to_string(s)).c_str());
-						grouped_2dhist->GetYaxis()->SetTitleSize(0.05);
-						grouped_2dhist->GetYaxis()->SetTitleOffset(0.9);
-						grouped_2dhist->GetXaxis()->SetTitleSize(0.05);
-						grouped_2dhist->GetXaxis()->SetTitleOffset(0.9);
-						padmc->SetRightMargin(0.15);
-						std::cout<<"Writing pdf."<<std::endl;
-						cobsmc->Write();
-						cobsmc->SaveAs(tem_output_name,"pdf");
-
-						delete cobsmc;
-						delete grouped_2dhist;
+						cobsmc->SaveAs(("var2D/"+tag+"_"+dait.first[0]+"_"+dait.first[4]+"_stage_"+std::to_string(s)+"_flat2d.pdf").c_str(),"pdf");
 					}
 
-				}//if different variables and haven't already used the combo
-            }//var2
-        }//var1
-    }//stage
+				}
+			}
+		}
 
-    return 0;
+	}
+	return 0;
 }
 
 
@@ -644,8 +871,8 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 	bool print_message = true;
 	bool debug_message = true;
-	bool label_removal = false;//remove title and ratio portion;
-	bool disable_number = false;//remove number of events
+	bool label_removal = true;//remove title and ratio portion;
+	bool disable_number = true;//remove number of events
 
 	double plot_pot=data_file->pot;
 //	if(stack_mode) plot_pot = stack_pot;//always false for now;
@@ -898,7 +1125,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 						if(!isfinite((*covar_collapsed)(ib,jb)) ) curchi = 0;
 						mychi += curchi;
 						if(ib==jb){
-						std::cout<<"Hi: "<<ib<<" "<<jb<<" "<<tsum->GetBinContent(ib+1)<<" "<<d0->GetBinContent(ib+1)<<" "<<(*covar_collapsed)(ib,ib)<<" "<<tsum->GetBinContent(jb+1)<<" "<<d0->GetBinContent(jb+1)<<" "<<curchi<<" "<<mychi<<std::endl;
+							std::cout<<"Hi: "<<ib<<" "<<jb<<" "<<tsum->GetBinContent(ib+1)<<" "<<d0->GetBinContent(ib+1)<<" "<<(*covar_collapsed)(ib,ib)<<" "<<tsum->GetBinContent(jb+1)<<" "<<d0->GetBinContent(jb+1)<<" "<<curchi<<" "<<mychi<<std::endl;
 						}
 					} 
 				}
@@ -908,7 +1135,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 
 			//STEP 2.2.B: TCanvas, TPad
-				//Top TPad
+			//Top TPad
 			pad0top->SetBottomMargin(0); // Upper and lower plot are joined
 			if(var.is_logplot){//adjust the Maximum y of the plot
 				if(label_removal){
@@ -934,22 +1161,22 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 						break;
 				}
 			}
-				//Bottom TPad
+			//Bottom TPad
 			pad0bot->SetTopMargin(0);
 			pad0bot->SetBottomMargin(0.351);
 			pad0bot->SetGridx(); // vertical grid
 
 			//STEP 2.2.C: Histograms
 			//STEP 2.2.C.1: Top Plot 
-				//stk [skip], tsum[adjust error bar, if systematic error is available], d0 [skip], l0[add contents]
+			//stk [skip], tsum[adjust error bar, if systematic error is available], d0 [skip], l0[add contents]
 
 			for(size_t jndex = 0; jndex < mc_stack->stack.size(); ++jndex){//For l0, set legend contents according to bdt_file members
 				bdt_file* f = mc_stack->stack[jndex];
 
-//				std::string temp_varcut =  var.name+">"+to_string_prec(var.plot_min)+"&&"+var.name+"<"+to_string_prec(var.plot_max);
-//				std::cout<<temp_varcut<<std::endl;
+				//				std::string temp_varcut =  var.name+">"+to_string_prec(var.plot_min)+"&&"+var.name+"<"+to_string_prec(var.plot_max);
+				//				std::cout<<temp_varcut<<std::endl;
 				double Nevents =Events_num[jndex];// f->GetEntries(temp_varcut)*(plot_pot/f->pot)*f->scale_data;// get the original number of events;
-//				double Nevents = (mc_stack->vec_hists[jndex])->Integral();// f->GetEntries()*(plot_pot/f->pot)*f->scale_data;
+				//				double Nevents = (mc_stack->vec_hists[jndex])->Integral();// f->GetEntries()*(plot_pot/f->pot)*f->scale_data;
 
 
 				auto temp_histogram = new TH1F(("tmp"+current_stage+var.safe_name+f->tag).c_str(),"TLegend Example",200,-10,10);//Ghost TH1F
@@ -968,7 +1195,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 					l0->AddEntry(temp_histogram,string_events,"f");
 				}
 
-//				if(mc_stack->signal_on_top[n]) which_signal = n;//currently, only 1 signal sample is allowed, delete CHECK, not necessary
+				//				if(mc_stack->signal_on_top[n]) which_signal = n;//currently, only 1 signal sample is allowed, delete CHECK, not necessary
 			}
 
 			if(!label_removal) l0->AddEntry(tsum, tsum_name, legend_style);
@@ -979,12 +1206,12 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 			}
 
 			//STEP 2.2.C.2: Bottom Plot
-				//ratio_data [ratio numerator], ratio_bkgMC [ratio denomenator, need to evaluate here], ratunit[shade region, inversely proportional to total MC number], ratio_data_err [error for ratio]
+			//ratio_data [ratio numerator], ratio_bkgMC [ratio denomenator, need to evaluate here], ratunit[shade region, inversely proportional to total MC number], ratio_data_err [error for ratio]
 
 			ratio_bkgMC = (TH1*)pure_bkg.getEntrySum(var,stage);//Histogram of the bkg MC, denominator
 
 			ratio_data->Divide(ratio_bkgMC);//Now, ratio is data/bkgMC
-			
+
 			ratio_data->SetMarkerSize(3);//ok, remember to do this, CHECK
 
 			std::vector<double> x_pos, y_pos, err_x_left, err_x_right, err_y_high, err_y_low;
@@ -1007,11 +1234,11 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 				ratunit->SetBinError(i+1, tsum->GetBinError(i+1)/tsum->GetBinContent(i+1));
 			}
 
-			
-			//STEP 2.2.D: Texts
-				//Plot title, stage label, spectator [not currently in use?], POT info, Estimators, new label for ratio plot [CHECK];
 
-//        // TText *pre = drawPrelim(0.12,0.92,"MiniBooNE Simulation - In Progress") is a function in bdt_file.h, depreciate it!
+			//STEP 2.2.D: Texts
+			//Plot title, stage label, spectator [not currently in use?], POT info, Estimators, new label for ratio plot [CHECK];
+
+			//        // TText *pre = drawPrelim(0.12,0.92,"MiniBooNE Simulation - In Progress") is a function in bdt_file.h, depreciate it!
 			TString title_content = "MiniBooNE Simulation";//For title
 			if (isSpectator) {//CHECK, to be fixed, isSpectator is not working now;
 				title_content += "";//"[Spectator Variable]";
@@ -1024,9 +1251,9 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 			TString pot_content = data_file->topo_name + " " + to_string_prec(plot_pot/pot_unit,2) + pot_unit_string + " POT";//For POT info
 
-//			std::string pot_draw = data_file->topo_name+" "+to_string_prec(plot_pot/pot_unit,1)+ pot_unit_s+" POT";
+			//			std::string pot_draw = data_file->topo_name+" "+to_string_prec(plot_pot/pot_unit,1)+ pot_unit_s+" POT";
 
-//			TLatex *estimators;//Data/MC ratio, KS Test, Chi^2/(nDoF), Chi^2 p-value;
+			//			TLatex *estimators;//Data/MC ratio, KS Test, Chi^2/(nDoF), Chi^2 p-value;
 			std::string mean = "(Data/MC: "+to_string_prec(NdatEvents/total_MC_events,2)+")";//For estimators
 			std::string mean2 = "(Data/BkgMC: "+to_string_prec(NdatEvents/total_MCbkg_events,2)+")";
 			std::string ks = "(KS: "+to_string_prec(tsum->KolmogorovTest(d0),3) + ")     (#chi^{2}/n#it{DOF}: "+to_string_prec(mychi,2) + "/"+to_string_prec(ndof) +")    (#chi^{2} P^{val}: "+to_string_prec(TMath::Prob(mychi,ndof),3)+")";
@@ -1074,11 +1301,11 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 				line->Draw("same");
 				ratio_data->Draw("same P hist");
 				ratio_data_err->Draw("E0 same");
-//				estimators->Draw("same"); //CHECK , disable chi2 calculation for now
+				//				estimators->Draw("same"); //CHECK , disable chi2 calculation for now
 			}
 
 			//STEP 2.4: Configure plots
-				//Top Histograms: stk, tsum, d0 , l0
+			//Top Histograms: stk, tsum, d0 , l0
 			stk->SetTitle("");
 			stk->GetXaxis()->SetTitle(var.unit.c_str());
 			if(var.is_custombin){ 
@@ -1089,7 +1316,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 			stk->GetYaxis()->SetTitleSize(0.05);
 			stk->GetYaxis()->SetTitleOffset(0.9);
-			stk->SetMaximum( std::max(tsum->GetBinContent(tsum->GetMaximumBin()), d0->GetMaximum())*max_modifier);
+			stk->SetMaximum(2000);//std::max(tsum->GetBinContent(tsum->GetMaximumBin()), d0->GetMaximum())*max_modifier);
 
 			if(!label_removal) stk->SetMinimum(min_val);
 
