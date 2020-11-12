@@ -895,6 +895,8 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 	//stack plot sttting
 	double min_val = 0.01;//minimum events count
+	double max_val = 420;///max_val<0 means max y-axis is not fixed;
+	int legend_option = 2;//0 - two, 1 - right, 2 - left.
 	double max_modifier = 2;//a factor to be applied according to the highest bin, for the maximum y
 
 	//POT info display
@@ -987,7 +989,22 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 			TH1* d0 = (TH1*)data_file->getTH1(var, "1", temp_data_name, plot_pot);//Data points.
 
 			TLegend *l0; 
-			l0= new TLegend(0.14,0.65,0.89,0.89);//Legend
+			int lcolumns;
+			switch(legend_option){
+				case 1://right
+					l0= new TLegend(0.75,0.35,0.93,0.89);//Legend, x1,y1,x2,y2
+					lcolumns = 1;
+					break;
+				case 2://left
+					l0= new TLegend(0.15,0.35,0.45,0.89);//Legend
+					lcolumns = 1;
+					break;
+				default://top
+					l0= new TLegend(0.14,0.65,0.89,0.89);//Legend
+					lcolumns = 2;
+					break;
+			}
+
 //			TH1* leg_hack = (TH1*)tsum->Clone(("leg_tmp_tsum"+std::to_string(stage)).c_str());//legend?
 //			std::vector<TH1F*> fake_legend_hists;
 			
@@ -1316,7 +1333,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 			stk->GetYaxis()->SetTitleSize(0.05);
 			stk->GetYaxis()->SetTitleOffset(0.9);
-			stk->SetMaximum(2000);//std::max(tsum->GetBinContent(tsum->GetMaximumBin()), d0->GetMaximum())*max_modifier);
+			stk->SetMaximum((max_val>0)? max_val:std::max(tsum->GetBinContent(tsum->GetMaximumBin()), d0->GetMaximum())*max_modifier);
 
 			if(!label_removal) stk->SetMinimum(min_val);
 
@@ -1333,7 +1350,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 			l0->SetFillStyle(0);
 			l0->SetLineWidth(0);
-			l0->SetNColumns(2);
+			l0->SetNColumns(lcolumns);
 			l0->SetLineColor(0);
 			if(label_removal){
 				l0->SetTextSize(0.03);
