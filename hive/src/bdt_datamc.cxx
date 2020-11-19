@@ -286,6 +286,9 @@ THStack* gadget_GetStackhists(std::string title, bdt_stack* stackinfo, std::vect
 
     THStack *stacked = new THStack((title).c_str(), (title).c_str());
 	std::vector<bdt_file*> files = stackinfo->stack;
+	
+	std::vector<int> saveJndextoTop;
+	std::vector<TH1F*> saveTH1toTop;
 	for(int index = 0; index< hists.size(); ++index){
 		int jndex = 0;
 		while( files[jndex]->tag!= labels[index]){ 
@@ -312,13 +315,24 @@ THStack* gadget_GetStackhists(std::string title, bdt_stack* stackinfo, std::vect
 		curth1->SetFillStyle(curf->fillstyle);
 		//        curth1.Scale();
 
-		stacked->Add(curth1);
-		leg->AddEntry(curth1, curf->plot_name.c_str(), "f");
+		if(curf->is_signal){
+			saveJndextoTop.push_back( jndex);
+			saveTH1toTop.push_back( curth1);
+		} else{
+			stacked->Add(curth1);
+			leg->AddEntry(curth1, curf->plot_name.c_str(), "f");
+		}
 
 		std::cout<<"Add stack "<<labels[index]<<" ";
-
 	}
 	std::cout<<std::endl;
+
+	for(int index = saveJndextoTop.size()-1; index > -1; --index){
+		int f_jndex = saveJndextoTop[index];
+		stacked->Add(saveTH1toTop[index]);
+		leg->AddEntry(saveTH1toTop[index], files[f_jndex]->plot_name.c_str(), "f");
+		
+	}
 	return stacked;
 }
 
@@ -371,7 +385,7 @@ void gadget_SetPlotlabels(THStack* stk, TH1D* tsum, TH1D& d0, bdt_variable var1,
 	tsum->SetMarkerSize(0);
 	tsum->SetLineWidth(0);
 	tsum->SetFillColor(kGray+3);
-	tsum->SetFillStyle(3145);
+	tsum->SetFillStyle(3345);
 
 	d0.SetMarkerSize(3);
 	gStyle->SetEndErrorSize(3);
@@ -824,7 +838,8 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 							//							std::cout<<"formula "<<v2formula<<std::endl;
 							//ticks formula: ndiv=N1 + 100*N2 + 10000*N3
 							double ticks = var2.n_bins + 400;
-							gadget_addDoubleAxis(var2.name+" (step function)", v2formula , plotheight, var1.plot_min, tsum2d->GetBinLowEdge( tsum2d->GetNbinsX()+1), var2.plot_min, var2.plot_max, ticks);
+							gadget_addDoubleAxis(var2.unit + " (step function)", v2formula , plotheight, var1.plot_min, tsum2d->GetBinLowEdge( tsum2d->GetNbinsX()+1), var2.plot_min, var2.plot_max, ticks);
+
 							//draw TLine,
 							std::vector<TLine *> lines(var2.n_bins);
 //							std::cout<<" var2 has bins: "<<var2.n_bins<<std::endl;
@@ -837,7 +852,8 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 						}
 
 						//add the remaining legends;
-						legend->AddEntry(tsum2d, "Stat Error","f");
+						TString errorLabel = (var1.has_covar && var2.has_covar)? "Stat+Systematic Error" : "Stat Error";
+						legend->AddEntry(tsum2d, errorLabel,"f");
 						legend->AddEntry(&d02d, "Data","lp");
 
 						legend->Draw();

@@ -131,12 +131,10 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 	TMatrixD total_fm(nb,nb);
 	std::cout<<"\n Getting fracitonal matrices: ";
 	for(size_t index = 0; index < syss.size(); ++index){//loop over systematics
-	std::cout<<__LINE__<<" "<<index<<std::endl;
 
 		if(bdt_tag.compare(syss[index]->bdt_file::tag) != 0 ) continue;
 		if(syss[index]->its_CV) continue;//work with non-CV systematic weights, bdt_sys only provides names to retrieve contents;
 		bdt_sys* cur_sys = syss[index];
-	std::cout<<__LINE__<<" "<<cur_sys->tag<<std::endl;
 
 		std::vector<std::stringstream> summary(nb+1);//print out buffer
 		std::vector<bool> summary_headers(nb+1, true);
@@ -151,15 +149,16 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 			TMatrixD* read_matrix = (TMatrixD*) matrix_root->Get(temp_tag + "_FracMatrix");
 			TMatrixD* read_CV = (TMatrixD*) matrix_root->Get(temp_tag + "_CV");
 
+			if(read_matrix == NULL){//it is skipped because it has been merged to another matrices.
+				std::cout<<"\tSkip loading matrix for "<<temp_tag+ "_FracMatrix"<<std::endl;
+				continue;
+			}
+
 			if(read_CV->GetNrows() != nb){
 				std::cout<<"Pls check input matrix: cov. has dimension "<<read_CV->GetNrows()<<" vs histogram "<<nb<<std::endl;
 				exit(EXIT_FAILURE);
 			}
 
-			if(read_matrix == NULL){
-				std::cout<<"\tSkip loading matrix for "<<temp_tag+ "_FracMatrix"<<std::endl;
-				continue;
-			}
 
 			TH1D* temp_CVhist  = (TH1D*) matrix_root->Get(temp_tag + "_CV_drawn");
 			if(true){//check bins;
@@ -175,6 +174,7 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 				 *3 - BAD: underflow bins: xoutput_binning range too large (1,2,4) - (0,1,4)
 				 *4 - BAD: bins edge not found in temp_CVhist (1,2,5) - (1,2,3,4)
 				 */
+	std::cout<<__LINE__<<std::endl;
 				switch (matching_code){
 					case 0:
 						temp_matrix = *read_matrix;
@@ -1279,7 +1279,7 @@ int sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss)
 	bool skip_sysEvaluation = false;//true - exit the function right away, 
 	if(skip_sysEvaluation) return 0;
 
-	bool do_cov = true; //exit the function early only when fractional covar matrix exists & and do_cov is false;
+	bool do_cov = false; //exit the function early only when fractional covar matrix exists & and do_cov is false;
 	bool do_hist = false; //true - generate hist everytime, no matter what; false -this boolean is not functioning
 
 
@@ -1315,7 +1315,7 @@ int sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss)
 	//check if it is good;
 	TFile *check_cov_root = (TFile*) TFile::Open(xml_covroot_name,"READ"); //one var one hist root;
 
-	if(verbose) std::cout<<"Xml suggest covaraince matrices root: \n\t"<<xml_covroot_name<<std::endl;
+	if(verbose) std::cout<<"xml suggests covaraince matrices root: \n\t"<<xml_covroot_name<<std::endl;
 	if(check_cov_root != NULL){//The job was previously done;
 
 		if(verbose) std::cout<<"\tFound root, so skip making cov matrices."<<std::endl;
