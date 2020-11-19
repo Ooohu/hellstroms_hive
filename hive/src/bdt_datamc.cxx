@@ -895,8 +895,8 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 
 	//stack plot sttting
 	double min_val = 0.01;//minimum events count
-	double max_val = 420;///max_val<0 means max y-axis is not fixed;
-	int legend_option = 2;//0 - two, 1 - right, 2 - left.
+	double max_val = 650;///max_val<0 means max y-axis is not fixed;
+	int legend_option = 0;//0 - top, 1 - right, 2 - left.
 	double max_modifier = 2;//a factor to be applied according to the highest bin, for the maximum y
 
 	//POT info display

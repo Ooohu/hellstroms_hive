@@ -95,7 +95,7 @@ class sys_env{
 		TString getFileName(TString plot_type, std::vector<bdt_variable> var);
 
 		//make 1dhist or load 1dhist; then make cov matrices;
-		void InitSys(std::vector<bdt_variable> var, std::vector<bdt_sys*> syss);
+		int InitSys(std::vector<bdt_variable> var, std::vector<bdt_sys*> syss);
 		/*
 		 * make covariance matrix according to the histograms;
 		 */
@@ -155,7 +155,7 @@ class bdt_sys : public sys_env, public bdt_file{
 		bool its_multithrows;
 		bool its_OM;
 		bool fullyloaded;
-		std::vector< bool > loads;
+		std::vector< bool > histloaded;
 
 		//deduced elements
 		std::vector< TString> TdirNames;
@@ -182,8 +182,7 @@ class bdt_sys : public sys_env, public bdt_file{
 //		void Make1dhist(TString histfilename, bdt_variable* var);//,  double plot_pot,std::vector<double> bdt_cuts);
 		void Make1dhist(std::vector<bdt_variable> vars, TFile* out_root, bool twovars);//,  double plot_pot,std::vector<double> bdt_cuts);
 
-//		void Load1dhist(TString histfilename, bdt_variable* var);
-		bool Load1dhist(TFile* cur_file);
+		bool Load1dhist(TFile* cur_file, bool savehist);
 
 
 };
