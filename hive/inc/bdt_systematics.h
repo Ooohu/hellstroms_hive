@@ -47,8 +47,7 @@ class sys_env{
 		std::vector<TString> tag_collection;//tags = systags[?]+"_"+bdtftags[?];
 		std::multimap< TString, bdt_sys* > tag2SWmap;
 		std::map< TString, bdt_sys* > tag2CVmap;
-		std::vector<double> xoutput_binning;
-		std::vector<double> youtput_binning;
+//		std::vector<double> xoutput_binning;
 
 		//set directories and POT;
 		void setEnv(TString input_top_dir, TString subdir_root, TString subdir_drawn){
@@ -99,7 +98,6 @@ class sys_env{
 		/*
 		 * make covariance matrix according to the histograms;
 		 */
-		void hist2cov( bdt_variable var, bool rescale, bool smooth_matrix);
 		void hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smooth_matrix);
 		
 		//combine
