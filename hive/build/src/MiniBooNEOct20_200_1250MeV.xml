@@ -1,0 +1,279 @@
+<?xml version="1.0" ?>
+
+<!-- Some basic information, a tag that defines uniquely this analysis, and a topology that also defines it -->
+<topology tag="MiniBooNEOct20" name ="#nu_{e}" def = "1" bdtcut = "( 0.5, 0, 0, 0, 0, 0)"/> 
+<filedir>/scratch/condor-tmp/klin/data_timing_root</filedir>
+
+<!-- ================================================== BDT FILES [First the ones that we stack in things]==================================================== -->
+<!--
+<bdtfile filename = "timing_MC_fullosc_may07_2.root" tag = "fullosc" hist_style = "hist" dirs = "" col = "(255,255,255)" linecol = "1" linestyle = "7" plot_name = "best-fit" scale = "1.0" signal = "true" plot_on_top = "false" weight = "wgt*pow(1.267*0.04*nuleng/enugen,2)">
+    <definition>
+        <cut> (backgroundType==1||backgroundType==2||backgroundType==3) </cut>
+    </definition>
+	<fixPOT> 13.278e19 </fixPOT>
+</bdtfile>
+-->
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "other" hist_style = "hist" dirs = "" col = "(153,153,153)" plot_name = "Other" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType[0]==11 </cut>
+    </definition>
+	<fixPOT> 4.108E21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_dirt_may07_2.root" tag = "dirt" hist_style = "hist" dirs = "" col = "(137,104,89)" plot_name = "dirt" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut>1 </cut>
+    </definition>
+	<fixPOT> 4.108E21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "delta" hist_style = "hist" dirs = "" col = "(222,186,135)" plot_name = "#Delta#rightarrow N#gamma" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType[0]==10 </cut>
+    </definition>
+	<fixPOT> 4.108E21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "pi0misid" hist_style = "hist" dirs = "" col = "(207,94,97)" plot_name = "#pi^{0} misid" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType[0]==9 </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "k0nue" hist_style = "hist" dirs = "" col = "(130,158,140)" plot_name = "#nu_{e} from K^{0}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType==5 </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "kpmnue" hist_style = "hist" dirs = "" col = "(133,194,163)" plot_name = "#nu_{e} from K^{+/-}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> (backgroundType==3||backgroundType==4) </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "munue" hist_style = "hist" dirs = "" col = "(176,207,199)" plot_name = "#nu_{e} from #mu^{+/-}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> (backgroundType==1||backgroundType==2) </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+
+<!--
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "intrinsicnue" hist_style = "hist" dirs = "" col = "(176,207,199)" plot_name = "Intrinsic #nu_{e}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> (backgroundType[0]&gt;0) </cut>
+        <cut> (backgroundType[0]&lt;6) </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+-->
+
+<!-- DATA!!!!-->
+<bdtfile filename = "electron_analysis/timing2.0_data_nue_07to19_EnuQECorrected.root" tag = "data" hist_style = "hist" dirs = "" col = "(0.2,0.8,0.2)" plot_name = "Data" fillstyle = "3333" scale = "1">
+    <definition>
+		<cut>1</cut>
+    </definition>
+	<fixPOT>18.75e20</fixPOT>
+   <data type="OnBeam">
+   </data>
+</bdtfile>
+
+<!-- ================================================== BDT FILES [Now the training files]==================================================== -->
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "pi0Train" hist_style = "hist" dirs = "" col = "(0.81,0.37,0.38)" plot_name = "#pi^{0} Train" weight = "wgt" >
+    <definition>
+        <cut> backgroundType[0]==9 </cut>
+        <cut> ibkgd!=1 </cut>
+        <cut> Entry$%2==1 </cut>
+    </definition>
+    <training>
+        <cut> 1 </cut>
+     </training>
+	<fixPOT> 2.054E21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "other_numuTrain" hist_style = "hist" dirs = "" col = "(163,143,163)" plot_name = "#bar{#nu}_{#mu}/#nu_{#mu} Train" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType[0]==11 </cut>
+        <cut> ibkgd!=1 </cut>
+        <cut> Entry$%2==1 </cut>
+		<cut> MCBEAM.ntp&gt;2</cut>
+    </definition>
+    <training>
+        <cut> 1 </cut>
+     </training>
+	<fixPOT> 2.054E21 </fixPOT>
+</bdtfile>
+<!-- ============================================== ACTUAL BDT TMVA Setup ==================================== -->
+<mva type="BDT" use="yes" tag = "AB" name ="Ghost BDT NOT REALLY USEFUL" binning = "(36,0.9,1.0)">
+    <method type = "XGBoost" use = "yes">
+        <param> n_trees=2000</param>
+        <param> tree_method=exact</param>
+        <param> n_gpus=0</param>
+        <param> objective=binary:logistic</param>
+        <param> eval_metric=logloss</param>
+        <param> min_child_weight=1</param> 
+        <param> gamma=1.2</param>          
+        <param> max_depth=4</param>    
+        <param> eta=0.04</param>      
+        <param> subsample=0.3</param> 
+        <param> colsample_bytree= 0.95</param>
+        <param> verbosity=1</param>
+    </method>
+    <file
+        bkg_train_tag= "pi0Train" 
+        bkg_test_tag = "pi0Train"
+        bkg_test_cut = "Entry$%5<2" 
+        sig_train_tag= "other_numuTrain"
+        sig_test_tag = "other_numuTrain"
+        sig_test_cut = "Entry$%5<2"
+        />
+    <scan min = "0.2" max = "0.95" steps="160"/>
+</mva>
+<!-- ================================================== PRE-CUTS   ==================================================== -->
+
+<!--
+<precut def = "el.EnuQE<1250&amp;&amp;el.EnuQE>200" name = "EnuQE Cut"/>
+
+<precut def = "miniPI0_mva>0.33 &amp;&amp; miniPI0_mva<0.66" name = " BDT cut"/>
+<precut def = "el.UZ<0.9" name = "UZ Cut"/>
+<precut def = "el.R<300" name = "R Cut"/>
+<precut def = "el.EnuQE<500&amp;&amp;el.EnuQE>150" name = "EnuQE Cut"/>
+<precut def = "el.R<400" name = "R Cut"/>
+<precut def = "el.UZ>0.9" name = "UZ Cut"/>
+<precut def = "backgroundType[0]==10" name = "delta pid"/>
+<precut def = "el.EnuQE[0]<1250&amp;&amp;el.EnuQE[0]>200" name = "EnuQE Cut"/>
+-->
+
+<precut def = "1" name = "cut nothing"/>
+<precut def = "el.EnuQE[0]<1250&amp;&amp;el.EnuQE[0]>200" name = "EnuQE Cut"/>
+
+<alias key = "leptonP" value = "sqrt(pow(el.E,2)+el.E*0.511)"/>
+<alias key = "Enu" value ="sqrt(pow(el.UZ*#leptonP#,2)-0.511*0.511) -25"/>
+<alias key = "Qsquare2" value ="(2*el.EnuQE*(el.E+0.511)*(1-#leptonP#/(el.E+0.511)*el.UZ)-pow(0.511,2))"/>
+<alias key = "Qsquare" value ="-pow(0.511,2)+2*el.EnuQE*((el.E+0.511)-sqrt(pow(el.E+0.511,2)-pow(0.511,2))*el.UZ) "/>
+
+<!--
+<alias key = "regular" value = "data,other,pi0misid,intrinsicnue,delta"/>
+<alias key = "regular" value = "data,other,pi0misid,munue,kpmnue,k0nue,delta"/>
+<alias key = "regular" value = "data"/>
+-->
+<alias key = "regular" value = "data"/>
+
+
+<!-- ============================================== Variables, BDT training and otherwise ====================================== -->
+<!-- Comment out pi0yield session in the ssytematics when making plots; dont want to include unnecessary systematics -->
+<!-- Three categories; others are freely used -->
+<!-- Pre - produce some commonly used systemtic related matrices -->
+<!-- Special - output final*.root is only for one particular purposes -->
+<!-- Reg - make plots to be shown -->
+
+<!-- 0 Pre: Use this to prepare hist_elEnuQE_bgap25_s1_h8261672200918285872.root traditional smoothing -->
+<var def = "el.EnuQE" binning="(25,100,3000)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "EMPTY"  custombin = "true"/>
+
+<!-- 1 Special: One-bin analysis for errors evaluation traditional smoothing -->
+<var def = "el.EnuQE" binning="(25,200,1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h8261672200918285872_onebin.root"  custombin = "true"/>
+
+<!-- 2 Special: Use this to produce CombinedFitPlus friendly inputs traditional smoothing-->
+<var def = "el.EnuQE" binning="(25, 200, 250, 300, 375, 475, 550, 600, 675, 800, 950, 1100, 1150,1250,1300,1500,1700,1900,3000)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h8261672200918285872_CombinedFitPlus.root"  custombin = "true" />
+
+
+<!-- 3 Pre: Use this to produce finalcov_elEnuQE_bgap25_s1_h8261672200918285872_universal.root, solution to low stat OM;  -->
+<var def = "el.EnuQE" binning="(25, 100, 150, 200, 250, 300, 350, 400, 475, 550, 600, 675, 800, 950, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h8261672200918285872_universal.root"  custombin = "true" />
+
+<!-- 4 Reg - 200 - 1250MeV EnuQE plot -->
+<var def = "el.EnuQE" binning="(25, 200, 250, 300, 350, 400, 475, 550, 600, 675, 800, 950, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h8261672200918285872_universal.root"  custombin = "true" />
+
+<!-- 5 Reg - 150 - 1250MeV EnuQE plot -->
+<var def = "el.EnuQE" binning="(25, 150, 200, 250, 300, 350, 400, 475, 550, 600, 675, 800, 950, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h8261672200918285872_universal.root"  custombin = "true" />
+
+<!-- 6 Reg - 475 - 1250MeV EuQE plot-->
+<var def = "el.EnuQE" binning="(25, 475, 550, 600, 675, 800, 950, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h8261672200918285872_universal.root"  custombin = "true"/>
+
+
+<!-- 7 Reg - Radius, motivation of R cuts -->
+<var def = "el.R" binning="(50,0,200,250,300,350,400,450,500,550,600)" unit = "R [cm]" type = "d" logplot = "false"  training = "0" group = "1" minidef = "el.R[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elR_bgap50_s1_h8705463704296334249.root" custombin = "true"/>
+
+<!-- 8 Reg - Radius, good with systematics, usually plot it under EnuQE cuts -->
+<var def = "pow(el.R/500.0,3)" binning="(10,0,1)" unit = "(R/500cm)^{3}" type = "d" logplot = "false"  training = "0" group = "0" minidef = "pow(el.R[0]/500.0,3)" covarfile = "MiniBooNEOct20systematics/finalcov_powelR50003_bgap0_s1_h8705463704296334249.root" />
+
+<var def = "pow(el.R/500.0,3)" binning="(10,0,1)" unit = "(R/500cm)^{3}" type = "d" logplot = "false"  training = "0" group = "0" />
+
+<!-- 10 well, might need UZ 2d version-->
+<var def = "el.UZ" binning="(10,-1,1)" unit = "cos#theta" type = "d" logplot = "false"  training = "" group = "0" minidef = "el.UZ[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elUZ_bgap0_s1_h8705463704296334249.root" />
+
+<!-- 11 150 MeV binnings, but it has low stat problem at high energy; -->
+<var def = "el.EnuQE" binning="(5, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_elUZ_bgap210_0.2_s1_h8705463704296334249.root"  custombin = "false"/>
+
+<!-- 12 -->
+<var def = "el.UZ" binning="(10,-1,1)" unit = "cos#theta" type = "d" logplot = "false"  training = "" group = "0" />
+
+
+<!-- 50 MeV binnings, but it has low stat problem at high energy; -->
+<var def = "el.EnuQE" binning="(21, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap50_s1_h8261672200918285872_200_1250.root"  custombin = "false"/>
+
+<!-- OK, below are historical variables -->
+<var def = "el.R" binning="(12,0,600)" unit = "R [cm]" type = "d" logplot = "false"  training = "0" group = "1" minidef = "el.R[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elR_bgap50_s1_h8261672200918285872.root" />
+
+<var def = "el.X" binning="(20,-600,600)" unit = "X [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
+<var def = "el.Y" binning="(20,-600,600)" unit = "Y [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
+<var def = "el.Z" binning="(20,-600,600)" unit = "Z [cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
+
+<var def = "sqrt(2*939.57*( #Enu# - el.E)+pow(939.57,2)-#Qsquare#)" binning="(25,0,1500)" unit = "MECness W" type = "d" logplot = "false"  training = "" group = "1"/>
+
+<var def = "el.E" binning="(24,100,1300)" unit = "Visible Energy [MeV]" type = "d" logplot = "false"  training = "" group = "0"/>
+
+<var def = "el.UZ" binning="(20,-1,1)" unit = "cos#theta" type = "d" logplot = "false"  training = "" group = "0"/>
+
+<var def = "pow(el.R/500.0,3)" binning="(10,0,1)" unit = "(R/500cm)^{3}" type = "d" logplot = "false"  training = "0" group = "0" minidef = "pow(el.R[0]/500.0,3)" covarfile = "MiniBooNEOct20systematics/finalcov_powelR50003_bgap0_s1_h8261672200918285872.root" />
+
+<var def = "el.UZ" binning="(20,0.8,1)" unit = "cos#theta (zoome-in)" type = "d" logplot = "false"  training = "" group = "1"/>
+<var def = "el.UY" binning="(8,-1,1)" unit = "UY" type = "d" logplot = "false"  training = "0" group = "0"/>
+<var def = "el.UX" binning="(8,-1,1)" unit = "UX" type = "d" logplot = "false"  training = "0" group = "0"/>
+
+<var def = "mu.F - el.F" binning= "(20,-0.1,1)" unit ="electron/muon log likelihood" type = "d" logplot = "false"  training = "" group ="3"/>
+<var def = "piFix.F - el.F" binning= "(20,-0.08,0.08)" unit ="electron/pion log likelihood" type = "d" logplot = "false"  training = "" group ="3"/>
+<var def = "piFix.F - mu.F" binning= "(20,-0.4,0.08)" unit ="muon/pion log likelihood" type = "d" logplot = "false"  training = "" group ="3"/>
+
+<var def = "sqrt(pow(el.UY,2)+pow(el.UX,2))" binning="(8,0,1)" unit = "#sqrt{UY^{2}+UX^{2}}" type = "d" logplot = "false"  training = "" group= "324"/>
+<var def = " piNoFix.M " binning="(18,0,150)" unit = "Pi0 Mass [MeV/c^{2}]" type = "d" logplot = "false"  training = "" group = "0"/>
+<var def = "el.RtoWallB" binning="(20,0,1000)" unit = "R to Wall backward[cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
+<var def = "el.RtoWallF" binning="(20,0,1000)" unit = "R to Wall forward[cm]" type = "d" logplot = "false"  training = "0" group = "0"/>
+
+<!-- ==================================== Add systematics ====================================-->
+
+<!--dirt Multisim-->
+<systematics tag = "NueMCDetDirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "Dirt[0]" varnam = "Dirt" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" OpticalModel = "false" />
+
+<systematics tag = "NueMCDetDirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+
+<!--Multisims-->
+<systematics tag = "NueMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "KpProd[0],KmProd[0],K0Prod[0],PipProd_RawAboutSW[0],PimProd_RawAboutSW[0],BeamUnisims[0],XSec[0],CCQECCpi[0],Hadronic[0],Pi0Yield[0]" varnam = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" OpticalModel = "false" />
+
+<systematics tag = "NueMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+
+<!--Multisims pi0yield, use this when using combined fit
+<systematics tag = "NueMCMultismPi0Det" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Pi0Yield_Oct20.root" tree = "TTiming" var = "Pi0Yield_common_det[0]" varnam = "Pi0Yield_common_det" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" OpticalModel = "false" />
+
+<systematics tag = "NueMCMultismPi0Det" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Pi0Yield_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+
+<systematics tag = "NueMCMultismPi0Stat" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Pi0Yield_Oct20.root" tree = "TTiming" var = "Pi0Yield_statbkg[0]" varnam = "Pi0Yield_statbkg" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" OpticalModel = "false" />
+
+<systematics tag = "NueMCMultismPi0Stat" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Pi0Yield_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+-->
+
+<!--Unisims-->
+<systematics tag = "NueMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DISCMC.root" tree = "TTiming" var = "CV[0]" varnam = "XsecxFluxWgt" pot = "41.10e20" throws = "1"  isCV = "false" isMultithrows = "false" OpticalModel = "false" />
+
+<systematics tag = "NueMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07QTCORRMC.root" tree = "TTiming" var = "CV[0]" varnam = "QtcorrXsecxFluxWgt" pot = "41.13e20" throws = "1"  isCV = "false" isMultithrows = "false" OpticalModel = "false" />
+
+<systematics tag = "NueMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetMC_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+<!--OM-->
+<systematics tag = "NueMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "Nuemay06OM_MC_66.root" tree = "TTiming" var = "CV[0]" varnam = "XsecxFluxWgt" pot = "6.58848e20" throws = "66"  isCV = "false" isMultithrows = "true" OpticalModel = "true" />
+
+<systematics tag = "NueMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "Nuemay06OM_MCCV.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "43.8925e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "true" />
