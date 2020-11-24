@@ -21,35 +21,43 @@
 #include "TMVA/Reader.h"
 #include "TFriendElement.h"
 
+std::string gadget_MakeSafeName(std::string safe_name);
 
 struct bdt_variable{
 
 	public:
+		//raw from xml files;
 		std::string name;//variable name
-		TString mininame;
-        int id;
-		int cat;
-        std::string safe_name;
-		std::string binning;
-		std::string unit;
-		std::string safe_unit;
-		bool is_track;
-		std::string type;
-        bool is_logplot;
-        bool has_covar;
-//        std::string covar_name;
-        std::string covar_file;
-        std::string covar_legend_name;
+		TString mininame;//CHECK, has disable this;
+		std::string binning;//default binning string
+		std::string unit;//axis unit
+		std::string type;//CHECK, useless
+        std::string covar_file;//systematic cov. location
 
-        double plot_min;
-        double plot_max;
+		//optional
+        std::string covar_legend_name;//for adjusting legend name
+        bool is_logplot;//make a log plot if true
+
+		//derivated members
+        int id;
+		int cat;//group id
+        std::string safe_name;//tag for output
+		std::string safe_unit;//tag for output
+		bool is_track;//CHECK, useless
+        bool has_covar;//has (not) systematics
+		bool is_custombin;//true - use variable binnings
+//      std::string covar_name;
+
+        double plot_min;//left edge;
+        double plot_max;//right edge;
+		double plot_height;//NEW, constrainied max bin height of plots;
 		
-        int n_bins;
+        int n_bins;//bins for equal binnings;
 		int int_n_bins;//use this as initial bin# when using variable binning;
 
-        std::vector<double> edges;
+        std::vector<double> edges;//update this;
+        std::vector<std::string> edges_str;//NEW, edges in strings;
 
-		bool is_custombin;
 		
 
 //        int addCovar(std::string name, std::string file){}
@@ -60,7 +68,7 @@ struct bdt_variable{
             return 0;
         }
 
-		bdt_variable(std::string inname, std::string inbin, std::string inunit,bool intrack, std::string intype) : bdt_variable(inname,inbin,inunit,intrack,intype,-1){}; 
+//		bdt_variable(std::string inname, std::string inbin, std::string inunit,bool intrack, std::string intype) : bdt_variable(inname,inbin,inunit,intrack,intype,-1){}; 
 		
         bdt_variable(std::string inname, std::string inbin, std::string inunit,bool intrack, std::string intype,int in_id) : 
 			name(inname), 
@@ -73,39 +81,8 @@ struct bdt_variable{
 	{//WARNING!! This is the orignal version, use the overflow one below!
 		plot_min =-999;
 		plot_max =-999;
-		safe_name = name;
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '('), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ')'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '\\'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '/'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '['), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ']'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '+'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '-'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '*'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '.'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ' '), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ','), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), '|'), safe_name.end());
-		safe_name.erase(std::remove(safe_name.begin(), safe_name.end(), ':'), safe_name.end());
-
-		safe_unit = unit;
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), ' '), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '('), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), ')'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '\\'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '/'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '['), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), ']'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '+'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '-'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '*'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '|'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), ':'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '#'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '^'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '{'), safe_unit.end());
-		safe_unit.erase(std::remove(safe_unit.begin(), safe_unit.end(), '}'), safe_unit.end());
+		safe_name = gadget_MakeSafeName(name);
+		safe_unit = gadget_MakeSafeName(unit);
 
 		has_covar = false;
 
@@ -139,6 +116,7 @@ struct bdt_variable{
 			}
 
 			edges.push_back(std::stod(token));
+			edges_str.push_back(token);
 			bins.erase(0, pos + delim.length());
 		}
 
@@ -149,8 +127,8 @@ struct bdt_variable{
 
 
 
-		bdt_variable(){};
-
+//		bdt_variable(){};
+		//short-handed constructor?
 		bdt_variable(std::string inname, std::string inbin, std::string inunit,bool intrack) : 
 			name(inname), 
 			binning(inbin),

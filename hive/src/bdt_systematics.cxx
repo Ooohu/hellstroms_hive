@@ -24,49 +24,6 @@ TH1D gadget_vrebin(TH1D* hist, std::vector<double > binning){
 	return *hist;
 }
 
-//get the binning vector for variables;
-//if two variables; extend the first variable binning based on the second;
-
-std::vector<double> gadget_calbinning( std::vector<bdt_variable> cur_vars){
-
-	int xnb = cur_vars[0].n_bins;//n_bins is the target binning;
-	double xnl = cur_vars[0].plot_min;
-	double xnh = cur_vars[0].plot_max;
-
-	std::vector<double> xoutput_binning;
-
-	if(cur_vars[0].is_custombin){//just get edges, removing the first number, which is the bingap;
-		xoutput_binning = cur_vars[0].edges;
-		xoutput_binning.erase(xoutput_binning.begin());//remove the first element, then we get the binning;
-	} else{//binnings need to be calcualted
-		double bin_left = xnl; 
-		double bingap = (xnh-xnl)/xnb;
-
-		for(int jndex = 0; jndex < xnb+1; jndex++){
-			xoutput_binning.push_back(bin_left);
-			std::cout<<bin_left<<" ";
-			bin_left+=bingap;
-		}
-	}
-//	std::cout<<std::endl;
-	if(cur_vars.size()<2) return xoutput_binning;
-
-	int ynb = cur_vars[1].n_bins;//n_bins is the target binning;
-
-	//adjust xoutput_binning; (1,2)x(100,200,300)->(1,2,3,4);
-	std::vector<double> origin_xout_binning(xoutput_binning);
-	for(int index = 1; index < ynb; index ++){
-		std::cout<<"Add "<<index<<"th histogram: ";
-		for(int jndex = 1; jndex < xnb+1; jndex ++){
-			xoutput_binning.push_back(origin_xout_binning[jndex]+index*(xnh-xnl));
-			std::cout<<xoutput_binning.back()<<" ";
-		}
-		std::cout<<std::endl;
-	}
-
-	return xoutput_binning;
-
-}
 
 /*
  * Check bins of cv_hist, see if it is handlable;
@@ -174,7 +131,6 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 				 *3 - BAD: underflow bins: xoutput_binning range too large (1,2,4) - (0,1,4)
 				 *4 - BAD: bins edge not found in temp_CVhist (1,2,5) - (1,2,3,4)
 				 */
-	std::cout<<__LINE__<<std::endl;
 				switch (matching_code){
 					case 0:
 						temp_matrix = *read_matrix;
@@ -499,7 +455,7 @@ bool bdt_sys::Load1dhist(TFile* cur_file, bool savehist){
 			TH1D* temp_th1 =  (TH1D*) cur_file->Get(this->TdirNames[index]+"/"+hist_name);
 
 			if(temp_th1 == NULL){//oops, find a histogram is missing; label this bdt_sys as unloaded with histograms;
-				if(verbose) std::cout<<"\t"<<this->TdirNames[index]+"/"+hist_name<<" does not exist. Next";
+				if(verbose) std::cout<<"\t"<<this->TdirNames[index]+"/"+hist_name<<" does not exist. Next"<<std::endl;
 				this->histloaded[index] = false;
 				this->fullyloaded = false;
 				break;
@@ -720,7 +676,7 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 	int xnb = vars[0].n_bins;//n_bins is the target binning;
 	bool xdo_rebin = vars[0].is_custombin;//this will be updated, if the sys histogram binning can be used.
 
-	std::vector<double> xoutput_binning = gadget_calbinning(vars);
+	std::vector<double> xoutput_binning = gadget_CalBinning(vars);
 
 	int nb = xoutput_binning.size()-1;//totalbins on xaxis;
 	int ynb = (vars.size()<2)? 1 : vars[1].n_bins;//n_bins is the target binning;
@@ -773,7 +729,10 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 		}
 
 		//Update cv_hist, if the binning are not exactly what we want;
-		if(rescale) cv_hist->Scale(out_POT/tempsCV->pot);//scale hist to data POT
+		if(rescale){ 
+			cv_hist->Scale(out_POT/tempsCV->pot);//scale hist to data POT
+			if(debug_verbose) std::cout<<"\rScale CV "<<cur_tag<<" POT: "<<out_POT/tempsCV->pot<<std::endl;
+		}
 		TH1D* smoothRef_hist = (TH1D*) cv_hist->Clone();
 		if(xdo_rebin) *cv_hist = gadget_vrebin(cv_hist, xoutput_binning);
 
@@ -810,10 +769,9 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 					}
 					//handle rescaling of sw_hist;
 					for( auto cur_hist : tmp_h){
-						if(debug_verbose) std::cout<<"\rScale "<<cur_tag<<temp_varName<<" "<<tmp_pscale<<" ";
+						if(debug_verbose) std::cout<<"\rScale "<<cur_tag<<temp_varName<<" POT: "<<tmp_pscale<<" throws:"<<tmp_tscale;
 						
 						if(rescale){ 
-
 							cur_hist->Scale(tmp_pscale);
 						}
 						hist2tscalemap.insert( std::make_pair(cur_hist, tmp_tscale));//scale with throws
@@ -855,10 +813,10 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 					if(verbose) std::cout<<"\r Smoothing a sw histogram";
 					*cur_hist = SmoothSW(cur_hist, cv_hist, trad_bin);
 				}
-				for(int jndex = 1; jndex < nb;  ++ jndex){
+				for(int jndex = 1; jndex < nb+1;  ++ jndex){
 					all_hist->Fill(cur_hist->GetBinLowEdge(jndex) , cur_hist->GetBinContent(jndex));
 					if(debug_verbose){
-						std::cout<<"\r Fill "<<cur_hist->GetBinLowEdge(jndex)<<" with "<<cur_hist->GetBinContent(jndex);
+						std::cout<<"\r Fill bin "<<cur_hist->GetBinLowEdge(jndex)<<" with content "<<cur_hist->GetBinContent(jndex);
 					}
 				}
 //				if(debug_verbose)std::cout<<std::endl;
@@ -991,11 +949,17 @@ TH2D* Make2VarCov(TH1D* hist, TH1D* cv, int one_set_bins){
 //	delete gROOT->FindObject("tmp");
 	TH2D* covmatrix = new TH2D(("tmp"+to_string_prec(global_index++,0)).c_str() ,"tmp",totalbins, &(bins.front()),totalbins, &(bins.front()) );//binning for xnbins,xmin,xmax,ybins,ymin.ymax;
 	for(int index = x_ini; index<one_set_bins+1; ++index){
-		if(db_message)	std::cout<<"Make2VarCov check: Onesetbins :"<<one_set_bins<<" total bins :"<<totalbins<<std::endl;
+//		if(db_message)	std::cout<<"Make2VarCov check: Onesetbins :"<<one_set_bins<<" total bins :"<<totalbins<<std::endl;
 		for(int jndex = y_ini; jndex<one_set_bins+1; ++jndex){
 			double entry = (hist->GetBinContent(index)-cv->GetBinContent(index) )*(hist->GetBinContent(jndex)-cv->GetBinContent(jndex) );
 			covmatrix->SetBinContent(index,jndex,entry);
-			if(db_message) std::cout<<"x: "<<index<<" y: "<<jndex<<std::endl;
+			if(db_message && index ==4 &&jndex ==4){ 
+			std::cout<<"CHECK ";
+			std::cout<<index<<" cv "<<cv->GetBinContent(index) << " sw "<<hist->GetBinContent(index);
+			std::cout<<" "<<jndex<<" cv "<<cv->GetBinContent(jndex) << " sw "<<hist->GetBinContent(jndex);
+			std::cout<<" cov:"<<entry<<std::endl;
+			}
+
 		}
 		if( index == totalbins) break;
 		if(index == one_set_bins){//update index for 2nd blocks;
@@ -1006,6 +970,7 @@ TH2D* Make2VarCov(TH1D* hist, TH1D* cv, int one_set_bins){
 	}
 	return covmatrix;
 }
+
 /*
  * Make one covariance matrix
  */
@@ -1029,6 +994,13 @@ TH2D* MakeCov(TH1D* hist, TH1D* cv){
 		for(int jndex = 1; jndex<nb+1; ++jndex){
 			double entry = (hist->GetBinContent(index)-cv->GetBinContent(index) )*(hist->GetBinContent(jndex)-cv->GetBinContent(jndex) );
 			covmatrix->SetBinContent(index,jndex,entry);
+
+			if(index == jndex && jndex ==4){
+			std::cout<<"CHECK"<<std::endl;
+			std::cout<<index<<" cv "<<cv->GetBinContent(index) << " sw "<<hist->GetBinContent(index);
+			std::cout<<" "<<jndex<<" cv "<<cv->GetBinContent(jndex) << " sw "<<hist->GetBinContent(jndex);
+			std::cout<<" cov:"<<entry<<std::endl;
+			}
 
 		}
 	}
@@ -1073,6 +1045,7 @@ TH2D* MakeCor(TH2D* twodhist, TH1D* hist, TH1D* cv){
  */
 TH2D* MakeFracCov(TH2D* inputcov, TH1D* oldcv){
 	
+	bool p_message = false;
 	int nb=oldcv->GetNbinsX();
 	int nl=oldcv->GetBinLowEdge(1);
 	int nh=oldcv->GetBinLowEdge(nb+1);
@@ -1087,6 +1060,11 @@ TH2D* MakeFracCov(TH2D* inputcov, TH1D* oldcv){
 			double cvk = oldcv->GetBinContent(kndex);
 			double covjk = inputcov->GetBinContent(jndex,kndex);
 			double fjk = (cvj==0 || cvk ==0 )? 0 : covjk/(cvj*cvk);//not divide by nb;
+			if(kndex == jndex && jndex ==4 && p_message){
+			std::cout<<jndex<<" value "<<cvj;
+			std::cout<<" "<<kndex<<" value "<<cvk;
+			std::cout<<" cov:"<<covjk<<std::endl;
+			}
 
 			fractional_cov->SetBinContent(jndex,kndex,fjk);
 		}
@@ -1262,11 +1240,7 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
 		double AIC = chi2+ 2*degree+ (2*degree)*(degree+1)/(Nbins-degree-1);
 		if(message) cout<<" Chi2: "<<chi2<<" AIC = "<<AIC<<" with degree "<<degree<<std::endl;
 		//the minimum AIC gives the best fitting result;
-
-
 	return *sw;
-
-
 }
 
 

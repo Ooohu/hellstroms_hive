@@ -918,7 +918,7 @@ int scan_likelihood(std::vector<bdt_file*> stack_files, std::vector<bdt_info> bd
 
         }
         padtop->cd();
-        bdt_variable cat_var( "("+cat_name+")/1.0","(50,0,1)","Liklihood",false,"d");
+        bdt_variable cat_var( "("+cat_name+")/1.0","(50,0,1)","Liklihood",false);//,"d");
         //bdt_variable cat_var("("+cat_name+")/"+std::to_string(bdt_infos.size()),"(50,0,1)","Liklihood",false,"d");
         TH1 * tmp = (TH1*)f->getTH1(cat_var , "1",f->tag+"_"+cat_var.safe_name, 13.2e20);
         padtop->cd();

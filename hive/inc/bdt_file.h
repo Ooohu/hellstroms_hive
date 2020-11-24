@@ -275,4 +275,6 @@ class bdt_file{
 };
 void get_joy();
 
+//get binning vector for variables;
+std::vector<double> gadget_CalBinning( std::vector<bdt_variable> cur_vars);
 #endif

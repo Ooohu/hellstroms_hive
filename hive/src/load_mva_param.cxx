@@ -624,7 +624,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
         std::cout<<"\nVariable Index "<<n_var<<" is "<<var_unit<<" with definiton: "<<var_def<<std::endl;
 
-		TString var_minidef = pVar->Attribute("minidef");
+//		TString var_minidef = pVar->Attribute("minidef");
 
         std::string var_binning = pVar->Attribute("binning");
         std::string var_type = pVar->Attribute("type");
@@ -701,7 +701,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
 		//following two modify the bdt_variable t
 		t.is_custombin = var_custombin_bool;
-		t.mininame = var_minidef;
+		t.mininame = t.name;//var_minidef;
 
 		//update binnings, define int_n_bins;
 		if(var_custombin_bool){

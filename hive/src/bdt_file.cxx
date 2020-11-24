@@ -1,5 +1,57 @@
 #include "bdt_file.h"
 
+//get the binning vector for variables;
+//if two variables; extend the first variable binning based on the second;
+std::vector<double> gadget_CalBinning( std::vector<bdt_variable> cur_vars){
+	bool p_message = false;
+	int xnb = cur_vars[0].n_bins;//n_bins is the target binning;
+	double xnl = cur_vars[0].plot_min;
+	double xnh = cur_vars[0].plot_max;
+
+	std::vector<double> xoutput_binning;
+
+	if(cur_vars[0].is_custombin){//just get edges, removing the first number, which is the bingap;
+		xoutput_binning = cur_vars[0].edges;
+		xoutput_binning.erase(xoutput_binning.begin());//remove the first element, then we get the binning;
+	} else{//binnings need to be calcualted
+		double bin_left = xnl; 
+		double bingap = (xnh-xnl)/xnb;
+
+		for(int jndex = 0; jndex < xnb+1; jndex++){
+			xoutput_binning.push_back(bin_left);
+if(p_message)std::cout<<bin_left<<" ";
+			bin_left+=bingap;
+		}
+	}
+//	std::cout<<std::endl;
+	if(cur_vars.size()<2) return xoutput_binning;
+
+	int ynb = cur_vars[1].n_bins;//n_bins is the target binning;
+
+	//adjust xoutput_binning; (1,2)x(100,200,300)->(1,2,3,4);
+	std::vector<double> origin_xout_binning(xoutput_binning);
+	for(int index = 1; index < ynb; index ++){
+		std::cout<<"Add "<<index<<"th histogram: ";
+		for(int jndex = 1; jndex < xnb+1; jndex ++){
+			xoutput_binning.push_back(origin_xout_binning[jndex]+index*(xnh-xnl));
+			std::cout<<xoutput_binning.back()<<" ";
+		}
+		std::cout<<std::endl;
+	}
+
+	return xoutput_binning;
+}
+
+//make formula string between two values;
+//TString gadget_FormulaMaker(TString expression, double lbin, double hbin, double wgt){ 
+//
+//	TString fhalf = expression + ">" + std::to_string(lbin);
+//	TString shalf = expression + "<" + std::to_string(hbin);
+//
+//	TString output = "((" + fhalf + ")*("+wgt+")*(" + shalf + "))";
+//
+//	return output;
+//}
 
 bdt_file::bdt_file(std::string indir,std::string inname, std::string intag, std::string inops, std::string inrootdir, int incol, bdt_flow inflow) : bdt_file(indir, inname, intag,inops,inrootdir,incol,1001,inflow){}
 
@@ -665,31 +717,35 @@ int bdt_file::scanStage(int which_stage, std::vector<double> bdt_cuts , std::str
     return 0;
 }
 
+//DONT KNOW WHY I can return TH2D.. as a TH2;
 TH2* bdt_file::getTH2(bdt_variable varx,bdt_variable vary, std::string cuts, std::string nam, double plot_POT){
-    std::string binx = varx.binning;
-    std::string biny = vary.binning;
 
-    std::string binx_c = binx;
-    std::string biny_c = biny;
+	//New method: 
+	
+	std::vector<double> xbins = gadget_CalBinning( {varx});
+	std::vector<double> ybins = gadget_CalBinning( {vary});
+	int xnbins =  xbins.size()-1;
+	int ynbins =  ybins.size()-1;
+	TH2D* th2 = new TH2D(nam.c_str(), nam.c_str(), xnbins, &(xbins).front(), ynbins, &(ybins).front());
 
-    // std::cout<<"binx_c"<< binx_c<<std::endl;
-    // std::cout<<"biny_c"<< biny_c<<std::endl;
+	int nentries = (this->tvertex)->GetEntries();
+	
+	TTreeFormula* xformula = new TTreeFormula( (nam+"x").c_str(), (varx.name).c_str(), this->tvertex);
+	TTreeFormula* yformula = new TTreeFormula( (nam+"y").c_str(), (vary.name).c_str(), this->tvertex);
+	TTreeFormula* weight = new TTreeFormula( (nam+"wgt").c_str(), (this->weight_branch).c_str(), this->tvertex);
+	TTreeFormula* condition = new TTreeFormula( (nam+"cond").c_str(), (cuts).c_str(), this->tvertex);
 
-    binx_c.erase(binx_c.end()- 1);
-    biny_c.erase(biny_c.begin()+ 0); 
+	xformula->GetNdata();
+	yformula->GetNdata();
+	weight->GetNdata();
+	condition->GetNdata();
 
-    // std::cout<<"binx_c"<< binx_c<<std::endl;
-    // std::cout<<"biny_c"<< biny_c<<std::endl;
+	for(Long64_t entry = 0; entry< nentries; ++entry){
+		(this->tvertex)->GetEntry(entry);
+		th2->Fill(xformula->EvalInstance(), yformula->EvalInstance(), weight->EvalInstance()*condition->EvalInstance());
+//		std::cout<<"Fill "<<xformula->EvalInstance()<<","<<yformula->EvalInstance()<<" wgt: "<<weight->EvalInstance()*condition->EvalInstance()<< "cuts "<<cuts<<std::endl;
+	}
 
-    std::string bin = binx_c + std::string(", ") + biny_c ;
-
-    std::cout<<"Starting to get for "<<(varx.name+vary.name+">>"+bin ).c_str()<<std::endl;
-    TCanvas *ctmp = new TCanvas();
-   // this->CheckWeights();
-    this->tvertex->Draw((vary.name+":"+varx.name+">>"+nam+bin).c_str() , ("("+cuts+")*"+this->weight_branch).c_str(),"goff");
-    //std::cout<<"Done with Draw for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
-    TH2* th2 = (TH2*)gDirectory->Get(nam.c_str()) ;
-    //th1->Sumw2();
 
     th2->Scale(this->scale_data*plot_POT/this->pot);
     //std::cout<<"IS THIS: "<<this->scale_data*plot_POT/this->pot<<" "<<th2->GetSumOfWeights()<<std::endl;
@@ -850,11 +906,11 @@ std::vector<TH1*> bdt_file::getRecoMCTH1(bdt_variable var, std::string cuts, std
 
 bdt_variable bdt_file::getBDTVariable(bdt_info info){
     //   std::cout<<"Getting bdt_file var bdt : "<<this->tag+"_"+info.identifier+".mva"<<std::endl;
-    return bdt_variable(this->tag +"_"+info.identifier+ ".mva", info.binning, info.name+" Response" ,false,"d");
+    return bdt_variable(this->tag +"_"+info.identifier+ ".mva", info.binning, info.name+" Response" ,false);//,"d");
 }
 
 bdt_variable bdt_file::getBDTVariable(bdt_info info, std::string binning){
-    return bdt_variable(this->tag +"_"+info.identifier+ ".mva", binning, info.name+" Response" ,false,"d");
+    return bdt_variable(this->tag +"_"+info.identifier+ ".mva", binning, info.name+" Response" ,false);//,"d");
 }
 
 

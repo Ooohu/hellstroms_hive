@@ -331,8 +331,8 @@ bdt_efficiency::bdt_efficiency(bdt_file* filein, std::string denomin, double c1,
     std::cout<<"Same scaled to 6.6e20 "<<true_denominator<<std::endl; 
 
 
-    bdt_variable true_photon("delta_photon_energy","(20, 0 , 1.0)","True Photon Energy [GeV]",false,"d");
-    bdt_variable true_proton("delta_proton_energy-0.938272","(20, 0 , 1.0)","True Proton Kinetic Energy [GeV]",false,"d");
+    bdt_variable true_photon("delta_photon_energy","(20, 0 , 1.0)","True Photon Energy [GeV]",false);//,"d");
+    bdt_variable true_proton("delta_proton_energy-0.938272","(20, 0 , 1.0)","True Proton Kinetic Energy [GeV]",false);//,"d");
 
     TH1* h_true_photon_denom = (TH1*)file->getTH1(true_photon, denominator, "photon_true_denom", 6.6e20);
     TH1* h_true_proton_denom = (TH1*)file->getTH1(true_proton, denominator, "proton_true_denom", 6.6e20);
@@ -584,11 +584,11 @@ bdt_efficiency::bdt_efficiency(bdt_file* filein, std::vector<std::string> v_deno
     std::cout<<"This is "<<filein->tvertex->GetEntries((denominator+"&&"+topocuts+"&&"+precuts).c_str())<<" actuall MC events"<<std::endl;
 
 
-    bdt_variable true_photon("mctruth_exiting_photon_energy","(20, 0 ,"+std::to_string(max_x_range)+")","True Photon Energy [GeV]",false,"d");
+    bdt_variable true_photon("mctruth_exiting_photon_energy","(20, 0 ,"+std::to_string(max_x_range)+")","True Photon Energy [GeV]",false);//,"d");
     TH1* h_true_photon_denom = (TH1*)file->getTH1(true_photon, denominator, "photon_true_denom", 13.2e20);
     TH1* h_true_photon_numer;
     TH1* h_true_proton_numer;
-    bdt_variable true_proton("Max$(mctruth_exiting_proton_energy-0.938272)*(Max$(mctruth_exiting_proton_energy-0.938272)>0)","(20, 0 , "+std::to_string(max_x_range)+")","True Proton Kinetic Energy [GeV]",false,"d");
+    bdt_variable true_proton("Max$(mctruth_exiting_proton_energy-0.938272)*(Max$(mctruth_exiting_proton_energy-0.938272)>0)","(20, 0 , "+std::to_string(max_x_range)+")","True Proton Kinetic Energy [GeV]",false);//,"d");
     TH1* h_true_proton_denom ;
 
     if(is0p == false){ 
@@ -793,8 +793,8 @@ bdt_efficiency::bdt_efficiency(bdt_file* filein, std::vector<std::string> v_deno
 
     std::cout<<"-----------------------------------------"<<std::endl;
 
-    bdt_variable true_photon("mctruth_exiting_photon_energy","(30, 0 , 0.6)","True Photon Energy [GeV]",false,"d");
-    bdt_variable true_proton("Max$(mctruth_exiting_proton_energy)-0.938272","(30, 0 , 0.6)","True Proton Kinetic Energy [GeV]",false,"d");
+    bdt_variable true_photon("mctruth_exiting_photon_energy","(30, 0 , 0.6)","True Photon Energy [GeV]",false);//,"d");
+    bdt_variable true_proton("Max$(mctruth_exiting_proton_energy)-0.938272","(30, 0 , 0.6)","True Proton Kinetic Energy [GeV]",false);//,"d");
 
     std::cout<<"flag1"<<std::endl;
 
@@ -962,7 +962,7 @@ bdt_efficiency::bdt_efficiency(std::vector<bdt_file*> vec_files, std::string cut
     //OK this file will simply make an effciciey curves for all files in vec_files. 
 
     // we want to make this a function for Nu_E
-    bdt_variable true_energy("mctruth_nu_E","(50, 0 , 2)","True Neutrino Energy [GeV]",false,"d");
+    bdt_variable true_energy("mctruth_nu_E","(50, 0 , 2)","True Neutrino Energy [GeV]",false);//,"d");
 
     TCanvas * c = new TCanvas();
     TPad *p1 = (TPad*)c->cd();
@@ -1021,7 +1021,7 @@ bdt_efficiency::bdt_efficiency(std::vector<bdt_file*> vec_files, std::vector<bdt
 
     // we want to make this a function for Nu_E
     std::cout << "[EFF] Starting filter efficiency function" << std::endl;
-    bdt_variable true_energy("mctruth_nu_E","(20, 0 , 2)","True Neutrino Energy [GeV]",false,"d");
+    bdt_variable true_energy("mctruth_nu_E","(20, 0 , 2)","True Neutrino Energy [GeV]",false);//,"d");
 
     TCanvas * c = new TCanvas();
     TPad *p1 = (TPad*)c->cd();
