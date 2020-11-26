@@ -129,9 +129,9 @@ int main (int argc, char *argv[]){
             case 'f':
                 which_file = (int)strtof(optarg,NULL);
                 break;
-            case 'n':
-                number = strtof(optarg,NULL);
-                break;
+//            case 'n':
+//                number = strtof(optarg,NULL);
+//                break;
             case 'c':
                 is_combined = true;
                 break;
@@ -160,6 +160,7 @@ int main (int argc, char *argv[]){
             case 't':
                 topo_tag = optarg;
                 break;
+            case 'n':
             case 'v':
                 vvector = optarg;
                 break;
@@ -210,7 +211,7 @@ int main (int argc, char *argv[]){
     //===========================================================================================
 
     std::cout<<"================================================================================"<<std::endl;
-    std::cout<<"=================  Beginning HIVE run (version Blue World Order)================"<<std::endl;
+    std::cout<<"=============  Beginning HIVE run (version Blue World Order @ MiniBooNE) ======="<<std::endl;
     std::cout<<"================================================================================"<<std::endl;
     std::cout<<"Welcome."<<std::endl;get_joy();
     //Most TMVA arguments are loaded in here via XML
@@ -233,13 +234,14 @@ int main (int argc, char *argv[]){
     dir = XMLconfig.filedir;
     std::cout<<"Core File dir set as "<<dir<<std::endl;
 
-    std::cout<<"We have "<<TMVAmethods.size()<<" Different BDT's we are going to train today"<<std::endl;
+    std::cout<<TMVAmethods.size()<<" different BDT's: "<<std::endl;
     std::vector<bdt_info> bdt_infos;
     for(int k=0; k< TMVAmethods.size(); k++){
         bdt_infos.push_back( bdt_info(analysis_tag, TMVAmethods[k]));
-        std::cout<<"BDT Number: "<<k<<" is on "<<bdt_infos.back().name<<std::endl;
-        std::cout<<"We have "<<bdt_infos.back().train_vars.size()<<" Training variables"<<std::endl;
+        std::cout<<"["<<k<<"] BDT is on "<<bdt_infos.back().name;
+        std::cout<<" with "<<bdt_infos.back().train_vars.size()<<" training variables."<<std::endl;
     }
+	std::cout<<std::endl;
 
     //This is a vector each containing a precut, they are all added together to make the whole "precut"
     std::vector<std::string> vec_precuts = TMVAmethods[0].precuts;
@@ -276,14 +278,16 @@ int main (int argc, char *argv[]){
 
 	std::vector<bdt_sys*> systematics;
 
-    std::cout<<"================================================================================"<<std::endl;
-    std::cout<<"=============== Loading all BDT files for this analysis ========================"<<std::endl;
+    std::cout<<"\n================================================================================"<<std::endl;
+    std::cout<<"================ Loading all samples for this analysis ========================="<<std::endl;
     std::cout<<"================================================================================"<<std::endl;
 
     for(size_t f = 0; f < XMLconfig.GetNFiles(); ++f){//load up ROOT files!
 
-        std::cout<<"======= Starting bdt_file number "<<f<<" (0 is the first one) with tag -- "<<XMLconfig.bdt_tags[f]<<"====="<<std::endl;
+//        std::cout<<"======= Starting bdt_file number "<<f<<" (0 is the first one) with tag -- "<<XMLconfig.bdt_tags[f]<<"====="<<std::endl;
         //First build a bdt_flow for this file.
+		//CHECK, print out bdt_file stuff, instead of XMLconfig stuff;
+		std::cout<<"["<<f<<"] tag:"<<XMLconfig.bdt_tags[f]<<std::endl;
         std::string def = "1";
         for(int i=0; i< XMLconfig.bdt_definitions[f].size(); ++i){
             def += "&&" + XMLconfig.bdt_definitions[f][i];
@@ -296,12 +300,12 @@ int main (int argc, char *argv[]){
             }
         }
 
-        std::cout<<def<<std::endl;
+        std::cout<<"\tDefinition: "<<def<<std::endl;
 
         bdt_flow analysis_flow(topological_cuts, def, 	vec_precuts,	postcuts,	bdt_infos);
 
         std::cout<<" -- Filename "<<XMLconfig.bdt_filenames[f]<<" subdir "<<XMLconfig.bdt_dirs[f]<<std::endl;
-        std::cout<<" -- Color ";XMLconfig.bdt_cols[f]->Print();std::cout<<" and hist style "<<XMLconfig.bdt_hist_styles[f]<<" fillstyle "<<XMLconfig.bdt_fillstyles[f]<<std::endl;
+        std::cout<<" -- ";XMLconfig.bdt_cols[f]->Print();std::cout<<" and hist style "<<XMLconfig.bdt_hist_styles[f]<<" fillstyle "<<XMLconfig.bdt_fillstyles[f]<<std::endl;
         std::cout<<" -- With the following Definition Cuts: "<<std::endl;
         for(int i=0; i< XMLconfig.bdt_definitions[f].size(); ++i){
             std::cout<<" -----> "<<XMLconfig.bdt_definitions[f][i]<<std::endl;
@@ -406,7 +410,7 @@ int main (int argc, char *argv[]){
 
 			}
 		}
-
+		std::cout<<std::endl;
     }
 		//set systematic enviroments;
 	sysConfig.out_POT = onbeam_data_file->pot;
@@ -461,12 +465,16 @@ int main (int argc, char *argv[]){
 	
 //prepare variable vector
 	std::vector<bdt_variable> use_vars;
-	if(number>-1){//a specific variable
+	if (vvector != ""){//if passed specific variables in -v 1,2,3,etc.
+		use_vars = gadget_GetSelectVars(vvector, vars);
+		if(vvector.length() == 1) number =(int)  std::stod(vvector);
+	}
+//a specific variable
+	if(number>-1){ 
 		use_vars = {vars.at(number)};
-
 	}else{//all varaibles;
 		for(auto &v: vars){//load variables
-			if(which_group == -1 || which_group == v.cat){//load variables of a group
+			if(which_group == -1 || which_group == v.cats[0]){//load variables of a group
 				use_vars.push_back(v);
 			}
 		}
@@ -475,16 +483,7 @@ int main (int argc, char *argv[]){
 	if(which_bdt>-1){//a bdt is specified
 		use_vars = bdt_infos[which_bdt].train_vars;
 	}
-	if (vvector != ""){//if passed specific variables in -v 1,2,3,etc.
-		use_vars = gadget_GetSelectVars(vvector, vars);
 
-		//do systematics
-//		if(use_vars[0].has_covar&&use_vars[1].has_covar){
-//
-//			sysConfig.setStageHash(which_stage, stack_bdt_files[0],fbdtcuts);
-//			sysConfig.InitSys(use_vars, systematics);//prepare 1dhist, save them in systematics
-//		}
-	}
 
 
 //prepare bdt_stack  for "datamc", "var2D"
@@ -1452,9 +1451,11 @@ std::cout<<"Starting to make a stack of : "<<vars.at(number).name<<std::endl;
 
 std::vector<bdt_variable> v_tmp = {vars.at(number)};
 histogram_stack.plotStacks(ftest,v_tmp,fcoscut,fbnbcut);
-}
+
 }else{
 return 0;
+}
+}
 }
 */
 }else if(mode_option == "vars"){

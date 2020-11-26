@@ -20,3 +20,7 @@ std::string gadget_MakeSafeName(std::string safe_name){
 };
 
 
+void gadget_loadV( std::vector<int>& out_v, std::string in){ out_v.push_back( std::stod(in));}
+void gadget_loadV( std::vector<double>& out_v, std::string in){ out_v.push_back( std::stod(in));}
+void gadget_loadV( std::vector<std::string>& out_v, std::string in){ out_v.push_back( in);}
+void gadget_loadV( std::vector<TString>& out_v, std::string in){ out_v.push_back( in.c_str());}

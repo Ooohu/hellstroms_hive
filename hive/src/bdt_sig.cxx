@@ -854,124 +854,124 @@ std::vector<double> scan_significance_random(std::vector<bdt_file*> sig_files, s
 
 
 int scan_likelihood(std::vector<bdt_file*> stack_files, std::vector<bdt_info> bdt_infos){
-
-    std::cout<<"Starting the (somewhat) experimental likelihood combination of BDTs"<<std::endl;
-    TCanvas *ctest = new TCanvas();
-    TPad *padtop = new TPad("padtop_just", "padtop_just", 0, 0.35, 1, 1.0);
-    padtop->SetLogy();
-    padtop->SetBottomMargin(0); // Upper and lower plot are joined
-    padtop->Draw();             // Draw the upper pad: pad2top
-    padtop->cd();
-    THStack *stacked = new THStack("slimp","slimp");
-
-    std::vector<double> maxvec;
-    std::vector<double> minvec;
-
-    std::vector<double> tpoint;
-    for(double k=0; k<1.0; k=k+0.0025){
-        tpoint.push_back(k);
-    }
-    std::vector<double> sig(tpoint.size(),0);
-    std::vector<double> bkg(tpoint.size(),0);
-
-
-    for(auto &b: bdt_infos){
-
-        double minval = 999;
-        double maxval = -999;
-
-        for(auto &f: stack_files){
-            f->setStageEntryList(1);
-
-            std::string precut_list_name = b.identifier+"_"+f->tag+"_"+"lust";
-            std::string name = f->tag +"_"+b.identifier+".mva";
-
-            TTreeFormula * tf_tmp = new TTreeFormula(("tf_"+precut_list_name).c_str(), name.c_str(), f->tvertex);
-            for(int i = 0; i < f->tvertex->GetEntries(); ++i) {
-                f->tvertex->GetEntry(i);
-                tf_tmp->GetNdata();
-                double thisval = tf_tmp->EvalInstance();
-
-                if(thisval>0){
-                    minval = std::min(minval,thisval);                     
-                }
-
-            }
-            maxval = std::max(maxval, f->tvertex->GetMaximum(name.c_str()));
-
-        }
-        maxvec.push_back(maxval);
-        minvec.push_back(minval);
-        std::cout<<"So Total Min "<<minvec.back()<<"  -- > "<<maxvec.back()<<std::endl;
-        std::cout<<"-----"<<std::endl;
-    }
-
-    //now scale
-    for(auto &f: stack_files){
-        f->setStageEntryList(1);
-        std::string cat_name = "1.0";
-        for(int b=0; b< bdt_infos.size();b++){
-            std::string name = f->tag +"_"+bdt_infos[b].identifier+".mva";
-            //cat_name += "*( (" + name+"-"+std::to_string(minvec[b]) + ")/("+std::to_string(maxvec[b])+"-"+std::to_string(minvec[b])+"))";
-            cat_name = "min( "+cat_name+" , (" + name+"-"+std::to_string(minvec[b]) + ")/("+std::to_string(maxvec[b])+"-"+std::to_string(minvec[b])+"))";
-            //cat_name += "+(" + name+"-"+std::to_string(minvec[b]) + ")/("+std::to_string(maxvec[b])+"-"+std::to_string(minvec[b])+")";
-
-        }
-        padtop->cd();
-        bdt_variable cat_var( "("+cat_name+")/1.0","(50,0,1)","Liklihood",false);//,"d");
-        //bdt_variable cat_var("("+cat_name+")/"+std::to_string(bdt_infos.size()),"(50,0,1)","Liklihood",false,"d");
-        TH1 * tmp = (TH1*)f->getTH1(cat_var , "1",f->tag+"_"+cat_var.safe_name, 13.2e20);
-        padtop->cd();
-        tmp->SetFillColor(f->col);
-        stacked->Add(tmp);
-
-
-        std::cout<<"Starting a s/sqrt(b) scan of "<<f->tag<<std::endl;
-        //now for sig/sqrt b
-        for(int t=0; t<tpoint.size(); t++){
-            double v = f->GetEntries(cat_name+">"+std::to_string(tpoint[t]))*(13.2e20/f->pot)*f->scale_data;
-            if(f->tag == "NCDeltaRadOverlay" || f->tag == "NCDeltaRadOverlayOther"){
-                sig[t] +=v;
-            }else{
-                bkg[t] +=v;
-            }
-        }
-
-    }
-
-
-
-    padtop->cd(); // pad2top becomes the current pad
-
-    stacked->Draw("hist");
-    stacked->SetMaximum(1e4);
-    stacked->SetMinimum(1e-2);
-
-    ctest->cd();
-    TPad *padbot = new TPad("padbot_just","padbot_just", 0, 0.05, 1, 0.35);
-    padbot->SetTopMargin(0);
-    padbot->SetBottomMargin(0.351);
-    padbot->SetGridx(); // vertical grid
-    padbot->Draw();
-    padbot->cd();       // pad0bot becomes the current pad
-
-
-    std::vector<double> signif;
-    for(int t=0; t< sig.size(); t++){
-        if(bkg[t]!=0){
-            signif.push_back(sig[t]/sqrt(bkg[t]));
-        }else{
-            signif.push_back(0);
-        }
-        std::cout<<"Point t: "<<tpoint[t]<<" "<<sig[t]<<" "<<bkg[t]<<" "<<signif[t]<<std::endl;
-    }
-
-    TGraph * g = new TGraph(signif.size(),&tpoint[0],&signif[0]);
-    g->Draw("ACP");
-
-    ctest->SaveAs("sig_scan_liklihood.pdf","pdf");
-
-    return 0;
+//
+//    std::cout<<"Starting the (somewhat) experimental likelihood combination of BDTs"<<std::endl;
+//    TCanvas *ctest = new TCanvas();
+//    TPad *padtop = new TPad("padtop_just", "padtop_just", 0, 0.35, 1, 1.0);
+//    padtop->SetLogy();
+//    padtop->SetBottomMargin(0); // Upper and lower plot are joined
+//    padtop->Draw();             // Draw the upper pad: pad2top
+//    padtop->cd();
+//    THStack *stacked = new THStack("slimp","slimp");
+//
+//    std::vector<double> maxvec;
+//    std::vector<double> minvec;
+//
+//    std::vector<double> tpoint;
+//    for(double k=0; k<1.0; k=k+0.0025){
+//        tpoint.push_back(k);
+//    }
+//    std::vector<double> sig(tpoint.size(),0);
+//    std::vector<double> bkg(tpoint.size(),0);
+//
+//
+//    for(auto &b: bdt_infos){
+//
+//        double minval = 999;
+//        double maxval = -999;
+//
+//        for(auto &f: stack_files){
+//            f->setStageEntryList(1);
+//
+//            std::string precut_list_name = b.identifier+"_"+f->tag+"_"+"lust";
+//            std::string name = f->tag +"_"+b.identifier+".mva";
+//
+//            TTreeFormula * tf_tmp = new TTreeFormula(("tf_"+precut_list_name).c_str(), name.c_str(), f->tvertex);
+//            for(int i = 0; i < f->tvertex->GetEntries(); ++i) {
+//                f->tvertex->GetEntry(i);
+//                tf_tmp->GetNdata();
+//                double thisval = tf_tmp->EvalInstance();
+//
+//                if(thisval>0){
+//                    minval = std::min(minval,thisval);                     
+//                }
+//
+//            }
+//            maxval = std::max(maxval, f->tvertex->GetMaximum(name.c_str()));
+//
+//        }
+//        maxvec.push_back(maxval);
+//        minvec.push_back(minval);
+//        std::cout<<"So Total Min "<<minvec.back()<<"  -- > "<<maxvec.back()<<std::endl;
+//        std::cout<<"-----"<<std::endl;
+//    }
+//
+//    //now scale
+//    for(auto &f: stack_files){
+//        f->setStageEntryList(1);
+//        std::string cat_name = "1.0";
+//        for(int b=0; b< bdt_infos.size();b++){
+//            std::string name = f->tag +"_"+bdt_infos[b].identifier+".mva";
+//            //cat_name += "*( (" + name+"-"+std::to_string(minvec[b]) + ")/("+std::to_string(maxvec[b])+"-"+std::to_string(minvec[b])+"))";
+//            cat_name = "min( "+cat_name+" , (" + name+"-"+std::to_string(minvec[b]) + ")/("+std::to_string(maxvec[b])+"-"+std::to_string(minvec[b])+"))";
+//            //cat_name += "+(" + name+"-"+std::to_string(minvec[b]) + ")/("+std::to_string(maxvec[b])+"-"+std::to_string(minvec[b])+")";
+//
+//        }
+//        padtop->cd();
+//        bdt_variable cat_var( "("+cat_name+")/1.0","(50,0,1)","Liklihood",false);//,"d");
+//        //bdt_variable cat_var("("+cat_name+")/"+std::to_string(bdt_infos.size()),"(50,0,1)","Liklihood",false,"d");
+//        TH1 * tmp = (TH1*)f->getTH1(cat_var , "1",f->tag+"_"+cat_var.safe_name, 13.2e20);
+//        padtop->cd();
+//        tmp->SetFillColor(f->col);
+//        stacked->Add(tmp);
+//
+//
+//        std::cout<<"Starting a s/sqrt(b) scan of "<<f->tag<<std::endl;
+//        //now for sig/sqrt b
+//        for(int t=0; t<tpoint.size(); t++){
+//            double v = f->GetEntries(cat_name+">"+std::to_string(tpoint[t]))*(13.2e20/f->pot)*f->scale_data;
+//            if(f->tag == "NCDeltaRadOverlay" || f->tag == "NCDeltaRadOverlayOther"){
+//                sig[t] +=v;
+//            }else{
+//                bkg[t] +=v;
+//            }
+//        }
+//
+//    }
+//
+//
+//
+//    padtop->cd(); // pad2top becomes the current pad
+//
+//    stacked->Draw("hist");
+//    stacked->SetMaximum(1e4);
+//    stacked->SetMinimum(1e-2);
+//
+//    ctest->cd();
+//    TPad *padbot = new TPad("padbot_just","padbot_just", 0, 0.05, 1, 0.35);
+//    padbot->SetTopMargin(0);
+//    padbot->SetBottomMargin(0.351);
+//    padbot->SetGridx(); // vertical grid
+//    padbot->Draw();
+//    padbot->cd();       // pad0bot becomes the current pad
+//
+//
+//    std::vector<double> signif;
+//    for(int t=0; t< sig.size(); t++){
+//        if(bkg[t]!=0){
+//            signif.push_back(sig[t]/sqrt(bkg[t]));
+//        }else{
+//            signif.push_back(0);
+//        }
+//        std::cout<<"Point t: "<<tpoint[t]<<" "<<sig[t]<<" "<<bkg[t]<<" "<<signif[t]<<std::endl;
+//    }
+//
+//    TGraph * g = new TGraph(signif.size(),&tpoint[0],&signif[0]);
+//    g->Draw("ACP");
+//
+//    ctest->SaveAs("sig_scan_liklihood.pdf","pdf");
+//
+//    return 0;
 }
 
 

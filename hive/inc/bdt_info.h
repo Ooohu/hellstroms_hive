@@ -30,7 +30,7 @@ struct bdt_info{
 
     method_struct TMVAmethod;
     std::vector<bdt_variable> train_vars;
-    std::vector<bdt_variable> spec_vars;
+//    std::vector<bdt_variable> spec_vars;
 	std::string topo_name;
 	
 	bdt_info(){identifier = "null"; name = "null"; binning = "null";};
@@ -43,7 +43,7 @@ struct bdt_info{
     bdt_info(std::string analysis_tag, method_struct inmethod):  TMVAmethod(inmethod), identifier(analysis_tag+inmethod.bdt_tag), name(inmethod.bdt_name),binning(inmethod.bdt_binning),base_cuts("1"), pre_cuts("1"), mid_cuts("1"),post_cuts("1"), bdt_cosmic_cuts("1"), bdt_bnb_cuts("1"),signal_definition("1"),background_definition("1") { 
 	topo_name = TMVAmethod.topological_name;	
     train_vars = TMVAmethod.bdt_train_vars;
-    spec_vars = TMVAmethod.bdt_spec_vars;
+//    spec_vars = TMVAmethod.bdt_spec_vars;
     }
 
 	int setName(std::string in){ identifier = in;return 0;};

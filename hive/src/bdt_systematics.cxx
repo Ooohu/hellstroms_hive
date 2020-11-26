@@ -563,16 +563,16 @@ void bdt_sys::Make1dhist(std::vector<bdt_variable> vars, TFile* out_root, bool t
 				count_hist++;
 
 				//variables of a throw
-				TString cur_formula = var.mininame;
+				TString cur_formula = var.name;
 				TString cur_condition = "1";
 				if(twovars){
 					double condition_step = (vars[1].plot_max-vars[1].plot_min)/(vars[1].int_n_bins*1.0);
 					double con_min = vars[1].plot_min+condition_step*kndex;
 					double con_max = vars[1].plot_min+condition_step*(kndex+1);
-					cur_condition = "("+vars[1].mininame+">"+to_string_prec(con_min,5)+"&&"+vars[1].mininame+"<"+to_string_prec(con_max,5)+")";
+					cur_condition = "("+vars[1].name+">"+to_string_prec(con_min,5)+"&&"+vars[1].name+"<"+to_string_prec(con_max,5)+")";
 
 					TString con_adj = "+"+to_string_prec(kndex,0)+"*"+to_string_prec(var.plot_max-var.plot_min,5);
-					cur_formula = "("+var.mininame+con_adj+")";
+					cur_formula = "("+var.name+con_adj+")";
 				}
 				//as a convention, kndex for different constrains, and lndex for different throws;
 				varformula[kndex][lndex] = new TTreeFormula(var.unit.c_str(), gadget_updateindex(cur_formula, lndex), temptree);//get the x-axis
@@ -615,7 +615,7 @@ void bdt_sys::Make1dhist(std::vector<bdt_variable> vars, TFile* out_root, bool t
 					if(temp_weight>0 && verbose){
 						std::cout<<"\r>>Looping entries: "<<std::setw(5)<<lentry+1<<"/"<<std::setw(5)<<nentries;
 						if(debug_verbose && temp_condition>0){//print out
-							std::cout<<" "<<std::setw(10)<<gadget_updateindex(var.mininame, mndex);
+							std::cout<<" "<<std::setw(10)<<gadget_updateindex(var.name, mndex);
 							std::cout<<"="<<std::setw(10)<<temp_xvalue;
 							std::cout<<" "<<std::setw(10)<<gadget_updateindex(this->vars[index],mndex);
 							std::cout<<"="<<std::setw(10)<<temp_weight;

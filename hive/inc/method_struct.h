@@ -19,7 +19,7 @@ struct method_struct {
 
     std::vector<bdt_variable> bdt_all_vars;
     std::vector<bdt_variable> bdt_train_vars;
-    std::vector<bdt_variable> bdt_spec_vars;
+//    std::vector<bdt_variable> bdt_spec_vars;
 
     std::string filename;
     std::string foldername;

@@ -357,7 +357,7 @@ int main (int argc, char *argv[]){
     }   
     for(auto &var: quick_vars){
 
-        if(which_group == -1 || which_group == var.cat){
+        if(which_group == -1 || which_group == var.cats[0]){
 
         std::vector<std::string> cuts;
         int v = 0;

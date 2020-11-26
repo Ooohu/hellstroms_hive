@@ -906,11 +906,11 @@ std::vector<TH1*> bdt_file::getRecoMCTH1(bdt_variable var, std::string cuts, std
 
 bdt_variable bdt_file::getBDTVariable(bdt_info info){
     //   std::cout<<"Getting bdt_file var bdt : "<<this->tag+"_"+info.identifier+".mva"<<std::endl;
-    return bdt_variable(this->tag +"_"+info.identifier+ ".mva", info.binning, info.name+" Response" ,false);//,"d");
+    return bdt_variable(this->tag +"_"+info.identifier+ ".mva", info.binning, info.name+" Response");// ,false);//,"d");
 }
 
 bdt_variable bdt_file::getBDTVariable(bdt_info info, std::string binning){
-    return bdt_variable(this->tag +"_"+info.identifier+ ".mva", binning, info.name+" Response" ,false);//,"d");
+    return bdt_variable(this->tag +"_"+info.identifier+ ".mva", binning, info.name+" Response");// ,false);//,"d");
 }
 
 

@@ -1209,7 +1209,7 @@ int bdt_XGtrain(std::string dir, bdt_info &info){
     int bdt_XGBoost_importance(std::string dir, bdt_info &info, BoosterHandle &booster){
 
         //some vectors to save info on each variable
-        int t_vars = info.train_vars.size()+info.spec_vars.size();
+        int t_vars = info.train_vars.size();//+info.spec_vars.size();
 
         std::vector<int> variable_uses(t_vars,0); 
         std::vector<double> total_gain(t_vars,0.0); 

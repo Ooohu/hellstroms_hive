@@ -18,9 +18,10 @@ target_link_libraries (validate_hive tinyxmllib hiveLib xgboost ${ROOT_LIBRARIES
 #target_link_libraries (validate_trk_2 tinyxmllib hiveLib xgboost ${ROOT_LIBRARIES})
 
 
-set_output_directory(hive ${CMAKE_SOURCE_DIR}/build/bin)
-set_output_directory(validate_hive ${CMAKE_SOURCE_DIR}/build/bin)
-#set_output_directory(validate_trk_2 ${CMAKE_SOURCE_DIR}/build/bin)
+set_output_directory(hive ${CMAKE_SOURCE_DIR}/test/bin)
+#set_output_directory(validate_hive ${CMAKE_SOURCE_DIR}/build/bin)
+#set_output_directory(hive ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+#set_output_directory(validate_hive ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 
 #Comment these in to build some lagacy code

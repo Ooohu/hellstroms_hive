@@ -1,66 +1,68 @@
 #include "load_mva_param.h"
 #include "method_struct.h"
 		
-bool gadget_boolreader( const char* text){
+bool gadget_boolreader( const char* intext){
 
-	if (strcmp(text ,"yes")==0||strcmp(text,"true")==0){
+	if( intext !=NULL){
+		if (strcmp(intext ,"yes")==0||strcmp(intext,"true")==0){
 			return true;
+		}
 	}
 	return false;
 
-}
+};
 
-std::vector< TString > gadget_tokenlizer( const char* text){
-	
-	bool debug = false;
-
-	if(debug)	std::cout<<"Tokenize input: "<<text<< "."<<std::endl;
-
-	std::vector< TString > tokens;
-
-
-	if(!text){ 
-		return {""};
-	}
-
-	std::stringstream acopy(text);
-	std::string temp_s;
-	bool no_comma = true;
-
-	while(getline(acopy, temp_s, ',')){
-		no_comma = false;
-		tokens.push_back(temp_s);
-		if(debug)std::cout<<temp_s<<std::endl;
-	}
-
-	if(no_comma){
-		getline(acopy, temp_s);
-		tokens.push_back(temp_s);
-	}
-//strcpy mess up the continuity of the char.. so fail!
-//	char copy_text[sizeof(text)];
-//	strcpy (copy_text, text);
+//std::vector< TString > gadget_tokenlizer( const char* text){
 //	
-////	char copy_text[] = "TMulMatWeightsChunk.data_.MultiWeight[0],TMul";
+//	bool debug = false;
 //
-//	std::cout<<"CHECK input "<<copy_text<<std::endl;
-//	char* pch; 
+//	if(debug)	std::cout<<"Tokenize input: "<<text<< "."<<std::endl;
+//
+//	std::vector< TString > tokens;
 //
 //
-//	pch = strtok (copy_text, " ," );
-//	while( pch !=NULL){
-//		std::string temp_s(pch);
-//		tokens.push_back( temp_s.c_str() );	
-//
-//		std::cout<<" pch   :"<<pch<<std::endl;
-//		std::cout<<"string :"<<temp_s<<std::endl;
-//		pch = strtok (NULL, ", ");
+//	if(!text){ 
+//		return {""};
 //	}
-//	std::cout<<"CHECK "<<__LINE__<<std::endl;
-
-	return tokens;
-
-}
+//
+//	std::stringstream acopy(text);
+//	std::string temp_s;
+//	bool no_comma = true;
+//
+//	while(getline(acopy, temp_s, ',')){
+//		no_comma = false;
+//		tokens.push_back(temp_s);
+//		if(debug)std::cout<<temp_s<<std::endl;
+//	}
+//
+//	if(no_comma){
+//		getline(acopy, temp_s);
+//		tokens.push_back(temp_s);
+//	}
+////strcpy mess up the continuity of the char.. so fail!
+////	char copy_text[sizeof(text)];
+////	strcpy (copy_text, text);
+////	
+//////	char copy_text[] = "TMulMatWeightsChunk.data_.MultiWeight[0],TMul";
+////
+////	std::cout<<"CHECK input "<<copy_text<<std::endl;
+////	char* pch; 
+////
+////
+////	pch = strtok (copy_text, " ," );
+////	while( pch !=NULL){
+////		std::string temp_s(pch);
+////		tokens.push_back( temp_s.c_str() );	
+////
+////		std::cout<<" pch   :"<<pch<<std::endl;
+////		std::cout<<"string :"<<temp_s<<std::endl;
+////		pch = strtok (NULL, ", ");
+////	}
+////	std::cout<<"CHECK "<<__LINE__<<std::endl;
+//
+//	return tokens;
+//
+//}
 
 MVALoader::MVALoader(std::string xmlname): MVALoader(xmlname,true) {
 
@@ -85,7 +87,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
     TiXmlHandle hDoc(&doc);
 
-    std::cout<<"########################### alias ###########################"<<std::endl;
+    std::cout<<"\n########################### Alias ###########################"<<std::endl;
     TiXmlElement *pAlias;
     pAlias = doc.FirstChildElement("alias");
     int n_alias = 0;
@@ -94,7 +96,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         std::string key = pAlias->Attribute("key");
         std::string val = pAlias->Attribute("value");
         aliasMap[key] = val; 
-        std::cout<<"Setting up an XML-Alias between "<<key<<" and "<<val<<std::endl;
+        std::cout<<"XML-Alias "<<key<<" --> "<<val<<std::endl;
         n_alias++;
         pAlias = pAlias->NextSiblingElement("alias");
     }
@@ -102,7 +104,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
 
 
-    std::cout<<"########################### Topology ###########################"<<std::endl;
+    std::cout<<"\n########################### Topology ###########################"<<std::endl;
 
     TiXmlElement *pTopoCut;
     pTopoCut = doc.FirstChildElement("topology");
@@ -158,7 +160,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
     std::vector<std::string> precuts;
 
-    std::cout<<"########################### Precuts ###########################"<<std::endl;
+    std::cout<<"\n########################### Precuts ###########################"<<std::endl;
     while(pPreCut )
     {
 
@@ -174,10 +176,8 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
         pPreCut = pPreCut->NextSiblingElement("precut");
 
     }
-    std::cout<<"######################## BDT's to Train on ########################################"<<std::endl;
 
-
-
+    std::cout<<"\n######################## BDT's to Train on ########################################"<<std::endl;
 
 
     TiXmlElement *pMVA; 
@@ -203,7 +203,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
             std::string bdt_name = pMVA->Attribute("name");
             std::string bdt_binning = pMVA->Attribute("binning");
 
-            std::cout<<"\nstarting BDT number "<<n_bdt<<" with TAG: "<<bdt_tag<<" name: "<<bdt_name<<"  with binning "<<bdt_binning<<std::endl;
+            std::cout<<"\n["<<n_bdt<<"] BDT TAG: "<<bdt_tag<<", name: "<<bdt_name<<", binning: "<<bdt_binning<<std::endl;
 
             //use TMVA instance to get the right EMVA type
             TMVA::Types::EMVA tmva_type = type_instance.GetMethodType(mva_type.c_str());
@@ -221,10 +221,10 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
                     TiXmlElement *pParam = pMethod->FirstChildElement("param");
                     while(pParam){
                         vec_params.push_back( std::string(pParam->GetText()) );
-                        std::cout<<vec_params.back()<<std::endl;
+//                        std::cout<<vec_params.back()<<", ";
                         pParam = pParam->NextSiblingElement("param");
                     }//-->end param loop
-
+//					std::cout<<std::endl;
 
                     for(std::string p: vec_params){
                         param_string = param_string + ":" +p;
@@ -234,6 +234,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
                     std::vector<std::pair<std::string,std::string>> xg_config;
                     if(method_type=="XGBoost"){
                         //Loop over all parameters, splitting by "=" sign and saving parameters into a vector of pairs of strings.
+                            std::cout<<"\tReading XGBoost config \n\t";
 
                         for(auto &p: vec_params){
                             size_t pos = 0;
@@ -246,8 +247,9 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
                             std::string secondone = p;
                             std::pair<std::string,std::string> pairs = std::make_pair(firstone,secondone);
                             xg_config.push_back(pairs);
-                            std::cout<<"Reading XGBoost config "<<firstone<<"  =  "<<secondone<<std::endl;
+                            std::cout<<firstone<<" = "<<secondone<<", ";
                         }
+						std::cout<<std::endl;
                     }
 
 
@@ -301,7 +303,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
                     vec_methods.back().scan_max = strtof(pMVAscan->Attribute("max"),NULL); 
                     vec_methods.back().scan_min = strtof(pMVAscan->Attribute("min"),NULL); 
                     vec_methods.back().scan_steps = strtof(pMVAscan->Attribute("steps"),NULL); 
-                    std::cout<<"Scan params "<<vec_methods.back().scan_steps<<" "<<vec_methods.back().scan_min<<" "<<vec_methods.back().scan_max<<std::endl;
+                    std::cout<<"\rScan params "<<vec_methods.back().scan_steps<<" "<<vec_methods.back().scan_min<<" "<<vec_methods.back().scan_max<<std::endl;
                     pMVAscan = pMVA->NextSiblingElement("scan");
                 }//end scan
             }
@@ -316,8 +318,8 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     }//--> end mva loop
 
 
-    std::cout<<"#######################  BDT_Files  ########################################"<<std::endl;
-    std::cout<<"(Print out will be below when constructing bdt_file class)"<<std::endl;
+//    std::cout<<"\n#######################  BDT_Files  ########################################"<<std::endl;
+//    std::cout<<"(Print out will be below when constructing bdt_file class)"<<std::endl;
 
     TiXmlElement *pBDTfile; 
 
@@ -580,7 +582,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     }//--> end bdt_file
 
 
-    std::cout<<"####################### Variables ########################################"<<std::endl;
+    std::cout<<"\n####################### Variables ########################################"<<std::endl;
      //first lets see if there is a covariance general file (GLOBAL)
     TiXmlElement *pCovar = doc.FirstChildElement("covar");
 
@@ -612,173 +614,102 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 	//bdt variables 
     TiXmlElement *pVar = doc.FirstChildElement("var");
     std::vector<bdt_variable> bdt_all_vars;
+//    std::vector<bdt_variable> bdt_train_vars;
+//    std::vector<bdt_variable> bdt_spec_vars;
 
-    std::vector<bdt_variable> bdt_train_vars;
-    std::vector<bdt_variable> bdt_spec_vars;
     int n_var = 0;
     while(pVar){
-        std::string var_def_unparsed = pVar->Attribute("def");
-        std::string var_def = this->AliasParse(var_def_unparsed); 
+		std::vector< std::string> read_labels = {"def", "binning", "unit"}; 
 
-        std::string var_unit = pVar->Attribute("unit");
+		std::vector< std::string> pVar_input_values(read_labels.size()); 
+		for(int jndex  = 0; jndex < read_labels.size(); jndex++){
 
-        std::cout<<"\nVariable Index "<<n_var<<" is "<<var_unit<<" with definiton: "<<var_def<<std::endl;
+			pVar_input_values[jndex] = pVar->Attribute( read_labels[jndex].c_str() );
 
-//		TString var_minidef = pVar->Attribute("minidef");
-
-        std::string var_binning = pVar->Attribute("binning");
-        std::string var_type = pVar->Attribute("type");
-
-
-        const char * var_logplot = pVar->Attribute("logplot");
-        bool var_logplot_bool = false;
-		if(var_logplot==NULL){
-			var_logplot_bool = false;
-		}else if (strcmp(var_logplot,"yes")==0||strcmp(var_logplot,"true")==0){
-			var_logplot_bool = true;
-			std::cout<<"It is a logplot!"<<std::endl;
+			if(read_labels[jndex] == "def" ) pVar_input_values[jndex] = this->AliasParse(pVar_input_values[jndex]);
 		}
 
-        const char * var_custombin = pVar->Attribute("custombin");
-        bool var_custombin_bool = false;
-		if(var_custombin==NULL){
-			var_custombin_bool = false;
-		}else if (strcmp(var_custombin,"yes")==0||strcmp(var_custombin,"true")==0){
-			var_custombin_bool = true;
-			std::cout<<"It uses customized binning!"<<std::endl;
+        bdt_variable tvar( pVar_input_values[0], pVar_input_values[1], pVar_input_values[2]);
+
+		tvar.id = n_var;
+		std::cout<<"["<<n_var<<"] "<< tvar.name<<" ("<<tvar.unit<<") in "<<tvar.binning<<std::endl;
+
+		tvar.is_logplot = gadget_boolreader( pVar->Attribute("logplot"));
+		if(tvar.is_logplot) std::cout<<"\tLogplot!"<<std::endl;
+
+		tvar.is_custombin = gadget_boolreader( pVar->Attribute("custombin"));
+		if(tvar.is_custombin) std::cout<<"\tVariable binning!"<<std::endl;
+		
+		
+		//The following const char* is for Attribute that can be NULL;
+		const char* t_covar_files =  pVar->Attribute("covarfile");//can be empty;
+		if( t_covar_files !=NULL && strlen(t_covar_files) > 0){
+			tvar.covar_file = t_covar_files;
+			tvar.has_covar = true;
+            std::cout<<"\tLink fractional covaraince matrices from "<<tvar.covar_file<<std::endl;
 		}
 
-        std::string covar_file;
-//        std::string covar_name;
-        std::string covar_leg = "default";
-        bool has_covar = false;
-        const char* var_covar_file = pVar->Attribute("covarfile");
-//        const char* var_covar_name = pVar->Attribute("covarname");
-        if (var_covar_file==NULL){// || var_covar_name==NULL){}
-            has_covar= false;
-        }else{
-            has_covar= true;
-            covar_file = var_covar_file;
-//            covar_name = var_covar_name;
-        }
-        
-        if(has_global_covar){
-            has_covar= true;
-            covar_file =  global_covar_dir;
-//            covar_name = global_covar_name;
-            covar_leg = global_leg_name;
-        }
+        const char* t_cats = pVar->Attribute("group");
+		if( t_cats !=NULL && strlen(t_cats) > 0 ){ 
+			std::string t_cats_str (t_cats);
+			std::vector<std::string> t_cats_v = gadget_Tokenizer<std::string> ( t_cats_str);
+			std::cout<<"\tGroup "<<t_cats<<std::endl;
 
-
-        double pmin = -999;
-        double pmax = -999;
-
-        const char* t_pmin = pVar->Attribute("pmin");
-        if(t_pmin!=NULL){
-            pmin = atof(t_pmin);
-        }
-
-        const char* t_pmax = pVar->Attribute("pmax");
-
-//        std::cout<<"Plotting Min/Max "<<pmin<<" "<<pmax<<std::endl;
-       
-        int in_cat = 0; 
-        const char * t_cat = pVar->Attribute("group");
-         if(t_cat!=NULL){
-            in_cat = atoi(t_cat);
-         }
-
-
-        bool is_spec = false;
-        //if(var_spectator=="true") is_spec = true;
-
-//        bdt_variable t(var_def, var_minidef, var_binning,var_unit,"false",var_type,n_var);//initialize the bdt_variable;
-        bdt_variable t(var_def,var_binning,var_unit,"false",var_type,n_var);
-        t.is_logplot = var_logplot_bool;
-//        t.plot_min = pmin;
-//        t.plot_max = pmax;
-        t.cat = in_cat;
-
-		//following two modify the bdt_variable t
-		t.is_custombin = var_custombin_bool;
-		t.mininame = t.name;//var_minidef;
-
-		//update binnings, define int_n_bins;
-		if(var_custombin_bool){
-			t.plot_min = t.edges[1];
-			t.plot_max = (t.edges).back();
-
-			t.n_bins = (t.edges).size() - 2;//keep this for plotting purpose. - edge - GCD (first element);
-
-			double temp_numbins = (t.plot_max-t.plot_min)/t.edges[0];//bins# according to the GCD, then the rebin wont  give gaps;
-
-			std::cout<<"Initialize variable binning with greatest common divisor(GCD): "<<t.edges[0];
-			std::cout<<" binning = ("<<temp_numbins<<","<<t.plot_min<<","<<t.plot_max<<")"<<std::endl;
-			if( std::floor(temp_numbins)!= temp_numbins){
-				std::cout<<"ERROR first number of the variable binnings needs to be a dividen for equal binnings"<<std::endl;
-				std::cout<<"CHECK "<<n_var<<" variable: "<<var_unit<<std::endl;
-				exit(EXIT_FAILURE);
+			tvar.cats.clear();
+			for(int jndex = 0; jndex < t_cats_v.size(); jndex++){
+				(tvar.cats).push_back( std::stod(t_cats_v[jndex]));
 			}
-
-			t.int_n_bins = (int) temp_numbins;
-		}else{
-			t.int_n_bins = t.n_bins;//for normal binning, the int_n_bins is same as n_bins;
-
 		}
 
-        if(has_covar){
-            std::cout<<"Adding a file with fractional covaraince matrices "<<covar_file<<std::endl;
-            covar_file = covar_file;//+"/VID"+std::to_string(n_var)+".SBNcovar.root";
-//            t.addCovar(covar_name,covar_file);
-            t.addCovar(covar_file);
-            t.covar_legend_name = covar_leg; 
-        }
+        const char* t_pheight = pVar->Attribute("plotheight");
+		if(t_pheight!=NULL && strlen(t_pheight) > 0 && std::stod(t_pheight) > 0){ 
+			std::cout<<"\tSet plotheight: "<<t_pheight<<std::endl;
+			tvar.plot_height =(double) std::stod(t_pheight);
+		}
 
 
-        bdt_all_vars.push_back(t);
-
-        if(is_spec){
-            bdt_spec_vars.push_back(t);            
-            //std::cout<<" -- adding as pectator Variable "<<var_def<<" with binning: "<<var_binning<<std::endl;
-        }else{
-            bdt_train_vars.push_back(t);            
-            //std::cout<<" -- adding Training Variable  "<<var_def<<" with binning: "<<var_binning<<std::endl;
-        }
-
-        std::string var_train_string = pVar->Attribute("training");
+        const char* t_train = pVar->Attribute("training");
         std::vector<int> var_train_int;
-		if(var_train_string.length()>0){
-			std::cout<<" -- Variable training string is "<<var_train_string<<std::endl;
-		}
-        for (auto && c : var_train_string) {
-            var_train_int.push_back((int)c - '0');
-        }
+		if(t_train!=NULL && strlen(t_train) > 0){
 
-        //Loop over vec_methods
+			std::string t_train_str (t_train);
+			std::vector<std::string> t_train_v = gadget_Tokenizer<std::string>( t_train_str);
+
+			for(int jndex = 0; jndex < t_train_v.size(); jndex++){
+				var_train_int.push_back( (int) std::stod( t_train_v[jndex]));
+			}
+			//for (auto && c : t_train_v) {
+			//	var_train_int.push_back((int)c - '0');
+			//}
+			tvar.is_train = true;
+			std::cout<<" -- Variable training string is "<<t_train_str<<std::endl;
+		}
+
+        //Loop over vec_methods, fill in bdt_train_vars;
         for(int p=0; p< vec_methods.size(); p++){
 
-            bool is_train = false;
+//            bool is_train = false;
             for(int k=0; k< var_train_int.size(); k++){
                 if(var_train_int[k]> vec_methods.size()){
-                    std::cout<<"ERROR! BDT variable: "<<var_def <<" has been assigned to train on BDT "<<var_train_int[k]<<" But only "<<vec_methods.size()<<" has been defined!"<<std::endl;
+                    std::cout<<"ERROR! BDT variable: "<<tvar.name <<" has been assigned to train on BDT "<<var_train_int[k]<<" But only "<<vec_methods.size()<<" has been defined!"<<std::endl;
                     exit(EXIT_FAILURE);
                 }
-                if(p==var_train_int[k]){
-                    is_train = true;
-                    break;
-                }
+//                if(p==var_train_int[k]){
+//                    is_train = true;
+//                    break;
+//                }
             }
-            if(is_train){
-                vec_methods[p].bdt_train_vars.push_back(t);
-                std::cout<<" -- so adding "<<var_def<<" as training to method "<<vec_methods[p].bdt_name<<std::endl;
-            }else{
-                vec_methods[p].bdt_spec_vars.push_back(t);
-
+            if(tvar.is_train){
+                vec_methods[p].bdt_train_vars.push_back(tvar);
+                std::cout<<" -- so adding "<<tvar.name<<" as training to method "<<vec_methods[p].bdt_name<<std::endl;
             }
-
-
         }
 
+		//finish up binning info;
+		tvar.load_bininfo();
+
+		//add tvar;
+        bdt_all_vars.push_back(tvar);
 
         n_var++;
         pVar = pVar->NextSiblingElement("var");
@@ -790,7 +721,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     }
 
 
-    std::cout<<"####################### Efficiency  ########################################"<<std::endl;
+    std::cout<<"\n####################### Efficiency  ########################################"<<std::endl;
 
     TiXmlElement *pEff = doc.FirstChildElement("efficiency");
 
@@ -838,56 +769,56 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     }
 
 
-    std::cout<<"####################### RECO-MC Matching ########################################"<<std::endl;
-
-
-
-    TiXmlElement *pRecoMC = doc.FirstChildElement("recomc");
-    while(pRecoMC){
-
-
-        TiXmlElement *pDef = pRecoMC->FirstChildElement("def");
-        while(pDef){
-
-            const char* t_recomc_name = pDef->Attribute("name");
-            if(t_recomc_name==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || recomc has no `name` attribute! "<<std::endl; exit(EXIT_FAILURE);}
-            recomc_names.push_back(t_recomc_name);
-
-            const char* t_col = pDef->Attribute("col");
-            if(t_col==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || recomc has no `col` attribute! Come and set a color! "<<std::endl; exit(EXIT_FAILURE);}
-            std::string s_col = t_col;
-            s_col.erase(std::remove(s_col.begin(), s_col.end(), '('), s_col.end());
-            s_col.erase(std::remove(s_col.begin(), s_col.end(), ')'), s_col.end());
-            std::vector<double> v_col; 
-
-            size_t pos = 0;
-            std::string delim = ",";
-            std::string token;
-            while ((pos = s_col.find(delim)) != std::string::npos) {
-                token = s_col.substr(0, pos);
-                v_col.push_back(std::stod(token));
-                s_col.erase(0, pos + delim.length());
-            }
-            v_col.push_back(std::stod(s_col));
-            for(int cc=0; cc< v_col.size();cc++) {
-                if(v_col[cc]>1) v_col[cc] = v_col[cc]/255.0;
-            }
-            recomc_cols.push_back(new TColor(TColor::GetFreeColorIndex(),v_col[0],v_col[1],v_col[2]) );
-
-
-            std::string unpar =  pDef->GetText();
-            std::string parsed = this->AliasParse(unpar);
-            recomc_defs.push_back(parsed);
-            pDef = pDef->NextSiblingElement("def");
-
-            std::cout<<"RecoMC cut "<<recomc_names.back()<<" "<<recomc_defs.back()<<" Color: ";recomc_cols.back()->Print();std::cout<<std::endl;
-
-        }
-        pRecoMC = pRecoMC->NextSiblingElement("recomc");
-    }//-->end definition
+//    std::cout<<"\n ####################### RECO-MC Matching ########################################"<<std::endl;
+//
+//
+//
+//    TiXmlElement *pRecoMC = doc.FirstChildElement("recomc");
+//    while(pRecoMC){
+//
+//
+//        TiXmlElement *pDef = pRecoMC->FirstChildElement("def");
+//        while(pDef){
+//
+//            const char* t_recomc_name = pDef->Attribute("name");
+//            if(t_recomc_name==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || recomc has no `name` attribute! "<<std::endl; exit(EXIT_FAILURE);}
+//            recomc_names.push_back(t_recomc_name);
+//
+//            const char* t_col = pDef->Attribute("col");
+//            if(t_col==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || recomc has no `col` attribute! Come and set a color! "<<std::endl; exit(EXIT_FAILURE);}
+//            std::string s_col = t_col;
+//            s_col.erase(std::remove(s_col.begin(), s_col.end(), '('), s_col.end());
+//            s_col.erase(std::remove(s_col.begin(), s_col.end(), ')'), s_col.end());
+//            std::vector<double> v_col; 
+//
+//            size_t pos = 0;
+//            std::string delim = ",";
+//            std::string token;
+//            while ((pos = s_col.find(delim)) != std::string::npos) {
+//                token = s_col.substr(0, pos);
+//                v_col.push_back(std::stod(token));
+//                s_col.erase(0, pos + delim.length());
+//            }
+//            v_col.push_back(std::stod(s_col));
+//            for(int cc=0; cc< v_col.size();cc++) {
+//                if(v_col[cc]>1) v_col[cc] = v_col[cc]/255.0;
+//            }
+//            recomc_cols.push_back(new TColor(TColor::GetFreeColorIndex(),v_col[0],v_col[1],v_col[2]) );
+//
+//
+//            std::string unpar =  pDef->GetText();
+//            std::string parsed = this->AliasParse(unpar);
+//            recomc_defs.push_back(parsed);
+//            pDef = pDef->NextSiblingElement("def");
+//
+//            std::cout<<"RecoMC cut "<<recomc_names.back()<<" "<<recomc_defs.back()<<" Color: ";recomc_cols.back()->Print();std::cout<<std::endl;
+//
+//        }
+//        pRecoMC = pRecoMC->NextSiblingElement("recomc");
+//    }//-->end definition
 	
 	//systematics
-    std::cout<<"####################### Ststematics  ########################################"<<std::endl;
+    std::cout<<"####################### Systematics  ########################################"<<std::endl;
     TiXmlElement *pSys = doc.FirstChildElement("systematics");
 
     n_sys = 0;
@@ -911,14 +842,14 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
         std::string bdtfiles_need_alias = pSys->Attribute("bdtfiles");
         std::string aliased_bdtfiles = this->AliasParse(bdtfiles_need_alias); 
-		sys_for_files.push_back(gadget_tokenlizer( aliased_bdtfiles.c_str()));
+		sys_for_files.push_back(gadget_Tokenizer<TString>( aliased_bdtfiles));
 
-		sys_vars.push_back(gadget_tokenlizer( pSys->Attribute("var")));
-		sys_vars_name.push_back(gadget_tokenlizer( pSys->Attribute("varnam")));
+		sys_vars.push_back(gadget_Tokenizer<TString>( this->AliasParse(pSys->Attribute("var"))));
+		sys_vars_name.push_back(gadget_Tokenizer<TString>( this->AliasParse(pSys->Attribute("varnam"))));
 
 		if(true){//print the systemati files information out;
-			std::cout<<"\nDirectory: "<<sys_dir[n_sys]<<std::endl;
-			std::cout<<"File: "<<sys_filename[n_sys]<<std::endl;
+			std::cout<<"File directory: "<<sys_dir[n_sys];
+			std::cout<<"/"<<sys_filename[n_sys]<<std::endl;
 
 			std::cout<<"For "<<sys_for_files[n_sys].size()<<" bdtfiles: ";
 			for(size_t index = 0; index < sys_for_files[n_sys].size(); ++index){
@@ -955,7 +886,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 			std::cout<<std::setw(8)<<t_of_f[toff_index];
 
 			toff_index = (sys_its_OpticalModel[n_sys])? 0: 1;
-			std::cout<<std::setw(8)<<t_of_f[toff_index]<<std::endl;
+			std::cout<<std::setw(8)<<t_of_f[toff_index]<<"\n"<<std::endl;
 			
 		}
         n_sys++;
