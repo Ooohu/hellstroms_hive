@@ -39,7 +39,7 @@ void gadget_loadV( std::vector<TString>& out_v, std::string in);
 //template usage reference: https://stackoverflow.com/questions/17649136/function-which-is-able-to-return-different-types
 //T (for now) doule be std::string, TString, int, double
 //
-//This function return string to a vector of T.
+//This function return string to a vector of T. usage (for int) : gadget_Tokenizer< int> ("str");
 template<typename T > 
 std::vector< T> gadget_Tokenizer( std::string input){
 	//exp:

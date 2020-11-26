@@ -42,32 +42,32 @@ void gadget_buildfolder( std::string name){
 }
 
 //This is called in the hive.cxx. It is used var2D for reading var1,var2,var3 argument
-std::vector<bdt_variable> gadget_GetSelectVars(std::string vector, std::vector<bdt_variable> vars){
-    std::vector<bdt_variable> select_vars = {};
-    //first parse string as a vector
-
-    std::vector<int> vect;
-    std::stringstream ss(vector);
-
-    //for each character in the string add the ints
-    for (int i; ss >> i;) {
-        vect.push_back(i);    
-        if (ss.peek() == ',')
-            ss.ignore();
-    }
-
-    //then for each number, add that variable to the vars list
-    for (std::size_t i = 0; i < vect.size(); i++){
-        select_vars.push_back(vars[vect[i]]);
-    }
-
-    for(auto vars: select_vars){
-        std::cout<<"added vars to list "<<vars.safe_unit<<std::endl;
-
-    }
-
-    return select_vars;
-}
+//std::vector<bdt_variable> gadget_GetSelectVars(std::string vector, std::vector<bdt_variable> vars){
+//    std::vector<bdt_variable> select_vars = {};
+//    //first parse string as a vector
+//
+//    std::vector<int> vect;
+//    std::stringstream ss(vector);
+//
+//    //for each character in the string add the ints
+//    for (int i; ss >> i;) {
+//        vect.push_back(i);    
+//        if (ss.peek() == ',')
+//            ss.ignore();
+//    }
+//
+//    //then for each number, add that variable to the vars list
+//    for (std::size_t i = 0; i < vect.size(); i++){
+//        select_vars.push_back(vars[vect[i]]);
+//    }
+//
+//    for(auto vars: select_vars){
+//        std::cout<<"added vars to list "<<vars.safe_unit<<std::endl;
+//
+//    }
+//
+//    return select_vars;
+//}
 
 //int compareQuick(bdt_variable var, std::vector<bdt_file*> files, std::vector<std::string> cuts, std::string name);
 //int compareQuick(bdt_variable var, std::vector<bdt_file*> files, std::vector<std::string> cuts, std::string name,bool shape_only);
@@ -92,6 +92,7 @@ int main (int argc, char *argv[]){
     int which_bdt = -1;
     int which_stage = -1;
     std::string vvector = "";
+    std::vector< int > vvector_num = {0};
     std::string input_string = "";
     int which_group = -1;
 
@@ -465,9 +466,13 @@ int main (int argc, char *argv[]){
 	
 //prepare variable vector
 	std::vector<bdt_variable> use_vars;
+	vvector_num = gadget_Tokenizer< int> (vvector);
 	if (vvector != ""){//if passed specific variables in -v 1,2,3,etc.
-		use_vars = gadget_GetSelectVars(vvector, vars);
-		if(vvector.length() == 1) number =(int)  std::stod(vvector);
+
+		for(auto vvit : vvector_num){
+			use_vars.push_back(vars[vvit]);
+		}
+		if(vvector_num.size() == 1) number = vvector_num[0];
 	}
 //a specific variable
 	if(number>-1){ 
