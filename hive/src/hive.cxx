@@ -232,7 +232,7 @@ int main (int argc, char *argv[]){
     }
 
 
-    dir = XMLconfig.filedir;
+    dir = XMLconfig.inputdir;
     std::cout<<"Core File dir set as "<<dir<<std::endl;
 
     std::cout<<TMVAmethods.size()<<" different BDT's: "<<std::endl;
@@ -261,7 +261,7 @@ int main (int argc, char *argv[]){
 
     std::vector<bdt_file*> training_bdt_files;
 
-    std::vector<bdt_file*> validate_files;//"valid" mode
+//    std::vector<bdt_file*> validate_files;//"valid" mode
 
     bdt_file * signal;
     bdt_file * onbeam_data_file;
@@ -397,7 +397,7 @@ int main (int argc, char *argv[]){
 
 	//        if(incl_in_stack) stack_bdt_files.push_back(bdt_files.back());
 
-		if(XMLconfig.bdt_is_validate_file[f]) validate_files.push_back(bdt_files.back());//Mark validate files
+//		if(XMLconfig.bdt_is_validate_file[f]) validate_files.push_back(bdt_files.back());//Mark validate files
 
  
 		//load Initialize systematic files for each bdt_file
@@ -419,8 +419,8 @@ int main (int argc, char *argv[]){
 
     std::vector<bdt_file*> stack_bdt_files(bkg_bdt_files);
 	stack_bdt_files.insert(stack_bdt_files.end(),signal_bdt_files.begin(),signal_bdt_files.end());//bkg go first, because we want signal on top; Check, specific for MiniBooNE
-			std::cout<<"# of signal files "<<signal_bdt_files.size()<<std::endl;
-			std::cout<<"# of bkg files "<<bkg_bdt_files.size()<<std::endl;
+	std::cout<<"# of signal files "<<signal_bdt_files.size()<<std::endl;
+	std::cout<<"# of bkg files "<<bkg_bdt_files.size()<<std::endl;
 
 
     //The "signal" is whichever signal BDT you define first.
@@ -492,12 +492,12 @@ int main (int argc, char *argv[]){
 
 
 //prepare bdt_stack  for "datamc", "var2D"
-	TFile* ftest;
+//	TFile* ftest;
 	bdt_stack* histogram_stack;
 	bdt_datamc* real_datamc;
 
 	if(mode_option == "datamc" || mode_option == "var2D"){
-		ftest = new TFile(("test+"+analysis_tag+".root").c_str(),"recreate");
+//		ftest = new TFile(("test+"+analysis_tag+".root").c_str(),"recreate");
 		histogram_stack = new bdt_stack(analysis_tag+"_"+mode_option);
 		histogram_stack->plot_pot = onbeam_data_file->pot;
 
@@ -788,7 +788,7 @@ int main (int argc, char *argv[]){
 //			}
 
 //			datamc.plotStacks(ftest, use_vars, fbdtcuts, bdt_infos);
-			real_datamc->plotStacksSys(ftest, use_vars, fbdtcuts, bdt_infos, systematics);
+			real_datamc->plotStacksSys(use_vars, fbdtcuts, bdt_infos, systematics);
 //		}
 
 
@@ -858,25 +858,25 @@ int main (int argc, char *argv[]){
 //			real_datamc->plot2D_DataMinusMC(ftest, use_vars, fbdtcuts);
 			//real_datamc->plot2D(ftest, use_vars, fbdtcuts);
 //		}else{//no specific variables, means all variables are considered.
-            real_datamc->plot2D(ftest, use_vars, fbdtcuts, systematics); //warning this will make a lot of plots
+            real_datamc->plot2D(use_vars, fbdtcuts, systematics); //warning this will make a lot of plots
 //        }//if passed a vector
     }
     else if(mode_option == "superdatamc"){
-        std::cout<<"Starting superdatamc "<<std::endl;
-
-        ftest = new TFile(("test+"+analysis_tag+".root").c_str(),"recreate");
-        TFile * fsuper = new TFile((analysis_tag+"_superMVA.root").c_str(),"read");
-
-        std::vector<TTree*> super_trees;
-        for(size_t f =0; f< stack_bdt_files.size(); ++f){
-            std::string stree = "output_"+stack_bdt_files[f]->tag;
-            std::cout<<"Getting supertree : "<<stree<<std::endl;
-            super_trees.push_back((TTree*)fsuper->Get(stree.c_str()));
-        }
-
-        bdt_stack *histogram_stack = new bdt_stack(analysis_tag+"_superdatamc");
-        histogram_stack->plot_pot = onbeam_data_file->pot;
-
+//        std::cout<<"Starting superdatamc "<<std::endl;
+//
+//        ftest = new TFile(("test+"+analysis_tag+".root").c_str(),"recreate");
+//        TFile * fsuper = new TFile((analysis_tag+"_superMVA.root").c_str(),"read");
+//
+//        std::vector<TTree*> super_trees;
+//        for(size_t f =0; f< stack_bdt_files.size(); ++f){
+//            std::string stree = "output_"+stack_bdt_files[f]->tag;
+//            std::cout<<"Getting supertree : "<<stree<<std::endl;
+//            super_trees.push_back((TTree*)fsuper->Get(stree.c_str()));
+//        }
+//
+//        bdt_stack *histogram_stack = new bdt_stack(analysis_tag+"_superdatamc");
+//        histogram_stack->plot_pot = onbeam_data_file->pot;
+//
     }
     // Added by A. Mogan 1/13/20 for normalization fits
     // Similar to datamc, but iteratively scales signal histogram and

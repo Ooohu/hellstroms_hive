@@ -12,65 +12,11 @@ bool gadget_boolreader( const char* intext){
 
 };
 
-//std::vector< TString > gadget_tokenlizer( const char* text){
-//	
-//	bool debug = false;
-//
-//	if(debug)	std::cout<<"Tokenize input: "<<text<< "."<<std::endl;
-//
-//	std::vector< TString > tokens;
-//
-//
-//	if(!text){ 
-//		return {""};
-//	}
-//
-//	std::stringstream acopy(text);
-//	std::string temp_s;
-//	bool no_comma = true;
-//
-//	while(getline(acopy, temp_s, ',')){
-//		no_comma = false;
-//		tokens.push_back(temp_s);
-//		if(debug)std::cout<<temp_s<<std::endl;
-//	}
-//
-//	if(no_comma){
-//		getline(acopy, temp_s);
-//		tokens.push_back(temp_s);
-//	}
-////strcpy mess up the continuity of the char.. so fail!
-////	char copy_text[sizeof(text)];
-////	strcpy (copy_text, text);
-////	
-//////	char copy_text[] = "TMulMatWeightsChunk.data_.MultiWeight[0],TMul";
-////
-////	std::cout<<"CHECK input "<<copy_text<<std::endl;
-////	char* pch; 
-////
-////
-////	pch = strtok (copy_text, " ," );
-////	while( pch !=NULL){
-////		std::string temp_s(pch);
-////		tokens.push_back( temp_s.c_str() );	
-////
-////		std::cout<<" pch   :"<<pch<<std::endl;
-////		std::cout<<"string :"<<temp_s<<std::endl;
-////		pch = strtok (NULL, ", ");
-////	}
-////	std::cout<<"CHECK "<<__LINE__<<std::endl;
-//
-//	return tokens;
-//
-//}
+MVALoader::MVALoader(std::string xmlname): MVALoader(xmlname, 1) {}//activate verbosity
 
-MVALoader::MVALoader(std::string xmlname): MVALoader(xmlname,true) {
+MVALoader::MVALoader(std::string xmlname, int Verbose_in) :whichxml(xmlname) {
 
-}
-
-MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) {
-
-    isVerbose = isVerbose_in;
+    verbosity = Verbose_in;
 
 
     //Setup TiXml documents
@@ -78,7 +24,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     bool loadOkay = doc.LoadFile();
 
     if(loadOkay){
-        if(isVerbose) std::cout<<"MVALoader::MVALoader || Loaded "<<whichxml<<std::endl;
+        if(verbosity > 0) std::cout<<"MVALoader::MVALoader || Loaded "<<whichxml<<std::endl;
     }else{
         std::cerr<<"ERROR: MVALoader::MVALoader || Failed to load "<<whichxml<<std::endl;
         std::cerr<<"ERROR: MVALoader::MVALoader || You probably just forgot to add a --xml my_analysis.xml , or maybe you missed a </>"<<std::endl;
@@ -142,13 +88,13 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     }
 
     TiXmlElement *pFileDir;
-    pFileDir = doc.FirstChildElement("filedir");
+    pFileDir = doc.FirstChildElement("inputdir");
     if(pFileDir)
     {
-        filedir =std::string(pFileDir->GetText());
-        pFileDir = pFileDir->NextSiblingElement("filedir");
+        inputdir =std::string(pFileDir->GetText());
+        pFileDir = pFileDir->NextSiblingElement("inputdir");
     }else{
-        filedir = "./";
+        inputdir = "./";
     }
 
 
@@ -263,7 +209,7 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
 
                     vec_methods.push_back(temp_struct);		
 
-                    if(isVerbose) std::cout<<" MVALoader::MVALoader || Loading a method: "<<mva_type<<"::"<<method_type<<" with params: "<<param_string<<std::endl;
+                    if(verbosity > 0) std::cout<<" MVALoader::MVALoader || Loading a method: "<<mva_type<<"::"<<method_type<<" with params: "<<param_string<<std::endl;
 
 
                 }
@@ -332,6 +278,8 @@ MVALoader::MVALoader(std::string xmlname, bool isVerbose_in) :whichxml(xmlname) 
     }
     n_bdt_files = 0;
 
+	//essential information: filename, tag;
+	//with default: systematic, definition;
     while(pBDTfile)
     {
 

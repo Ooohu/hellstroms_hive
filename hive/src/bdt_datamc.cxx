@@ -399,7 +399,7 @@ void gadget_SetPlotlabels(THStack* stk, TH1D* tsum, TH1D& d0, bdt_variable var1,
 
 
 //ordinary 2D comparison for each samples;
-int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_sys*> systematics){
+int bdt_datamc::plot2D(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_sys*> systematics){
 
 	if (vars.size() < 2){
 		std::cout<<"need min 2 vars to make 2D plots"<<std::endl;
@@ -418,7 +418,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 
 	std::cout<<"DATAMC PLOT POT "<<plot_pot<<std::endl;
 
-	ftest->cd();
+//	ftest->cd();
 
 	int s_min = 0;
 	int s_max = bdt_cuts.size()+2;
@@ -664,7 +664,7 @@ int bdt_datamc::plot2D(TFile *ftest, std::vector<bdt_variable> vars, std::vector
 
 
 //systematic friendly plotStacks for MiniBooNE.
-int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics){
+int bdt_datamc::plotStacksSys(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics){
 
 
 	bool print_message = true;
@@ -701,7 +701,7 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 	double pot_unit = 1e20;
 	std::string pot_unit_string = "e20";
 
-	ftest->cd();//output root file to storage histograms.
+//	ftest->cd();//output root file to storage histograms.
 	std::vector<std::string> stage_names = {"Topological Selection","Pre-Selection Cuts"};
 	for(size_t index = 0; index < bdt_infos.size(); ++index){
 		stage_names.push_back(bdt_infos[index].name);//bdt_infos gives stage name

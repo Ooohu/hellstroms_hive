@@ -21,11 +21,13 @@ class MVALoader {
 	std::vector<method_struct> vec_methods;
 	public:
 	
-	bool isVerbose;
-	std::string whichxml;	
+	//environmental parameters;
+	int verbosity;
+	std::string whichxml;//xml file name;
 
 	
-	MVALoader(std::string,bool);
+	//essential funcitons
+	MVALoader(std::string, int );
 	MVALoader(std::string);
 
 	std::vector<method_struct> GetMethods();
@@ -36,7 +38,9 @@ class MVALoader {
 
     std::string analysis_tag;
 
-    std::string filedir;
+    std::string inputdir;
+
+	//bdt_files
     size_t n_bdt_files;
     std::vector<std::string> bdt_filenames;
     std::vector<std::string> bdt_tags;

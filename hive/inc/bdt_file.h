@@ -91,6 +91,7 @@ class bdt_file{
 
         std::string weight_branch;
 
+		//only precut, for entries list;
 		std::string s_precut_hash;
 
 

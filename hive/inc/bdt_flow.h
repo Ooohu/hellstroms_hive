@@ -8,6 +8,7 @@
 #include "bdt_info.h"
 /******** Root includes *****/
 
+//cuts applied on bdt files;
 struct bdt_flow{
 
 	public:
