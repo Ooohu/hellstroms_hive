@@ -11,14 +11,14 @@ message(STATUS "ROOT_LIBRARIES @: ${ROOT_LIBRARIES}")
 add_executable (hive hive.cxx)
 target_link_libraries (hive tinyxmllib hiveLib xgboost ${ROOT_LIBRARIES})
 
-add_executable (validate_hive validate_hive.cxx)
-target_link_libraries (validate_hive tinyxmllib hiveLib xgboost ${ROOT_LIBRARIES})
+#add_executable (validate_hive validate_hive.cxx)
+#target_link_libraries (validate_hive tinyxmllib hiveLib xgboost ${ROOT_LIBRARIES})
 
 #add_executable (validate_trk_2 validates/validate_trk_2.cxx)
 #target_link_libraries (validate_trk_2 tinyxmllib hiveLib xgboost ${ROOT_LIBRARIES})
 
 
-set_output_directory(hive ${CMAKE_SOURCE_DIR}/test/bin)
+set_output_directory(hive ${CMAKE_BINARY_DIR}/bin)
 #set_output_directory(validate_hive ${CMAKE_SOURCE_DIR}/build/bin)
 #set_output_directory(hive ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 #set_output_directory(validate_hive ${CMAKE_CURRENT_SOURCE_DIR}/bin)

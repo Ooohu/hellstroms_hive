@@ -5,7 +5,7 @@
 
 #include "bdt_var.h"
 #include "bdt_file.h"
-#include "load_mva_param.h"
+//#include "load_mva_param.h"
 
 #include "TStyle.h"
 #include "TSystem.h"
@@ -124,7 +124,7 @@ class sys_env{
  * set-ups for each systematic files (1 bdt_file x1 particulara systematics)
  *
  */
-class bdt_sys : public sys_env, public bdt_file{
+class bdt_sys : public sys_env{
 	//so bdt_sys is now have the public functions(), elements from bdtfile;
 	//we need the following functions from bdt_sys:
 	//-- TString bdt_file::getStageCutsIndex(int fstage, std::vector<double> bdt_cuts, int vec_index);
@@ -135,6 +135,7 @@ class bdt_sys : public sys_env, public bdt_file{
 	
 	public:
 		//From the XML;
+		bdt_file* rootbdtfile;
 		TString tag;// BkgMC, dirt | MCUnism, Multism,OpticalModel _ dirt, pi0misd, delta..
 		TString systag;//BkgMC, dirt | MCUnism, Multism,OpticalModel
 
@@ -142,6 +143,7 @@ class bdt_sys : public sys_env, public bdt_file{
 		TString dir;//directory of the input systematic file
 		TString filename;
 		TString treename;
+		TString cuts;
 
 		std::vector< TString > vars;
 		std::vector< TString > vars_name;
@@ -169,7 +171,8 @@ class bdt_sys : public sys_env, public bdt_file{
 //		int start_with_weight = 0;//a label for which weight to start, this is for the case that the code was interrupted
 
 		//constructor, now each bdt_sys contains one bdt_file; i.e. 2 systematics will have 2xfiles# bdt_sys classes;
-		bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inflow);
+		bdt_sys(){};
+		bdt_sys(int index, int bdtfile_index, bdt_flow inflow){};
 		~bdt_sys();
 
 

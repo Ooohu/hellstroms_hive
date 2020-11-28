@@ -3,7 +3,10 @@
 
 #include "tinyxml.h"
 
-#include "method_struct.h"
+//#include "method_struct.h"
+#include "bdt_var.h"
+#include "bdt_file.h"
+#include "bdt_systematics.h"
 
 #include <vector>
 #include <string>
@@ -18,27 +21,58 @@ class MVALoader {
 
 	protected:
 
-	std::vector<method_struct> vec_methods;
+//	std::vector<method_struct> vec_methods;
+    std::map<std::string,std::string> aliasMap; 
+	std::vector< bdt_file > all_files;
+	std::vector< bdt_variable > all_variables;
+	std::vector< bdt_sys* > all_systematics;
+	std::vector< std::string > stage_cuts;
+
 	public:
 	
 	//environmental parameters;
 	int verbosity;
+	bool isSys;
 	std::string whichxml;//xml file name;
-
-	
-	//essential funcitons
-	MVALoader(std::string, int );
-	MVALoader(std::string);
-
-	std::vector<method_struct> GetMethods();
-    size_t GetNFiles(){return n_bdt_files;}
-    
-    //BDT file info
-    //bdt_file *signal_SM = new bdt_file(dir, "ncdeltarad_overlay_run1_v17.1.root", "NCDeltaRadOverlaySM", "hist","singlephoton/",  kOrange+6, signal_all);
-
     std::string analysis_tag;
-
     std::string inputdir;
+
+	//essential funcitons
+	MVALoader(std::string xmlname, int verbo )
+		: isSys(false){
+		LoadEnv();
+		LoadBDTfiles();
+		LoadVariables();
+		if(isSys) LoadSystematics();
+	}
+
+	MVALoader(std::string xmlname){
+		MVALoader(xmlname, 1);
+	};
+
+
+	void LoadEnv();
+	void LoadBDTfiles();
+	void LoadVariables();
+	void LoadSystematics();
+
+	std::string AliasParse(std::string in);
+
+//	std::vector<method_struct> GetMethods();
+    size_t GetNFiles(){return 0;}
+    
+	std::vector< bdt_file > GetFiles(){ return all_files;}	
+	std::vector< bdt_sys* > GetSys(){ return all_systematics;}
+	std::vector< bdt_variable > GetVar(){return all_variables;}
+	std::string GetCuts( int nth_cut){
+		std::string out_cut = "1";
+		int index = 0;
+		while( index < nth_cut+1){
+			out_cut+="&&("+stage_cuts[index++]+")";
+		}
+	};
+	
+    //BDT file info
 
 	//bdt_files
     size_t n_bdt_files;
@@ -70,8 +104,6 @@ class MVALoader {
     std::vector<bool> bdt_on_top;
     std::vector<bool> bdt_is_training_signal;
 
-    std::map<std::string,std::string> aliasMap; 
-    std::string AliasParse(std::string in);
 
 
     std::vector<int> v_eff_denom_stage;

@@ -218,7 +218,7 @@ int main (int argc, char *argv[]){
     //Most TMVA arguments are loaded in here via XML
     std::cout<<"Getting xml variables"<<std::endl;
     MVALoader XMLconfig(xml);
-    std::vector<method_struct> TMVAmethods  = XMLconfig.GetMethods(); 
+    std::vector<method_struct> TMVAmethods;//  = XMLconfig.GetMethods(); 
     std::string analysis_tag = XMLconfig.analysis_tag;
 
     std::vector<double> fbdtcuts = XMLconfig.bdt_cuts;
@@ -277,7 +277,7 @@ int main (int argc, char *argv[]){
 	gadget_buildfolder(std::string(sysConfig.root_dir));
 	gadget_buildfolder(std::string(sysConfig.drawn_dir));
 
-	std::vector<bdt_sys*> systematics;
+	std::vector<bdt_sys*> systematics = XMLconfig.GetSys(); 
 
     std::cout<<"\n================================================================================"<<std::endl;
     std::cout<<"================ Loading all samples for this analysis ========================="<<std::endl;
@@ -314,7 +314,7 @@ int main (int argc, char *argv[]){
 
 		//load up all bdt files
 
-		bdt_files.push_back( new bdt_file(f, XMLconfig, analysis_flow));
+//		bdt_files.push_back( new bdt_file(f, XMLconfig, analysis_flow));
         bdt_files.back()->addPlotName(XMLconfig.bdt_plotnames[f]);
         tagToFileMap[XMLconfig.bdt_tags[f]] = bdt_files.back();
 
@@ -406,7 +406,7 @@ int main (int argc, char *argv[]){
 			TString this_s = XMLconfig.bdt_tags[f];
 			if( std::find( temp_s.begin(), temp_s.end(), XMLconfig.bdt_tags[f]) != temp_s.end() ){//we want this systematics
 			std::cout<<this_s<<" systematic is inheritated from the bdt_file."<<std::endl;
-				systematics.push_back( new bdt_sys(sys_index, XMLconfig, f, analysis_flow));
+//CHECK				systematics.push_back( new bdt_sys(sys_index, f, analysis_flow));
 //				(systematics.back())->setCutStage(which_stage);
 
 			}

@@ -11,7 +11,6 @@
 /******** Our includes *****/
 
 #include  "bdt_flow.h"
-#include  "bdt_file.h"
 #include  "bdt_var.h"
 #include  "bdt_info.h"
 #include  "method_struct.h"
@@ -40,7 +39,7 @@
 #include "TEntryList.h"
 #include "TSystem.h"
 
-#include "load_mva_param.h"
+//#include "load_mva_param.h"
 
     template <typename T>
 std::string to_string_prec(const T a_value, const int n = 6)
@@ -209,7 +208,7 @@ class bdt_file{
         //bdt_variable getBDTVariable(std::string cut);
 		//new
 		bdt_file(size_t index,
-			MVALoader XMLconfig,
+//			MVALoader XMLconfig,
 			bdt_flow inflow);
 
         bdt_file(std::string indir,

@@ -89,7 +89,7 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 	std::cout<<"\n Getting fracitonal matrices: ";
 	for(size_t index = 0; index < syss.size(); ++index){//loop over systematics
 
-		if(bdt_tag.compare(syss[index]->bdt_file::tag) != 0 ) continue;
+		if(bdt_tag.compare((syss[index]->rootbdtfile)->tag) != 0 ) continue;
 		if(syss[index]->its_CV) continue;//work with non-CV systematic weights, bdt_sys only provides names to retrieve contents;
 		bdt_sys* cur_sys = syss[index];
 
@@ -394,44 +394,29 @@ TString gadget_updateindex(TString varname, int nth){
  * Constructor for struct bdt_sys, 
  *
  */
-bdt_sys::bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inflow)
-	: bdt_file(bdtfile_index, XMLconfig, inflow){
-		//members to be read off immediately;
-		systag			=XMLconfig.sys_tag[index];
-		tag				=XMLconfig.sys_tag[index] + "_" + bdt_file::tag;//double tags
-		dir           	=XMLconfig.sys_dir[index];
-		filename      	=XMLconfig.sys_filename[index];
-		treename      	=XMLconfig.sys_treename[index];
-		vars          	=XMLconfig.sys_vars[index];
-		vars_name     	=XMLconfig.sys_vars_name[index];
-		pot           	=XMLconfig.sys_pot[index];
-		throws        	=XMLconfig.sys_throws[index];
-		its_CV         	=XMLconfig.sys_its_CV[index];
-		its_multithrows	=XMLconfig.sys_its_multithrows[index];
-		its_OM			=XMLconfig.sys_its_OpticalModel[index];
-
-		fullyloaded = true;
-		//members that need to be derived slightly;
-		num_vars = vars.size();
-		hists.resize(num_vars);
-//		twodhists.resize(num_vars);
-		histNames.resize(num_vars);
-//		twodhistNames.resize(num_vars);
-		TdirNames.resize(num_vars);
-
-		histloaded.assign(num_vars, false);
-		for(int index = 0 ; index < num_vars; ++index){//loop through weights
-			TdirNames[index] = tag+"_"+vars_name[index];
-
-			for(int jndex = 0; jndex < throws; ++jndex){//save names;
-				TString hist_name = vars_name[index];
-				if(its_multithrows) hist_name += std::to_string(jndex);
-				histNames[index].push_back(hist_name);
-//				twodhistNames[index].push_back(hist_name);
-			}//next throw
-		}//next weight
-
-	};
+//bdt_sys::bdt_sys(int index, int bdtfile_index, bdt_flow inflow){}
+//		fullyloaded = true;
+//		//members that need to be derived slightly;
+//		num_vars = vars.size();
+//		hists.resize(num_vars);
+////		twodhists.resize(num_vars);
+//		histNames.resize(num_vars);
+////		twodhistNames.resize(num_vars);
+//		TdirNames.resize(num_vars);
+//
+//		histloaded.assign(num_vars, false);
+//		for(int index = 0 ; index < num_vars; ++index){//loop through weights
+//			TdirNames[index] = tag+"_"+vars_name[index];
+//
+//			for(int jndex = 0; jndex < throws; ++jndex){//save names;
+//				TString hist_name = vars_name[index];
+//				if(its_multithrows) hist_name += std::to_string(jndex);
+//				histNames[index].push_back(hist_name);
+////				twodhistNames[index].push_back(hist_name);
+//			}//next throw
+//		}//next weight
+//
+//	};
 
 
 
@@ -589,7 +574,8 @@ void bdt_sys::Make1dhist(std::vector<bdt_variable> vars, TFile* out_root, bool t
 				TString temp_wgt = gadget_updateindex(this->vars[index], lndex);//this->vars[index] + temp_label;
 				TString temp_wgtname = this->vars_name[index]+std::to_string(lndex);
 
-				wgtforms[lndex] = new TTreeFormula(temp_wgtname, temp_wgt+"*"+this->getStageCutsIndex(this->fstage,fbdt_cuts, lndex), temptree);//get weight with precuts;
+				//CHECK, cuts on what stage?
+				wgtforms[lndex] = new TTreeFormula(temp_wgtname, temp_wgt+"*"+  gadget_updateindex(cuts,lndex), temptree);//get weight with precuts;
 				wgtforms[lndex]->GetNdata();
 				//			std::cout<<temp_wgt+"*"+this->getStageCutsIndex(this->stage,fbdt_cuts, lndex)<<std::endl;
 				//					std::cout<< wgtforms[lndex]->EvalInstance()<<std::endl;
