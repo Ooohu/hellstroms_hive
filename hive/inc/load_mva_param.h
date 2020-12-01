@@ -23,54 +23,57 @@ class MVALoader {
 
 //	std::vector<method_struct> vec_methods;
     std::map<std::string,std::string> aliasMap; 
-	std::vector< bdt_file > all_files;
-	std::vector< bdt_variable > all_variables;
-	std::vector< bdt_sys* > all_systematics;
 	std::vector< std::string > stage_cuts;
+	std::vector< std::string > pre_cuts;
+
+	std::vector< bdt_file > all_files;
+
+	std::vector< bdt_variable > all_variables;
+
+	std::vector< bdt_sys > all_systematics;
+
+	std::vector< bdt_info > all_bdtinfos;
+
 
 	public:
 	
 	//environmental parameters;
-	int verbosity;
+	TiXmlDocument* doc;
+	int verbosity;//0 - minimal, 1 - normal message, 2 - debug message;
 	bool isSys;
 	std::string whichxml;//xml file name;
     std::string analysis_tag;
+    std::string topo_name;
     std::string inputdir;
 
 	//essential funcitons
-	MVALoader(std::string xmlname, int verbo )
-		: isSys(false){
-		LoadEnv();
-		LoadBDTfiles();
-		LoadVariables();
-		if(isSys) LoadSystematics();
-	}
-
-	MVALoader(std::string xmlname){
-		MVALoader(xmlname, 1);
-	};
+	MVALoader(std::string xmlname)
+		: 
+		isSys(false),
+		whichxml(xmlname),
+		verbosity(1){
+			LoadEnv();
+			LoadBDTfiles();//this turns on isSys to be ture, if any systematic file is defined;
+			LoadBDTSettings();
+			LoadVariables();
+		}
 
 
 	void LoadEnv();
 	void LoadBDTfiles();
+	void LoadBDTSettings();
 	void LoadVariables();
-	void LoadSystematics();
 
 	std::string AliasParse(std::string in);
 
 //	std::vector<method_struct> GetMethods();
     size_t GetNFiles(){return 0;}
     
-	std::vector< bdt_file > GetFiles(){ return all_files;}	
-	std::vector< bdt_sys* > GetSys(){ return all_systematics;}
-	std::vector< bdt_variable > GetVar(){return all_variables;}
-	std::string GetCuts( int nth_cut){
-		std::string out_cut = "1";
-		int index = 0;
-		while( index < nth_cut+1){
-			out_cut+="&&("+stage_cuts[index++]+")";
-		}
-	};
+	std::vector< bdt_file > GetFiles(){ return all_files;};
+	std::vector< bdt_sys > GetSys(){ return all_systematics;};
+	std::vector< bdt_variable > GetVar(){return all_variables;};
+	std::vector< bdt_info > GetInfo(){return all_bdtinfos;};
+	std::string GetCuts( int nth_cut){return stage_cuts[nth_cut];};
 	
     //BDT file info
 

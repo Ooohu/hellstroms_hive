@@ -96,7 +96,7 @@ std::vector<double> gadget_getYranges(std::vector<TH1*> hists, TH1* hist){
 
 
 //int plot_bdt_variables(bdt_file * signal_pure, bdt_file * background_pure, std::vector<bdt_variable> vars, bdt_info input_bdt_info, bool isSpectator,int stage,std::vector<double> cuts);
-int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss, int stage, std::vector<double> bdtcuts, bool isNorm){
+int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::vector<bdt_variable> vars, std::vector<bdt_sys> syss, int stage, std::vector<double> bdtcuts, bool isNorm){
 //    std::vector<std::string> title = {"Topological Selection","Pre-Selection Cuts","Cosmic","BNB","Pi0","Other"};
 		
 		//isNorm true -  scale MC to the excess;

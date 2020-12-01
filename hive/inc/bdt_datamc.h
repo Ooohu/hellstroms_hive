@@ -82,12 +82,12 @@ class bdt_datamc{
 //        std::vector<bdt_variable> GetSelectVars(std::string vector, std::vector<bdt_variable> vars);
 
 
-        int plot2D(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts,std::vector<bdt_sys*> systematics );
+        int plot2D(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts,std::vector<bdt_sys> systematics );
 //        int plotStacks(TFile *ftest, std::vector<bdt_variable> vars, double c1, double c2);
         int plotStacks(TFile*f,std::vector<bdt_variable> vars, std::vector<double> cuts, std::vector<bdt_info> bdt_infos);
 
 // add the systematic friendly version for MiniBooNE;
-		int plotStacksSys(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics);
+		int plotStacksSys(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys> systematics);
 
 //TMatrixD PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root, TH1* MChist);
 

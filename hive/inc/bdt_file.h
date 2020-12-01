@@ -41,7 +41,7 @@
 
 //#include "load_mva_param.h"
 
-    template <typename T>
+template <typename T>
 std::string to_string_prec(const T a_value, const int n = 6)
 {
     std::ostringstream out;
@@ -73,37 +73,104 @@ std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 }
 
 
-//TText * drawPrelim(double x, double y);
-//TText * drawPrelim(double x, double y,double s);
 TText * drawPrelim(double x, double y,double s, std::string in);
 TText * drawPrelim(double x, double y, std::string in);
 
 
 class bdt_file{
     public:
-        std::string dir;
-        std::string name;
-        std::string tag;
-        std::string plot_name;
-        std::string plot_ops;
-        std::string root_dir;
+		
+		//essential members
+		TString input_root;	
+		std::string tag;
 
-        std::string weight_branch;
+		//members with default value
+		std::string weight_branch;
+		std::string root_dir;//TDiretory
+		std::string definition;
+        bool is_data;
+		bool is_signal;
+		bool is_train; //determined in <training> block
+		bool is_systematic;	//determined in <systematic> block
+		int group;
+        double pot;//determined in <fixPOT> section>
+		double scale;
 
-		//only precut, for entries list;
+		// - plotting special
+		std::string plot_name;
+		std::string plot_style;
+        bool is_stack;
+		bool bdt_on_top;
+        TColor* color;//this is also the fill color
+        int fillstyle;
+		int linecolor;
+        int linestyle;
+        std::string leg;//legend style; l - line; p - Marker; f - box
+		
+		//derived members
+        TFile *file;
+        TTree *tvertex;
 		std::string s_precut_hash;
+
+
+        //Optional members
+        std::vector<std::string> friend_files;
+        std::vector<std::string> friend_names;
+        int numberofevents_raw;//before POT scaling?
+
+
+		//function
+		//constructor;
+		bdt_file(std::string ininput_root, std::string in_tag)
+		:
+		input_root(ininput_root.c_str()),
+		tag(in_tag){};
+
+        ~bdt_file();
+
+		//copy constructor forbdt_sys; THIS CAUSE LINKING PROBLEM...
+//		bdt_file( const bdt_file& copy);
+
+		void SetDefaultAttributes();
+		
+		//CHECK to do;
+		void outputRoot(int stage);
+
+        int addFriend(std::string in_friend_tree_nam, std::string in_friend_file);
+
+        TH1* getTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT);
+        TH2* getTH2(bdt_variable varx, bdt_variable vary, std::string cuts, std::string nam, double plot_POT);
+
+        unsigned long jenkins_hash(std::string key);
+
+
+
+
+
+
+
+
+
+//        int makeSBNfitFile(const std::string &analysis_tag, const std::vector<bdt_info>& bdt_infos, int which_stage, const std::vector<double> & fbdtcuts, const std::string & inpu);
+        std::string dir;//file location
+        std::string name;
+//        std::string tag;
+//        std::string plot_name;
+//        std::string plot_ops;
+//        std::string root_dir;//TDirectory
+
+//        std::string weight_branch;
+
+
 
 
         TRandom3* rangen;
         std::string topo_name;
 
         //This is slightly deprecisated
-        std::string friend_tree_file;
-        std::string friend_tree_name;
+//        std::string friend_tree_file;
+//        std::string friend_tree_name;
 
-        //Will allow in future for lots of friends
-        std::vector<std::string> friend_files;
-        std::vector<std::string> friend_names;
 
         //These are now passed into bdt_recomc as they should be really.
         //Still used here (in get recomcbdts) but are filled from bdt_reco not in constructor.
@@ -111,31 +178,16 @@ class bdt_file{
         std::vector<std::string> recomc_names;
         std::vector<int> recomc_cols;
 
-        int col;
-        int fillstyle;
-        int linestyle;
-        int linecol;
-		int group;//Keng
 
-        bool is_data;
-        bool is_bnbext;
-        bool is_mc;
-		bool is_signal;
+	int col;
+        int rebin;	//combing bins, maybe not use;
 
-        std::string leg;
-
-        int rebin;	
-
+        bool is_bnbext;//bkg data; CHECK, might not use
         int numberofevents;
-        int numberofevents_raw;
-        double pot;
 
-        TFile *file;
-        TTree *tvertex;
 
         //copy tvertex into topovertex, but with topological cut.
         TTree *topovertex;
-
 
         TTree *tevent;
         TTree *tpot;
@@ -163,11 +215,7 @@ class bdt_file{
         std::string run_weight_string;
 
         //a function that splits a BDT file based on string and !string
-        int splitBDTfile(std::string split_string,std::string trueTAG, bdt_file* truesplit, std::string falseTAG, bdt_file *falsesplit);
-
-        
-        unsigned long jenkins_hash(std::string key);
-        
+//        int splitBDTfile(std::string split_string,std::string trueTAG, bdt_file* truesplit, std::string falseTAG, bdt_file *falsesplit);
 
 
         int setStageEntryList(int j);
@@ -187,15 +235,15 @@ class bdt_file{
         double ext_spills_ext;
         double N_samweb_ext;
 
-        int setAsMC();
-        int setAsOverlay();
-        int setAsOnBeamData(double in_tor860_wcut);
-        int setAsOffBeamData(double in_data_tor860_wcut, double in_data_spills_E1DCNT_wcut, double in_ext_spills_ext, double N_samweb_ext);
-        int setAsOffBeamData(double in_data_tor860_wcut, double in_data_spills_E1DCNT_wcut, double in_ext_spills_ext);
+//        int setAsMC();
+//        int setAsOverlay();
+//        int setAsOnBeamData(double in_tor860_wcut);
+//        int setAsOffBeamData(double in_data_tor860_wcut, double in_data_spills_E1DCNT_wcut, double in_ext_spills_ext, double N_samweb_ext);
+//        int setAsOffBeamData(double in_data_tor860_wcut, double in_data_spills_E1DCNT_wcut, double in_ext_spills_ext);
 
-        int calcPOT();
+//      int calcPOT();
 
-        int calcPOT(std::vector<std::string> run_names, std::vector<std::string> run_cuts, std::vector<double> run_fractions);
+//      int calcPOT(std::vector<std::string> run_names, std::vector<std::string> run_cuts, std::vector<double> run_fractions);
 
         int makeRunSubRunList();
 
@@ -219,40 +267,35 @@ class bdt_file{
 		int incol, 
 		bdt_flow inflow);	
         
-		bdt_file(std::string indir,
-		std::string inname, 
-		std::string intag, 
-		std::string inops, 
-		std::string inrootdir, 
-		int incol, 
-		int fillstyle,
-		bdt_flow inflow);	
+//		bdt_file(std::string indir,
+//		std::string inname, 
+//		std::string intag, 
+//		std::string inops, 
+//		std::string inrootdir, 
+//		int incol, 
+//		int fillstyle,
+//		bdt_flow inflow);	
 
         //legacy code OBSOLETE
         //bdt_file(std::string indir,std::string inname, std::string intag, std::string inops, std::string inrootdir, std::string infriend, std::string infriendtree, int incol, bool indata);	
 
 
-        int scale(double scalein);
-        int setPOT(double inpot);
+//        int scale(double scalein);
+//        int setPOT(double inpot);
 
         TH1* getEventTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT);
-        int CheckWeights();
+//        int CheckWeights();
      
         double GetEntries(std::string cuts);
         double GetEntries();
         TH1* getTH1(std::string invar, std::string cuts, std::string nam, double plot_POT, int rebin);
         TH1* getTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT, int rebin);
-        TH1* getTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT);
-        TH2* getTH2(bdt_variable varx, bdt_variable vary, std::string cuts, std::string nam, double plot_POT);
 
         std::vector<TH1*> getRecoMCTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT);
         std::vector<TH1*> getRecoMCTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT, int rebin);
 
-        int addFriend(std::string in_friend_tree_nam, std::string in_friend_file);
-        int addBDTResponses(bdt_info cosmic_bdt_info, bdt_info bnb_bdt_info,   std::vector<method_struct> TMVAmethods);
         int addBDTResponses(std::string dir, bdt_info input_bdt_info);
 
-        ~bdt_file();
 
         int makeSBNfitFile(const std::string &analysis_tag, const std::vector<bdt_info>& bdt_infos, int which_stage, const std::vector<double> & fbdtcuts, const std::string & inpu);
         int makeSBNfitFile(const std::string &analysis_tag, const std::vector<bdt_info>& bdt_infos, int which_stage, const std::vector<double> & fbdtcuts, const std::string & inpu, const std::vector<bdt_variable> &vars ,double plot_pot);
@@ -268,12 +311,11 @@ class bdt_file{
 		TString getStageCutsIndex(int stage, std::vector<double> bdt_cuts, int vec_index);
 
 
-        int writeStageFriendTree(std::string nam,double,double);
-        int addPlotName(std::string plotin);
-        int setTColor(TColor &);
-        TColor f_TColor;
+//        int writeStageFriendTree(std::string nam,double,double);
+//        int addPlotName(std::string plotin);
+//        int setTColor(TColor &);
 };
-void get_joy();
+//void get_joy();
 
 //get binning vector for variables;
 std::vector<double> gadget_CalBinning( std::vector<bdt_variable> cur_vars);

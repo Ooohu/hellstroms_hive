@@ -14,197 +14,356 @@ bool gadget_boolreader( const char* intext){
 
 //MVALoader::MVALoader(std::string xmlname): MVALoader(xmlname, 1) {}//activate verbosity
 
-void MVALoader::LoadEnv(){};
-void MVALoader::LoadBDTfiles(){};
-void MVALoader::LoadVariables(){};
-void MVALoader::LoadSystematics(){};
+void MVALoader::LoadEnv(){
+
+    //Setup TiXml documents
+    doc = new TiXmlDocument(whichxml.c_str() );
+    bool loadOkay = doc->LoadFile();
+
+    if(loadOkay){
+        std::cout<<"MVALoader::LoadEnv() || Loaded "<<whichxml<<std::endl;
+    }else{
+        std::cerr<<"ERROR: MVALoader::LoadEnv() || Failed to load "<<whichxml<<std::endl;
+        std::cerr<<"ERROR: MVALoader::LoadEnv() || You probably just forgot to add a --xml my_analysis.xml , or maybe you missed a </>"<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+	//Verbosity & Input Directory
+    TiXmlElement *pVerbo;
+    pVerbo = doc->FirstChildElement("verbosity");
+    if(pVerbo)
+    {
+        verbosity =std::stod(pVerbo->GetText());
+    }
+
+    TiXmlElement *pFileDir;
+    pFileDir = doc->FirstChildElement("inputdir");
+    if(pFileDir)
+    {
+        inputdir =std::string(pFileDir->GetText());
+    }else{
+        inputdir = "./";
+    }
+
+	//ALIAS
+    if(verbosity>0) std::cout<<"\n #### <<Alias>> ####"<<std::endl;
+    TiXmlElement *pAlias;
+    pAlias = doc->FirstChildElement("alias");
+    int n_alias = 0;
+    while(pAlias)
+    {
+        std::string key = pAlias->Attribute("key");
+        std::string val = pAlias->Attribute("value");
+        aliasMap[key] = val; 
+        std::cout<<"XML-Alias "<<key<<" --> "<<val<<std::endl;
+        n_alias++;
+        pAlias = pAlias->NextSiblingElement("alias");
+    }
 
 
-//MVALoader::MVALoader(std::string xmlname, int Verbose_in) :whichxml(xmlname) {
-//
-//    verbosity = Verbose_in;
-//
-//
-//    //Setup TiXml documents
-//    TiXmlDocument doc( xmlname.c_str() );
-//    bool loadOkay = doc.LoadFile();
-//
-//    if(loadOkay){
-//        if(verbosity > 0) std::cout<<"MVALoader::MVALoader || Loaded "<<whichxml<<std::endl;
-//    }else{
-//        std::cerr<<"ERROR: MVALoader::MVALoader || Failed to load "<<whichxml<<std::endl;
-//        std::cerr<<"ERROR: MVALoader::MVALoader || You probably just forgot to add a --xml my_analysis.xml , or maybe you missed a </>"<<std::endl;
-//        exit(EXIT_FAILURE);
-//    }
-//
-//    TiXmlHandle hDoc(&doc);
-//
-//    std::cout<<"\n########################### Alias ###########################"<<std::endl;
-//    TiXmlElement *pAlias;
-//    pAlias = doc.FirstChildElement("alias");
-//    int n_alias = 0;
-//    while(pAlias)
-//    {
-//        std::string key = pAlias->Attribute("key");
-//        std::string val = pAlias->Attribute("value");
-//        aliasMap[key] = val; 
-//        std::cout<<"XML-Alias "<<key<<" --> "<<val<<std::endl;
-//        n_alias++;
-//        pAlias = pAlias->NextSiblingElement("alias");
-//    }
-//
-//
-//
-//
-//    std::cout<<"\n########################### Topology ###########################"<<std::endl;
-//
-//    TiXmlElement *pTopoCut;
-//    pTopoCut = doc.FirstChildElement("topology");
-//    std::string topo_def;
-//    std::string topo_name;
-//    while(pTopoCut )
-//    {
-//
-//        topo_def = pTopoCut->Attribute("def");
-//        topo_name = pTopoCut->Attribute("name");
-//        analysis_tag = pTopoCut->Attribute("tag");
-//
-//        const char* t_cut = pTopoCut->Attribute("bdtcut");
-//        if(t_cut==NULL){ 
-//
-//        }else{
-//            std::string s_cuts = t_cut;
-//            s_cuts.erase(std::remove(s_cuts.begin(), s_cuts.end(), '('), s_cuts.end());
-//            s_cuts.erase(std::remove(s_cuts.begin(), s_cuts.end(), ')'), s_cuts.end());
-//
-//            size_t pos = 0;
-//            std::string delim = ",";
-//            std::string token;
-//            while ((pos = s_cuts.find(delim)) != std::string::npos) {
-//                token = s_cuts.substr(0, pos);
-//                bdt_cuts.push_back(std::stod(token));
-//                s_cuts.erase(0, pos + delim.length());
-//            }
-//            bdt_cuts.push_back(std::stod(s_cuts));
-//        }
-//
-//
-//        std::cout<<"Loading Topology "<<topo_name<<" with definition "<<topo_def<<std::endl;
+	//TOPOLOGY
+    std::cout<<"\n#### <<Topology>> ####"<<std::endl;
+
+    TiXmlElement *pTopoCut;
+    pTopoCut = doc->FirstChildElement("topology");
+
+    if(pTopoCut){
+        const char* pTopo_tag = pTopoCut->Attribute("tag");
+        const char* pTopo_def = pTopoCut->Attribute("def");
+        const char* pTopo_name = pTopoCut->Attribute("name");
+		try{
+			if(pTopo_tag = NULL) throw "tag";
+			if(pTopo_def = NULL) throw "def";
+			if(pTopo_name = NULL) throw "name";
+		}
+		catch( std::string topo_Error){
+			std::cerr<<"ERROR: MVALoader::LoadEnv() || ";
+			std::cerr<<" attribute of "<<topo_Error<<" is missing, please check your xml"<<std::endl;
+			exit(EXIT_FAILURE);
+		}
+		analysis_tag = pTopo_tag;
+		topo_name = pTopo_name;
+
+		stage_cuts.push_back(pTopo_def);
+		stage_cuts.push_back("");//leave a space for precus;
+
+		if(verbosity > 0) std::cout<<"Analysis tag: "<<analysis_tag<<" with "<<topo_name<<" definition:"<<pTopo_def<<std::endl;
+
+        const char* pTopo_bdtcuts = pTopoCut->Attribute("bdtcut");
+		if(pTopo_bdtcuts!=NULL){ 
+			std::vector<std::string > pTopo_bdtcuts_v = gadget_Tokenizer<std::string> (pTopo_bdtcuts);
+			stage_cuts.insert( stage_cuts.end(), pTopo_bdtcuts_v.begin(), pTopo_bdtcuts_v.end() );
+			if(verbosity > 0){
+				std::cout<<"BDT cuts are placed at: "<<pTopo_bdtcuts_v[0];
+				for(int lndex = 1; lndex < pTopo_bdtcuts_v.size(); lndex++){
+					std::cout<<","<<pTopo_bdtcuts_v[lndex];
+				}
+				std::cout<<std::endl;
+			}
+		}
 //        pTopoCut = pTopoCut->NextSiblingElement("topology");
-//    }
-//
-//    TiXmlElement *pFileDir;
-//    pFileDir = doc.FirstChildElement("inputdir");
-//    if(pFileDir)
-//    {
-//        inputdir =std::string(pFileDir->GetText());
-//        pFileDir = pFileDir->NextSiblingElement("inputdir");
-//    }else{
-//        inputdir = "./";
-//    }
-//
-//
-//
-//
-//
-//    TiXmlElement *pPreCut;
-//    pPreCut = doc.FirstChildElement("precut");
-//
-//    std::vector<std::string> precuts;
-//
-//    std::cout<<"\n########################### Precuts ###########################"<<std::endl;
-//    while(pPreCut )
-//    {
-//
-//        std::string cut_def_unparsed = pPreCut->Attribute("def");
-//        std::string cut_def = this->AliasParse(cut_def_unparsed); 
-//
-//
-//        std::string cut_name = pPreCut->Attribute("name");
-//
-//        std::cout<<"Loading Precut number "<<precuts.size()<<" "<<cut_name<<std::endl;
-//        std::cout<<"--- Define: "<<cut_def<<std::endl;
-//        precuts.push_back(cut_def);
-//        pPreCut = pPreCut->NextSiblingElement("precut");
-//
-//    }
-//
-//    std::cout<<"\n######################## BDT's to Train on ########################################"<<std::endl;
-//
-//
-//    TiXmlElement *pMVA; 
-//
-//
-//    //Grab the first element. Note very little error checking here! make sure they exist.
-//    pMVA = doc.FirstChildElement("mva");
-//    if(!pMVA) {
-//        std::cerr<<"Warnnig: MVALoader::MVALoader || XMl contains no mva's! No BDT is used."<<whichxml<<std::endl;
-////        std::cerr<<"ERROR: MVALoader::MVALoader || XMl contains no mva's! "<<whichxml<<std::endl;
-////        exit(EXIT_FAILURE);
-//    }
-//
-//    TMVA::Types  type_instance = TMVA::Types::Instance();
-//    int n_bdt = 0;
-//    while(pMVA )
-//    {
-//        if( (std::string)pMVA->Attribute("use") == "yes"){
-//            std::string mva_type = pMVA->Attribute("type");
-//            //for each type, find all methods to be used
-//
-//            std::string bdt_tag = pMVA->Attribute("tag");
-//            std::string bdt_name = pMVA->Attribute("name");
-//            std::string bdt_binning = pMVA->Attribute("binning");
-//
-//            std::cout<<"\n["<<n_bdt<<"] BDT TAG: "<<bdt_tag<<", name: "<<bdt_name<<", binning: "<<bdt_binning<<std::endl;
-//
-//            //use TMVA instance to get the right EMVA type
-//            TMVA::Types::EMVA tmva_type = type_instance.GetMethodType(mva_type.c_str());
-//
-//            TiXmlElement *pMethod = pMVA->FirstChildElement("method");
+    }
+
+    std::cout<<"\n#### <<Precuts>> ####"<<std::endl;
+
+    TiXmlElement *pPreCut;
+    pPreCut = doc->FirstChildElement("precut");
+	std::string cut_total = "(1)";
+
+    while(pPreCut )
+    {
+		const char* cut_def =  pPreCut->Attribute("def");
+		if(cut_def !=NULL){
+			pre_cuts.push_back( this->AliasParse( cut_def));
+			cut_total += "&&("+(std::string)cut_def+")";
+			const char* cut_name = pPreCut->Attribute("name");
+			if(verbosity > 0){ 
+				if(cut_name!=NULL)std::cout<<cut_name;
+				std::cout<<" is defined as "<<cut_def<<std::endl;
+			}
+		}
+		
+		stage_cuts[1] = cut_total;
+
+        pPreCut = pPreCut->NextSiblingElement("precut");
+    }
+};
+
+
+void MVALoader::LoadBDTfiles(){
+
+    std::cout<<"\n#### <<BDT Files>> ####"<<std::endl;
+    //Grab the first element. Note very little error checking here! make sure they exist.
+    TiXmlElement *pBDTfile; 
+    pBDTfile = doc->FirstChildElement("bdtfile");
+
+    if(!pBDTfile){
+        std::cerr<<"ERROR: MVALoader::LoadBDTfiles() || "<<whichxml<<" contains no BDT files! "<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+	
+	while(pBDTfile){
+        const char* pBDTf_inputr = pBDTfile->Attribute("filename");
+        const char* pBDTf_tag = pBDTfile->Attribute("tag");
+		try{
+			if(pBDTf_inputr = NULL) throw "filename";
+			if(pBDTf_tag = NULL) throw "tag";
+		}
+		catch( std::string topo_Error){
+			std::cerr<<"ERROR: MVALoader::LoadBDTfiles() || ";
+			std::cerr<<" attribute of "<<topo_Error<<" is missing, please check your xml"<<std::endl;
+			exit(EXIT_FAILURE);
+		}
+		std::string tmp_input = inputdir + "/" + (std::string) pBDTf_inputr;
+		//Build the bdt_file class;
+		bdt_file tmp_BDTf( tmp_input, (std::string) pBDTf_tag);
+		tmp_BDTf.SetDefaultAttributes();
+
+		const char* pBDTf_wgt = pBDTfile->Attribute("wgt");
+		if(pBDTf_wgt!=NULL) tmp_BDTf.weight_branch = (std::string) pBDTf_wgt;
+
+		const char* pBDTf_Tdir = pBDTfile->Attribute("Tdir");
+		if(pBDTf_Tdir!=NULL) tmp_BDTf.root_dir = (std::string) pBDTf_Tdir;
+
+		const char* pBDTf_isdata = pBDTfile->Attribute("isdata");
+		if(pBDTf_isdata!=NULL) tmp_BDTf.is_data = gadget_boolreader(pBDTf_isdata);
+
+		const char* pBDTf_issignal = pBDTfile->Attribute("issignal");
+		if(pBDTf_issignal!=NULL) tmp_BDTf.is_signal = gadget_boolreader(pBDTf_issignal);
+
+		const char* pBDTf_group = pBDTfile->Attribute("group");
+		if(pBDTf_group!=NULL) tmp_BDTf.group = (int) std::stod(pBDTf_group);
+
+		const char* pBDTf_scale = pBDTfile->Attribute("scale");
+		if(pBDTf_scale!=NULL) tmp_BDTf.scale = (double) std::stod(pBDTf_scale);
+
+		//go to plotstyle block
+		TiXmlElement *pPlotstyle = pBDTfile->FirstChildElement("plotstyle");
+		if(pPlotstyle){
+			const char* pPlots_isstack = pPlotstyle->Attribute("isstack");
+			if(pPlots_isstack!=NULL) tmp_BDTf.is_stack = gadget_boolreader(pPlots_isstack);
+
+			const char* pPlots_color = pPlotstyle->Attribute("color");
+			if(pPlots_color!=NULL){ 
+				std::vector< double > v_col = gadget_Tokenizer< double > (pPlots_color);
+				tmp_BDTf.color = new TColor(TColor::GetFreeColorIndex(),v_col[0],v_col[1],v_col[2]) ;
+			}
+
+			const char* pPlots_histstyle = pPlotstyle->Attribute("histstyle");
+			if(pPlots_histstyle!=NULL) tmp_BDTf.plot_style = (std::string) pPlots_histstyle;
+
+			const char* pPlots_fillstyle = pPlotstyle->Attribute("fillstyle");
+			if(pPlots_fillstyle!=NULL) tmp_BDTf.fillstyle = (int) std::stod(pPlots_fillstyle);
+
+			const char* pPlots_linecolor = pPlotstyle->Attribute("linecolor");
+			if(pPlots_linecolor!=NULL) tmp_BDTf.linecolor = (int) std::stod(pPlots_linecolor);
+
+			const char* pPlots_linestyle = pPlotstyle->Attribute("linestyle");
+			if(pPlots_linestyle!=NULL) tmp_BDTf.linestyle = (int) std::stod(pPlots_linestyle);
+
+			const char* pPlots_legend = pPlotstyle->Attribute("legend");
+			if(pPlots_legend!=NULL) tmp_BDTf.leg = (std::string) pPlots_legend;
+
+			const char* pPlots_on_top = pPlotstyle->Attribute("on_top");
+			if(pPlots_on_top!=NULL) tmp_BDTf.bdt_on_top = gadget_boolreader(pPlots_on_top);
+
+			const char* pPlots_plot_name = pPlotstyle->Attribute("plot_name");
+			if(pPlots_plot_name!=NULL) tmp_BDTf.plot_name = (std::string) pPlots_plot_name;
+		}
+
+
+		//go to training block
+      TiXmlElement *pTrain = pBDTfile->FirstChildElement("training");
+      while(pTrain){
+          tmp_BDTf.is_train = true;
+          TiXmlElement *pCut = pTrain->FirstChildElement("cut");
+			while(pCut){
+				const char* text =  pCut->GetText();
+				if(text != NULL) tmp_BDTf.definition += "&&(" + this->AliasParse(text) + ")";
+				pCut = pCut->NextSiblingElement("cut");
+			}
+
+          pTrain = pTrain->NextSiblingElement("training");
+      }//multiple <training> blocks will be concatenated;
+
+		//go to definition block
+		TiXmlElement *pDefinition = pBDTfile->FirstChildElement("definition");
+		while(pDefinition){
+			TiXmlElement *pCut = pDefinition->FirstChildElement("cut");
+			while(pCut){
+				const char* text =  pCut->GetText();
+				if(text != NULL) tmp_BDTf.definition += "&&(" + this->AliasParse(text) + ")";
+				pCut = pCut->NextSiblingElement("cut");
+			}
+			pDefinition = pDefinition->NextSiblingElement("definition");
+		}//multiple <definition> blocks will be concatenated;
+
+		//go to fixPOT block
+		TiXmlElement *pfixPOT = pBDTfile->FirstChildElement("fixPOT");
+		if(pfixPOT){
+			std::string fixpot = std::string(pfixPOT->GetText());
+			tmp_BDTf.pot = (double) stod(fixpot);
+		}
+		
+
+		//go to systematic block build new object based on current bdtfiles;
+		TiXmlElement *pSystematics = pBDTfile->FirstChildElement("systematics");
+		if(pSystematics){
+			isSys += pSystematics;//one on, all on;
+          tmp_BDTf.is_systematic = true;
+
+			bdt_sys tmp_BDTsys( tmp_BDTf);
+			const char* pSys_systag = pSystematics->Attribute("systag");
+			if(pSys_systag!=NULL) tmp_BDTsys.systag = (std::string) pSys_systag;
+
+			const char* pSys_var = pSystematics->Attribute("var");
+			if(pSys_var!=NULL) tmp_BDTsys.vars =gadget_Tokenizer<TString>( this->AliasParse(pSys_var) );
+
+			const char* pSys_varname = pSystematics->Attribute("varname");
+			if(pSys_varname!=NULL) tmp_BDTsys.vars_name =gadget_Tokenizer<TString>( this->AliasParse(pSys_varname) );
+
+			const char* pSys_throws = pSystematics->Attribute("throws");
+			if(pSys_throws!=NULL) tmp_BDTsys.throws = (int) std::stod(pSys_throws);
+
+			const char* pSys_isCV = pSystematics->Attribute("isCV");
+			if(pSys_isCV!=NULL) tmp_BDTsys.is_CV = gadget_boolreader(pSys_isCV);
+
+			const char* pSys_isOM = pSystematics->Attribute("isOpticalModel");
+			if(pSys_isOM!=NULL) tmp_BDTsys.is_OM = gadget_boolreader(pSys_isOM);
+			
+			all_systematics.push_back( tmp_BDTsys);
+		}	
+
+		all_files.push_back( tmp_BDTf);
+        pBDTfile = pBDTfile->NextSiblingElement("bdtfile");
+	}
+}
+	
+//this feeds the bdt_info;
+void MVALoader::LoadBDTSettings(){
+
+
+    std::cout<<"\n#### <<BDT Training Setting>> ####"<<std::endl;
+	TiXmlElement *pMVA; 
+	
+	//    //Grab the first element. Note very little error checking here! make sure they exist.
+    pMVA = doc->FirstChildElement("mva");
+	
+	    if(!pMVA && verbosity > 0) std::cerr<<"Warnnig: MVALoader::LoadBDTSettings() || XMl contains no mva's! No BDT is used."<<whichxml<<std::endl;
+
+    TMVA::Types  type_instance = TMVA::Types::Instance();
+    int n_bdt = 0;
+    while(pMVA )
+    {
+        if( gadget_boolreader(pMVA->Attribute("use")) ){
+            const char* mva_type = pMVA->Attribute("type");
+            const char* bdt_tag = pMVA->Attribute("tag");
+            const char* bdt_name = pMVA->Attribute("name");
+            const char* bdt_binning = pMVA->Attribute("binning");
+			try{
+				if(mva_type = NULL) throw "type";
+				if(bdt_tag = NULL) throw "tag";
+				if(bdt_name = NULL) throw "name";
+				if(bdt_binning = NULL) throw "binning";
+			}
+			catch( std::string pMVA_Error){
+				std::cerr<<"ERROR: MVALoader::LoadBDTSettings() || ";
+				std::cerr<<" attribute of "<<pMVA_Error<<" is missing, please check your xml"<<std::endl;
+				exit(EXIT_FAILURE);
+			}
+			bdt_info tmp_bdtInfo();
+
+            TMVA::Types::EMVA tmva_type = type_instance.GetMethodType(mva_type.c_str());
+			tmp_bdtInfo.type = tmva_type;
+
+			tmp_bdtInfo.identifier = analysis_tag + (std::string) bdt_tag;
+			tmp_bdtInfo.name = (std::string) bdt_name;
+			tmp_bdtInfo.binning = (std::string) bdt_binning;
+
+			//options are concatenated with : as the connector
+
+           if(verbosity>0)  std::cout<<"\n["<<n_bdt<<"] BDT TAG: "<<bdt_tag<<", name: "<<bdt_name<<", binning: "<<bdt_binning<<std::endl;
+
+            TiXmlElement *pMethod = pMVA->FirstChildElement("method");
+
+				
+            while(pMethod ){
+
+				if( gadget_boolreader(pMethod->Attribute("use")) ){
+                    const char* method_type = pMethod->Attribute("type");		
+					if(method_type != NULL) tmp_bdtInfo.str = method_type;
+
+                    std::string param_string = "!H:!V";
+                    std::string xgboost_string = "";
+                    TiXmlElement *pParam = pMethod->FirstChildElement("param");
+                    while(pParam){
+                        param_string += ":"+ std::string(pParam->GetText()) ;
+						xgboost_string += "," + std::string(pParam->GetText());
+                        pParam = pParam->NextSiblingElement("param");
+                    }//-->end param loop
+
+					if(method_type=="XGBoost"){
+						//Loop over all parameters, splitting by "=" sign and saving parameters into a vector of pairs of strings.
+						//x = 1 -> pair(x,1)
+						if(verbosity > 0) std::cout<<"\tReading XGBoost config \n\t";
+
+						std::replace(xgboost_string.begin(), xgboost_string.end(), "=",",");
+						std::vector<std::string> vec_params = gadget_Tokenizer(std::string) (xgboost_string);
+						
+						for(int nndex = 0; nndex<vec_params/2;nndex ++){
+                            std::pair<std::string,std::string> pairs = std::make_pair(vec_params[2*nndex],vec_params[2*nndex+1]);
+							(tmp_bdtInfo.xg_config0.push_back(pairs);
+							if(verbosity>1) std::cout<<vec_params[2*nndex]<<" = "<<vec_params[2*nndex+1]<<", ";
+						}
+						if(verbosity>1) std::cout<<std:endl;
+					}
+
+            }
 //            while(pMethod ){
 //                if((std::string)pMethod->Attribute("use") == "yes"){
 //
-//                    std::string method_type = pMethod->Attribute("type");		
-//
-//
-//                    std::vector<std::string> vec_params;	
-//                    std::string param_string = "!H:!V";
-//
-//                    TiXmlElement *pParam = pMethod->FirstChildElement("param");
-//                    while(pParam){
-//                        vec_params.push_back( std::string(pParam->GetText()) );
-////                        std::cout<<vec_params.back()<<", ";
-//                        pParam = pParam->NextSiblingElement("param");
-//                    }//-->end param loop
-////					std::cout<<std::endl;
-//
-//                    for(std::string p: vec_params){
-//                        param_string = param_string + ":" +p;
-//                    }	
-//
 //
 //                    std::vector<std::pair<std::string,std::string>> xg_config;
-//                    if(method_type=="XGBoost"){
-//                        //Loop over all parameters, splitting by "=" sign and saving parameters into a vector of pairs of strings.
-//                            std::cout<<"\tReading XGBoost config \n\t";
-//
-//                        for(auto &p: vec_params){
-//                            size_t pos = 0;
-//                            std::string delim = "=";
-//                            std::string firstone;
-//                            while((pos = p.find(delim)) != std::string::npos) {
-//                                firstone = p.substr(0, pos);
-//                                p.erase(0, pos + delim.length());
-//                            }
-//                            std::string secondone = p;
-//                            std::pair<std::string,std::string> pairs = std::make_pair(firstone,secondone);
-//                            xg_config.push_back(pairs);
-//                            std::cout<<firstone<<" = "<<secondone<<", ";
-//                        }
-//						std::cout<<std::endl;
-//                    }
-//
-//
 //
 //                    method_struct temp_struct = {tmva_type , method_type, param_string};
 //                    temp_struct.bdt_tag = bdt_tag;
@@ -263,278 +422,24 @@ void MVALoader::LoadSystematics(){};
 //            vec_methods.back().topological_definition = topo_def;
 //            vec_methods.back().topological_name = topo_name;
 //
-//        }
-//        n_bdt++;
-//        pMVA = pMVA->NextSiblingElement("mva");
-//
-//    }//--> end mva loop
-//
-//
-////    std::cout<<"\n#######################  BDT_Files  ########################################"<<std::endl;
-////    std::cout<<"(Print out will be below when constructing bdt_file class)"<<std::endl;
-//
-//    TiXmlElement *pBDTfile; 
-//
-//
-//    //Grab the first element. Note very little error checking here! make sure they exist.
-//    pBDTfile = doc.FirstChildElement("bdtfile");
-//    if(!pBDTfile) {
-//        std::cerr<<"ERROR: MVALoader::MVALoader || XMl contains no BDT_files! "<<whichxml<<std::endl;
-//        exit(EXIT_FAILURE);
-//    }
-//    n_bdt_files = 0;
-//
-//	//essential information: filename, tag;
-//	//with default: systematic, definition;
-//    while(pBDTfile)
-//    {
-//
-//        const char* t_tag = pBDTfile->Attribute("tag");
-//        if(t_tag==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || bdt_file has no `tag` attribute! "<<std::endl; exit(EXIT_FAILURE);}
-//        bdt_tags.push_back(t_tag);
-//
-//        const char* t_filename = pBDTfile->Attribute("filename");
-//        if(t_filename==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || bdt_file has no `filename` attribute! "<<std::endl; exit(EXIT_FAILURE);}
-//        bdt_filenames.push_back(t_filename);
-//
-//        const char* t_hist_styles = pBDTfile->Attribute("hist_style");
-//        if(t_hist_styles==NULL){ bdt_hist_styles.push_back("hist");}else{
-//            bdt_hist_styles.push_back(t_hist_styles);
-//        }
-//
-//        const char* t_fillstyles = pBDTfile->Attribute("fillstyle");
-//		if(t_fillstyles==NULL){ 
-//			bdt_fillstyles.push_back(1001);
-//		}else{
-//			bdt_fillstyles.push_back((int)std::stoi(t_fillstyles,nullptr,10));
-//		}
-//
-//        const char* t_linecol = pBDTfile->Attribute("linecol");
-//		if(t_linecol==NULL){ 
-//			bdt_linecols.push_back(1);
-//		}else{
-//			bdt_linecols.push_back((int)std::stoi(t_linecol,nullptr,10));
-//		}
-//
-//        const char* t_linestyles = pBDTfile->Attribute("linestyle");
-//		if(t_linestyles==NULL){ 
-//			bdt_linestyles.push_back(1);
-//		}else{
-//			bdt_linestyles.push_back((int)std::stoi(t_linestyles,nullptr,10));
-//		}
-//
-//        const char* t_dirs = pBDTfile->Attribute("dirs");
-//        if(t_dirs==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || bdt_file has no `dirs` attribute! "<<std::endl; exit(EXIT_FAILURE);}
-//        bdt_dirs.push_back(t_dirs);
-//
-//        const char* t_col = pBDTfile->Attribute("col");
-//        if(t_col==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || bdt_file has no `col` attribute! "<<std::endl; exit(EXIT_FAILURE);}
-//        std::string s_col = t_col;
-//        s_col.erase(std::remove(s_col.begin(), s_col.end(), '('), s_col.end());
-//        s_col.erase(std::remove(s_col.begin(), s_col.end(), ')'), s_col.end());
-//        std::vector<double> v_col; 
-//
-//        size_t pos = 0;
-//        std::string delim = ",";
-//        std::string token;
-//        while ((pos = s_col.find(delim)) != std::string::npos) {
-//            token = s_col.substr(0, pos);
-//            v_col.push_back(std::stod(token));
-//            s_col.erase(0, pos + delim.length());
-//        }
-//        v_col.push_back(std::stod(s_col));
-//        //for(auto &d:v_col)std::cout<<d<<std::endl;
-//        for(int cc=0; cc< v_col.size();cc++) {
-//            if(v_col[cc]>1) v_col[cc] = v_col[cc]/255.0;
-//        }
-//        bdt_cols.push_back(new TColor(TColor::GetFreeColorIndex(),v_col[0],v_col[1],v_col[2]) );
-//
-//        const char* t_scales = pBDTfile->Attribute("scale");
-//        if(t_scales==NULL){
-//            bdt_scales.push_back(1.0);
-//        }else{
-//            bdt_scales.push_back(atof(t_scales));
-//        }
-//
-//        const char* t_weight = pBDTfile->Attribute("weight");
-//        if(t_weight==NULL){
-//            bdt_weight.push_back("1");
-//        }else{
-//            bdt_weight.push_back(t_weight);
-//        }
-//
-//
-//        const char* t_signals = pBDTfile->Attribute("signal");
-//        if(t_signals==NULL){
-//            bdt_is_signal.push_back(false);
-//        }else{
-//            std::string sig = t_signals;
-//            if(sig=="true"){
-//                bdt_is_signal.push_back(true);
-//            }else{
-//                bdt_is_signal.push_back(false);
-//
-//            }
-//        }
-//
-//        const char* t_ptop = pBDTfile->Attribute("plot_on_top");
-//        if(t_ptop==NULL){
-//            bdt_on_top.push_back(false);
-//        }else{
-//            std::string sig = t_ptop;
-//            if(sig=="true"){
-//                bdt_on_top.push_back(true);
-//            }else{
-//                bdt_on_top.push_back(false);
-//
-//            }
-//        }
-//
-//        const char* t_valid = pBDTfile->Attribute("validate");
-//        if(t_valid==NULL){
-//            bdt_is_validate_file.push_back(false);
-//        }else{
-//            std::string sig = t_valid;
-//            if(sig=="true"){
-//                bdt_is_validate_file.push_back(true);
-//            }else{
-//                bdt_is_validate_file.push_back(false);
-//            }
-//        }
-//
-//
-//        const char* t_plotname = pBDTfile->Attribute("plot_name");
-//        if(t_plotname==NULL){
-//            bdt_plotnames.push_back(bdt_tags.back());
-//        }else{
-//            bdt_plotnames.push_back(t_plotname);
-//        }
-//
-//		const char* t_groupname = pBDTfile->Attribute("group");//Keng
-//        if(t_groupname==NULL){
-//            bdt_group.push_back(-1);
-//        }else{
-//            bdt_group.push_back(atoi(t_groupname));
-//        }
-//
-//
-//
-//        TiXmlElement *pDefinition = pBDTfile->FirstChildElement("definition");
-//        std::vector<std::string> this_denom; 
-//        while(pDefinition){
-//            TiXmlElement *pCut = pDefinition->FirstChildElement("cut");
-//            while(pCut){
-//                std::string unpar =  pCut->GetText();
-//                std::string parsed = this->AliasParse(unpar);
-//                this_denom.push_back(parsed);
-//                pCut = pCut->NextSiblingElement("cut");
-//            }
-//            pDefinition = pDefinition->NextSiblingElement("definition");
-//        }//-->end definition
-//        bdt_definitions.push_back(this_denom);
-//
-//        //next lets check if its the Signal Training
-//        TiXmlElement *pTrain = pBDTfile->FirstChildElement("training");
-//        std::vector<std::string> this_tcut; 
-//        bool is_train = false;
-//        while(pTrain){
-//            is_train = true;
-//            TiXmlElement *pTCut = pTrain->FirstChildElement("cut");
-//            while(pTCut){
-//                std::string unpar =  pTCut->GetText();
-//                std::string parsed = this->AliasParse(unpar);
-//
-//                this_tcut.push_back(parsed);
-//                pTCut = pTCut->NextSiblingElement("cut");
-//            }
-//
-//            pTrain = pTrain->NextSiblingElement("training");
-//        }//-->end training cuts           
-//        bdt_training_cuts.push_back(this_tcut);
-//        if(is_train){
-//            bdt_is_training_signal.push_back(true);
-//        }else{
-//            bdt_is_training_signal.push_back(false);
-//        }
-//
-//		//Add fixpot for sample comparison, CHECK
-//		TiXmlElement *pfixPOT = pBDTfile->FirstChildElement("fixPOT");
-//		if(pfixPOT){
-//			std::string fixpot = std::string(pfixPOT->GetText());
-//			bdt_fixpot.push_back(stod(fixpot));
-//		}else{
-//			bdt_fixpot.push_back(0);
-//		}
-//
-//        //So, some book-keeping if its data!
-//        bool is_data = false;
-//        TiXmlElement *pData = pBDTfile->FirstChildElement("data");
-//
-//        bdt_is_onbeam_data.push_back(false);
-//        bdt_is_offbeam_data.push_back(false);
-//        bdt_onbeam_pot.push_back(-999);
-//        bdt_offbeam_spills.push_back(-999);
-//        bdt_onbeam_spills.push_back(-999);
-//
-//
-//        while(pData){//<data > section
-//
-//            const char* t_use = pData->Attribute("use");
-//            if(t_use=="no"){break;}
-//
-//            const char* t_type = pData->Attribute("type");
-//            if(t_type==NULL){std::cerr<<"ERROR: MVALoader::MVALoader || bdt_file has been designated data, but not given a `type` attribute! wither OnBeam or OffBeam!! "<<std::endl; exit(EXIT_FAILURE);}
-//            std::string s_type = t_type;
-//            if(s_type == "OnBeam"){
-//                bdt_is_onbeam_data.back() = true;
-//                is_data = true;
-//            }else if(s_type == "OffBeam"){
-//                bdt_is_offbeam_data.back() = true;
-//                is_data = true;
-//            }else{
-//                std::cerr<<"ERROR: MVALoader::MVALoader || bdt_file has been designated data, but its `type` attribute is neither OnBeam or OffBeam!! "<<t_type<<" "<<std::endl; exit(EXIT_FAILURE);
-//            }
-//            bdt_onbeam_pot.back() = 0;
-//            bdt_offbeam_spills.back() = 0;
-//            bdt_onbeam_spills.back() = 0;
-//
-//            TiXmlElement *pTor = pData->FirstChildElement("tor860_wcut");
-//            while(pTor){//tor860_wcut section
-//                std::string tor = std::string(pTor->GetText());
-//                bdt_onbeam_pot.back() = stod(tor);    
-//                pTor = pTor->NextSiblingElement("tor860_wcut");
-//            }
-//
-//            TiXmlElement *pSpills = pData->FirstChildElement("E1DCNT_wcut");
-//            while(pSpills){
-//                std::string tor = std::string(pSpills->GetText());
-//                bdt_onbeam_spills.back() = stod(tor);    
-//                pSpills = pSpills->NextSiblingElement("E1DCNT_wcut");
-//            }
-//            if(bdt_onbeam_spills.back()==0 && bdt_is_offbeam_data.back()==true){
-//                std::cerr<<"ERROR: MVALoader::MVALoader || bdt_file has been designated "<<t_type<<" data, but no ON beam Spills has been given for normalization! Use Zarko's tool "<<std::endl; exit(EXIT_FAILURE);
-//            }
-//
-//
-//            TiXmlElement *pExt = pData->FirstChildElement("EXT");
-//            while(pExt){
-//                std::string tor = std::string(pExt->GetText());
-//                bdt_offbeam_spills.back() = stod(tor);    
-//                pExt = pExt->NextSiblingElement("EXT");
-//            }
-//            if(bdt_offbeam_spills.back()==0 && bdt_is_offbeam_data.back()==true){
-//                std::cerr<<"ERROR: MVALoader::MVALoader || bdt_file has been designated "<<t_type<<" data, but no OFF beam Spills has been given for normalization! Use Zarko's tool "<<std::endl; exit(EXIT_FAILURE);
-//            }
-//
-//            pData = pData->NextSiblingElement("data");
-//        }//-->end data
-//
-//
-//        pBDTfile = pBDTfile->NextSiblingElement("bdtfile");
-//        n_bdt_files++;
-//
-//    }//--> end bdt_file
-//
+        }
+        n_bdt++;
+        pMVA = pMVA->NextSiblingElement("mva");
+
+    }//--> end mva loop
+
+
+
+};
+
+
+
+
+void MVALoader::LoadVariables(){};
+
+
+//MVALoader::MVALoader(std::string xmlname, int Verbose_in) :whichxml(xmlname) {
+
 //
 //    std::cout<<"\n####################### Variables ########################################"<<std::endl;
 //     //first lets see if there is a covariance general file (GLOBAL)

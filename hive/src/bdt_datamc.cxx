@@ -399,7 +399,7 @@ void gadget_SetPlotlabels(THStack* stk, TH1D* tsum, TH1D& d0, bdt_variable var1,
 
 
 //ordinary 2D comparison for each samples;
-int bdt_datamc::plot2D(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_sys*> systematics){
+int bdt_datamc::plot2D(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_sys> systematics){
 
 	if (vars.size() < 2){
 		std::cout<<"need min 2 vars to make 2D plots"<<std::endl;
@@ -664,7 +664,7 @@ int bdt_datamc::plot2D(std::vector<bdt_variable> vars, std::vector<double> bdt_c
 
 
 //systematic friendly plotStacks for MiniBooNE.
-int bdt_datamc::plotStacksSys(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys*> systematics){
+int bdt_datamc::plotStacksSys(std::vector<bdt_variable> vars, std::vector<double> bdt_cuts, std::vector<bdt_info> bdt_infos, std::vector<bdt_sys> systematics){
 
 
 	bool print_message = true;

@@ -15,9 +15,13 @@ struct bdt_info{
 	public:
 	
 	//some convientant labels
+	TMVA::Types::EMVA  type;
 	std::string identifier;
 	std::string name;	
 	std::string binning;
+	std::string str;//read from type; =  XGBoost;
+    std::vector<std::pair<std::string,std::string>> xg_config;
+
 	std::string base_cuts ;
  	std::string pre_cuts;
 	std::string bdt_cosmic_cuts;
@@ -33,18 +37,66 @@ struct bdt_info{
 //    std::vector<bdt_variable> spec_vars;
 	std::string topo_name;
 	
+	//CHECK who need method_struct??
+	std::string option;
+
+
+    std::string bdt_name;
+    std::string bdt_binning;
+    std::string bdt_tag;
+
+    std::vector<bdt_variable> bdt_all_vars;
+    std::vector<bdt_variable> bdt_train_vars;
+//    std::vector<bdt_variable> bdt_spec_vars;
+
+    std::string filename;
+    std::string foldername;
+    std::string training_cut;
+    double training_fraction;
+
+    //tags for training v2.2
+    std::string bkg_test_tag;
+    std::string bkg_train_tag;
+    std::string bkg_test_cut;
+    std::string sig_train_tag;
+    std::string sig_test_tag;
+    std::string sig_test_cut;
+
+    double scan_max;
+    double scan_min;
+    double scan_steps;
+
+    std::string topological_name;
+    std::string topological_definition;
+    std::vector<std::string> v_topological_definition;
+
+    std::vector<std::string> precuts;
+
+
+
 	bdt_info(){identifier = "null"; name = "null"; binning = "null";};
 	
-    bdt_info(std::string in_identifier, std::string in_name, std::string in_bin) : identifier(in_identifier), name(in_name), binning(in_bin), base_cuts("1"), pre_cuts("1"), mid_cuts("1"),post_cuts("1"), bdt_cosmic_cuts("1"), bdt_bnb_cuts("1"),signal_definition("1"),background_definition("1"){
-	topo_name = "2#gamma1p";	
-	};
+//    bdt_info(std::string in_identifier, std::string in_name, std::string in_bin) : identifier(in_identifier), name(in_name), binning(in_bin), base_cuts("1"), pre_cuts("1"), mid_cuts("1"),post_cuts("1"), bdt_cosmic_cuts("1"), bdt_bnb_cuts("1"),signal_definition("1"),background_definition("1"){
+//	topo_name = "2#gamma1p";	
+//	};
+	
+		//to be removed, CHECK
+		bdt_info(std::string analysis_tag, method_struct inmethod):  TMVAmethod(inmethod), binning(inmethod.bdt_binning){ 
+			topo_name = TMVAmethod.topological_name;	
+			train_vars = TMVAmethod.bdt_train_vars;
+			//    spec_vars = TMVAmethod.bdt_spec_vars;
+		}
 
-
-    bdt_info(std::string analysis_tag, method_struct inmethod):  TMVAmethod(inmethod), identifier(analysis_tag+inmethod.bdt_tag), name(inmethod.bdt_name),binning(inmethod.bdt_binning),base_cuts("1"), pre_cuts("1"), mid_cuts("1"),post_cuts("1"), bdt_cosmic_cuts("1"), bdt_bnb_cuts("1"),signal_definition("1"),background_definition("1") { 
-	topo_name = TMVAmethod.topological_name;	
-    train_vars = TMVAmethod.bdt_train_vars;
-//    spec_vars = TMVAmethod.bdt_spec_vars;
-    }
+	void SetDefaultAttributes(){
+		base_cuts = "1";
+		pre_cuts = "1";
+		mid_cuts = "1";
+		post_cuts = "1";
+		bdt_cosmic_cuts = "1";
+		bdt_bnb_cuts = "1";
+		signal_definition = "1";
+		background_definition = "1";
+	}
 
 	int setName(std::string in){ identifier = in;return 0;};
 	int setBaseCuts(std::string in){ base_cuts = in; return 0;}; 

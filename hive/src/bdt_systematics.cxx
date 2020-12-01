@@ -77,7 +77,7 @@ int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > cur_binning){
  * the systematic errors;
  * basically, it is (total_fractional matrices_ii)*(MChist_i)
  */
-TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist, double outPOT, std::string bdt_tag){
+TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys> syss, TFile* matrix_root , TH1* MChist, double outPOT, std::string bdt_tag){
 	//Extract Error matrix from the fractionla matrix and adjust optical Model;
 	//Only the diagonal element matters.
 	
@@ -89,16 +89,16 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 	std::cout<<"\n Getting fracitonal matrices: ";
 	for(size_t index = 0; index < syss.size(); ++index){//loop over systematics
 
-		if(bdt_tag.compare((syss[index]->rootbdtfile)->tag) != 0 ) continue;
-		if(syss[index]->its_CV) continue;//work with non-CV systematic weights, bdt_sys only provides names to retrieve contents;
-		bdt_sys* cur_sys = syss[index];
+		if(bdt_tag.compare((syss[index].rootbdtfile)->tag) != 0 ) continue;
+		if(syss[index].is_CV) continue;//work with non-CV systematic weights, bdt_sys only provides names to retrieve contents;
+		bdt_sys cur_sys = syss[index];
 
 		std::vector<std::stringstream> summary(nb+1);//print out buffer
 		std::vector<bool> summary_headers(nb+1, true);
 		
-		for(size_t jndex = 0; jndex < (cur_sys->vars).size(); ++jndex){//loop over spcific type of SW 
+		for(size_t jndex = 0; jndex < (cur_sys.vars).size(); ++jndex){//loop over spcific type of SW 
 
-			TString temp_tag = cur_sys->tag+"_"+cur_sys->vars_name[jndex];
+			TString temp_tag = cur_sys.tag+"_"+cur_sys.vars_name[jndex];
 
 			TMatrixD temp_matrix(nb,nb); 
 			TMatrixD temp_CV(nb,1); 
@@ -167,11 +167,11 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 				}
 			}
 
-			if(cur_sys->its_OM && adjustOM ){//modify the stat part of the matrix for Optical Model
+			if(cur_sys.is_OM && adjustOM ){//modify the stat part of the matrix for Optical Model
 				std::cout<<"\tAdjust Optical Model statistical error in the fractional matrix"<<std::endl;
 				for(int kndex =  0; kndex < nb; ++kndex){
 					double temp_mii = temp_matrix(kndex,kndex);//[kndex*nb+kndex];
-					double origin_cvi = temp_CV(kndex,0)/outPOT*cur_sys->pot;//which is OM weights POT
+					double origin_cvi = temp_CV(kndex,0)/outPOT*cur_sys.pot;//which is OM weights POT
 					double MCi = MChist->GetBinContent(kndex+1);
 					std::cout<<"\tThe ("<<kndex<<","<<kndex<<") element: "<<temp_mii<<" -> ";
 
@@ -190,10 +190,10 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 				}
 				summary[kndex+1]<<std::setw(9)<<temp_error<<"("<<std::setw(11)<<std::left<<temp_matrix(kndex,kndex)<<") ";
 			}//next bin
-				summary[0]<<std::setw(23)<<std::left<<cur_sys->vars_name[jndex]+"_Err (fm) ";
+				summary[0]<<std::setw(23)<<std::left<<cur_sys.vars_name[jndex]+"_Err (fm) ";
 		}//next SW
 
-		std::cout<<" "<<cur_sys->systag<<std::endl;
+		std::cout<<" "<<cur_sys.systag<<std::endl;
 		std::streambuf* orig_buf = std::cout.rdbuf();//save the original buffer,
 		for(int kndex = 0; kndex < summary.size(); ++kndex){
 			std::cout<<summary[kndex].rdbuf()<<"\n";
@@ -394,29 +394,26 @@ TString gadget_updateindex(TString varname, int nth){
  * Constructor for struct bdt_sys, 
  *
  */
-//bdt_sys::bdt_sys(int index, int bdtfile_index, bdt_flow inflow){}
-//		fullyloaded = true;
-//		//members that need to be derived slightly;
-//		num_vars = vars.size();
-//		hists.resize(num_vars);
-////		twodhists.resize(num_vars);
-//		histNames.resize(num_vars);
-////		twodhistNames.resize(num_vars);
-//		TdirNames.resize(num_vars);
-//
-//		histloaded.assign(num_vars, false);
-//		for(int index = 0 ; index < num_vars; ++index){//loop through weights
-//			TdirNames[index] = tag+"_"+vars_name[index];
-//
-//			for(int jndex = 0; jndex < throws; ++jndex){//save names;
-//				TString hist_name = vars_name[index];
-//				if(its_multithrows) hist_name += std::to_string(jndex);
-//				histNames[index].push_back(hist_name);
-////				twodhistNames[index].push_back(hist_name);
-//			}//next throw
-//		}//next weight
-//
-//	};
+void bdt_sys::InitializeSys(){
+	//finish off derived members;
+	fullyloaded = true;
+	num_vars = vars.size();
+	hists.resize(num_vars);
+	histNames.resize(num_vars);
+	TdirNames.resize(num_vars);
+
+	histloaded.assign(num_vars, false);
+	for(int index = 0 ; index < num_vars; ++index){//loop through weights
+		TdirNames[index] = tag+"_"+vars_name[index];
+
+		for(int jndex = 0; jndex < throws; ++jndex){//save names;
+			TString hist_name = vars_name[index];
+			if(throws>1) hist_name += std::to_string(jndex);
+			histNames[index].push_back(hist_name);
+		}//next throw
+	}//next weight
+
+};
 
 
 
@@ -434,7 +431,7 @@ bool bdt_sys::Load1dhist(TFile* cur_file, bool savehist){
 
 		(this->hists[index]).clear();//make sure it is empty before filling in;
 		for(int jndex = 0; jndex< this->throws; ++jndex){//loop through throws;
-			TString nth_label = (this->its_multithrows)? std::to_string(jndex) : "";
+			TString nth_label = (this->throws>1)? std::to_string(jndex) : "";
 			TString hist_name = this->vars_name[index]+nth_label;
 
 			TH1D* temp_th1 =  (TH1D*) cur_file->Get(this->TdirNames[index]+"/"+hist_name);
@@ -494,15 +491,15 @@ void bdt_sys::Make1dhist(std::vector<bdt_variable> vars, TFile* out_root, bool t
 
 	//STEP 1 Load files, prepare input TTree
 	gSystem->RedirectOutput("/dev/null");//no warning, shut up! thanks https://root-forum.cern.ch/t/suppress-all-root-info-warning-error-output/30766
-	TFile *infile = (TFile*) TFile::Open(this->dir+"/"+this->filename,"READ"); 
+	TFile *infile = (TFile*) TFile::Open(this->input_root,"READ"); 
 	gSystem->RedirectOutput(0,0);//this let ROOT warns
 
 	if(infile ==NULL){
-		std::cout<<this->dir+"/"+this->filename<<" does not exist, please check! Program aborts."<<std::endl;
+		std::cout<<this->input_root<<" does not exist, please check! Program aborts."<<std::endl;
 		exit(EXIT_FAILURE);
 	}
 
-	TTree* temptree = (TTree*) infile->Get(this->treename);//temptree is from the systematic weights file;
+	TTree* temptree = this->tvertex;//temptree is from the systematic weights file;
 
 	//STEP 2 prepare TH1D
 	for(int index = 0 ; index < this->num_vars; ++index){//loop through weights
@@ -772,7 +769,7 @@ void sys_env::hist2d2cov( std::vector<bdt_variable> vars, bool rescale, bool smo
 
 			TString temp_sw_name = cur_tag +"_"+ hists_names[index];//+twodlabel;
 
-			bool do_smooth = ( (vars[0].name).compare(3,5,"EnuQE")==0 )&& smooth_matrix && ((tempsCV->systag).Contains("Unisim"));
+			bool do_smooth = ( (vars[0].name).compare(3,5,"EnuQE")==0 )&& smooth_matrix && (((TString) (tempsCV->systag).c_str()).Contains("Unisim"));
 //		if(cur_tag.Contains("Optical")) do_smooth = true;
 
 			int plotbins = xnb*ynb;
@@ -1235,7 +1232,7 @@ TH1D SmoothSW(TH1D* sw, TH1D* fix_cv, bool special_option){//fit each bin with p
  * Check if the histograms exist, if yes, then can save some works.
  */
 
-int sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss){
+int sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys> syss){
 	bool skip_sysEvaluation = false;//true - exit the function right away, 
 	if(skip_sysEvaluation) return 0;
 
@@ -1310,28 +1307,28 @@ int sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss)
 	bool all_good = true;
 	if(verbose) std::cout<<"Make maps for central value root & multisims weights root: "<<std::endl;
 	for(auto cur_sys : syss){//the basic stuffs;
-		cur_sys->catchupEnv(this);//set up bdt_sys environment according to the marco setting in bdt_env;
-		for(int index = 0; index < cur_sys->num_vars; index ++){
-			cur_sys->TdirNames[index];//+=twodlabel ;//add to vars_name[index], TdirNames[index];
-			cur_sys->vars_name[index];//add to vars_name[index], TdirNames[index];
+		cur_sys.catchupEnv(this);//set up bdt_sys environment according to the marco setting in bdt_env;
+		for(int index = 0; index < cur_sys.num_vars; index ++){
+			cur_sys.TdirNames[index];//+=twodlabel ;//add to vars_name[index], TdirNames[index];
+			cur_sys.vars_name[index];//add to vars_name[index], TdirNames[index];
 		}
-		TString temptag = cur_sys->tag;
+		TString temptag = cur_sys.tag;
 
 		//classify bdt_sys
 		(this->tag_collection).push_back(temptag);
 		if(debug_verbose) std::cout<< temptag<<" is ";
 
-		if(cur_sys->its_CV){//save CV to map;
-			tag2CVmap.insert(std::make_pair (temptag, cur_sys));
+		if(cur_sys.is_CV){//save CV to map;
+			tag2CVmap.insert(std::make_pair (temptag, &cur_sys));
 			if(debug_verbose) std::cout<<"CV!"<<std::endl;
 
 		} else{//save SW to map
-			tag2SWmap.insert(std::make_pair (temptag, cur_sys));
+			tag2SWmap.insert(std::make_pair (temptag, &cur_sys));
 			if(debug_verbose) std::cout<<"multisim weight!"<<std::endl;
 		}
 
 		//mark empty Tdirectory in the 1dhist root file;
-		if(!(cur_sys->Load1dhist(hist_root,false) )){ //just check dont load; all good only if every bdt_sys have all 1dhists;
+		if(!(cur_sys.Load1dhist(hist_root,false) )){ //just check dont load; all good only if every bdt_sys have all 1dhists;
 			all_good = false;
 			if(verbose) std::cout<<" Some histograms are missing"<<std::endl;
 		}
@@ -1346,12 +1343,12 @@ int sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss)
 	if(!all_good){//now need to Make some or all histograms; open and close root for one set of bdt_sys;
 		if(verbose) std::cout<<"Updating "<<histfilename<<std::endl;
 		for(auto cur_sys : syss){
-			if(debug_verbose) std::cout<<" Check 1dhists of the systematics "<<cur_sys->tag<<std::endl;
+			if(debug_verbose) std::cout<<" Check 1dhists of the systematics "<<cur_sys.tag<<std::endl;
 
-			if(!cur_sys->fullyloaded){ 
+			if(!cur_sys.fullyloaded){ 
 				hist_root = (TFile*) TFile::Open(histfilename,"UPDATE");//reopen the file, but in UPDATE mode;
-				cur_sys->Make1dhist(vars, hist_root, do_2dhist);
-				cur_sys->fullyloaded = true;
+				cur_sys.Make1dhist(vars, hist_root, do_2dhist);
+				cur_sys.fullyloaded = true;
 				hist_root->Write();
 				hist_root->Close();
 			}
@@ -1361,7 +1358,7 @@ int sys_env::InitSys(std::vector<bdt_variable> vars, std::vector<bdt_sys*> syss)
 	//load
 	hist_root = (TFile*) TFile::Open(histfilename,"READ");
 	for(auto cur_sys : syss){//load everything;
-		cur_sys->Load1dhist(hist_root,true);
+		cur_sys.Load1dhist(hist_root,true);
 	}
 	std::cout<<"Finish preparing systematic histograms, and now they are in\n>>>> "<<histfilename<<std::endl;
 

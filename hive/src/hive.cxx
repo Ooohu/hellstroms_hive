@@ -214,7 +214,7 @@ int main (int argc, char *argv[]){
     std::cout<<"================================================================================"<<std::endl;
     std::cout<<"=============  Beginning HIVE run (version Blue World Order @ MiniBooNE) ======="<<std::endl;
     std::cout<<"================================================================================"<<std::endl;
-    std::cout<<"Welcome."<<std::endl;get_joy();
+    std::cout<<"Welcome."<<std::endl;
     //Most TMVA arguments are loaded in here via XML
     std::cout<<"Getting xml variables"<<std::endl;
     MVALoader XMLconfig(xml);
@@ -270,6 +270,7 @@ int main (int argc, char *argv[]){
     std::map<bdt_file*,bool> plotOnTopMap;
 
 	//systematic files; its follows each bdt_file;
+//CHECK, do this via bdt_sys;
 	sys_env sysConfig;
 	sysConfig.setVerbose(2);//2 - all messge; 1- no debug message;
 	sysConfig.setEnv(analysis_tag, "roots", "drawn");
@@ -277,7 +278,7 @@ int main (int argc, char *argv[]){
 	gadget_buildfolder(std::string(sysConfig.root_dir));
 	gadget_buildfolder(std::string(sysConfig.drawn_dir));
 
-	std::vector<bdt_sys*> systematics = XMLconfig.GetSys(); 
+	std::vector<bdt_sys> systematics = XMLconfig.GetSys(); 
 
     std::cout<<"\n================================================================================"<<std::endl;
     std::cout<<"================ Loading all samples for this analysis ========================="<<std::endl;
@@ -315,7 +316,7 @@ int main (int argc, char *argv[]){
 		//load up all bdt files
 
 //		bdt_files.push_back( new bdt_file(f, XMLconfig, analysis_flow));
-        bdt_files.back()->addPlotName(XMLconfig.bdt_plotnames[f]);
+//        bdt_files.back()->addPlotName(XMLconfig.bdt_plotnames[f]);
         tagToFileMap[XMLconfig.bdt_tags[f]] = bdt_files.back();
 
 //        bool incl_in_stack = true;
@@ -335,7 +336,7 @@ int main (int argc, char *argv[]){
 
         if(XMLconfig.bdt_is_onbeam_data[f]){
             std::cout<<" -- Setting as ON beam "<<std::endl;//data with "<<XMLconfig.bdt_onbeam_pot[f]/1e19<<" e19 POT equivalent"<<std::endl;
-            bdt_files.back()->setAsOnBeamData(XMLconfig.bdt_onbeam_pot[f]); //tor860_wc
+//            bdt_files.back()->setAsOnBeamData(XMLconfig.bdt_onbeam_pot[f]); //tor860_wc
 //            incl_in_stack = false;
             onbeam_data_file = bdt_files.back();
         }
@@ -345,7 +346,7 @@ int main (int argc, char *argv[]){
 
         if(XMLconfig.bdt_is_offbeam_data[f]){
             std::cout<<" -- Setting as Off beam data with "<<XMLconfig.bdt_offbeam_spills[f]<<" EXT spills being normalized to "<<XMLconfig.bdt_onbeam_spills[f]<<" BNB spills at a "<<XMLconfig.bdt_onbeam_pot[f]/1e19<<" e19 POT equivalent"<<std::endl;
-            bdt_files.back()->setAsOffBeamData( XMLconfig.bdt_onbeam_pot[f], XMLconfig.bdt_onbeam_spills[f], XMLconfig.bdt_offbeam_spills[f]);  //onbeam tor860_wcut, on beam spills E1DCNT_wcut, off beam spills EXT)
+//            bdt_files.back()->setAsOffBeamData( XMLconfig.bdt_onbeam_pot[f], XMLconfig.bdt_onbeam_spills[f], XMLconfig.bdt_offbeam_spills[f]);  //onbeam tor860_wcut, on beam spills E1DCNT_wcut, off beam spills EXT)
 
 //            bkg_bdt_files.push_back(bdt_files.back());
         }

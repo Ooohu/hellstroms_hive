@@ -94,7 +94,7 @@ class sys_env{
 		TString getFileName(TString plot_type, std::vector<bdt_variable> var);
 
 		//make 1dhist or load 1dhist; then make cov matrices;
-		int InitSys(std::vector<bdt_variable> var, std::vector<bdt_sys*> syss);
+		int InitSys(std::vector<bdt_variable> var, std::vector<bdt_sys> syss);
 		/*
 		 * make covariance matrix according to the histograms;
 		 */
@@ -124,7 +124,7 @@ class sys_env{
  * set-ups for each systematic files (1 bdt_file x1 particulara systematics)
  *
  */
-class bdt_sys : public sys_env{
+class bdt_sys : public sys_env, public bdt_file{
 	//so bdt_sys is now have the public functions(), elements from bdtfile;
 	//we need the following functions from bdt_sys:
 	//-- TString bdt_file::getStageCutsIndex(int fstage, std::vector<double> bdt_cuts, int vec_index);
@@ -136,24 +136,23 @@ class bdt_sys : public sys_env{
 	public:
 		//From the XML;
 		bdt_file* rootbdtfile;
-		TString tag;// BkgMC, dirt | MCUnism, Multism,OpticalModel _ dirt, pi0misd, delta..
-		TString systag;//BkgMC, dirt | MCUnism, Multism,OpticalModel
+//		TString tag;// BkgMC, dirt | MCUnism, Multism,OpticalModel _ dirt, pi0misd, delta..
+		std::string systag;//BkgMC, dirt | MCUnism, Multism,OpticalModel
 
 //		TString dir;//for multi files, need to know the parent directory.
-		TString dir;//directory of the input systematic file
-		TString filename;
-		TString treename;
+//		TString dir;//directory of the input systematic file
+//		TString filename;
+//		TString treename;
 		TString cuts;
 
 		std::vector< TString > vars;
 		std::vector< TString > vars_name;
 
-		double pot;
+//		double pot;
 		double throws;
 		
-		bool its_CV;
-		bool its_multithrows;
-		bool its_OM;
+		bool is_CV;
+		bool is_OM;
 		bool fullyloaded;
 		std::vector< bool > histloaded;
 
@@ -171,10 +170,11 @@ class bdt_sys : public sys_env{
 //		int start_with_weight = 0;//a label for which weight to start, this is for the case that the code was interrupted
 
 		//constructor, now each bdt_sys contains one bdt_file; i.e. 2 systematics will have 2xfiles# bdt_sys classes;
-		bdt_sys(){};
-		bdt_sys(int index, int bdtfile_index, bdt_flow inflow){};
-		~bdt_sys();
-
+		bdt_sys(const bdt_file& b)
+			: bdt_file(b){};
+//		bdt_sys(int index, int bdtfile_index, bdt_flow inflow){};
+//		~bdt_sys();
+		void InitializeSys();
 
 		/*
 		 * Make 1d histograms;
@@ -216,7 +216,7 @@ TH2D* Make2DCov(TString name,TH2D* hist, TH2D* cv);
 
 int gadget_BinMatcher(TH1D* cv_hist, std::vector< double > output_binning);
 
-TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , TH1* MChist, double outPOT, std::string tag);
+TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys> syss, TFile* matrix_root , TH1* MChist, double outPOT, std::string tag);
 
 /*
  * This function separate the matrix cov into shape, mixed, and norm three components.

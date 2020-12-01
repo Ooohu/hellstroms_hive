@@ -53,30 +53,55 @@ if(p_message)std::cout<<bin_left<<" ";
 //	return output;
 //}
 
-bdt_file::bdt_file(std::string indir,std::string inname, std::string intag, std::string inops, std::string inrootdir, int incol, bdt_flow inflow) : bdt_file(indir, inname, intag,inops,inrootdir,incol,1001,inflow){}
+void bdt_file::SetDefaultAttributes(){
+	weight_branch = "1";
+	root_dir = "";
+	definition = "1";
+	plot_name = tag;
+	is_data = false;
+	is_stack = false;
+	is_signal = false;
+	is_train = false;
+	is_systematic = false;
 
-bdt_file::bdt_file(
-	std::string indir,
-	std::string inname, 
-	std::string intag, 
-	std::string inops, 
-	std::string inrootdir, 
-	int incol, 
-	int infillstyle, 
-	bdt_flow inflow) :
-    dir(indir),
-    name(inname),
-    tag(intag),
-    plot_ops(inops),
-    root_dir(inrootdir),
-    col(incol),
-    flow(inflow),
-    is_data(false),
-    is_bnbext(false),
-    is_mc(true),
-	is_signal(false){
-		std::cout<<"WARNING, obsolete! Not used anymore."<<__FILE__<<" at Line "<<__LINE__<<std::endl;
-	};
+	group = -1;
+	pot = 0;
+	scale = 1;
+	
+	plot_style = "hist";
+	fillstyle = 1001;
+	color =  new TColor(TColor::GetFreeColorIndex(),0,0,0);
+	linestyle = 1;
+	leg = "lp";
+
+	file = new TFile(input_root, "read");
+    tvertex = (TTree*)file->Get("TTiming");
+};
+
+//bdt_file::bdt_file(std::string indir,std::string inname, std::string intag, std::string inops, std::string inrootdir, int incol, bdt_flow inflow) : bdt_file(indir, inname, intag,inops,inrootdir,incol,1001,inflow){}
+
+//bdt_file::bdt_file(
+//	std::string indir,
+//	std::string inname, 
+//	std::string intag, 
+//	std::string inops, 
+//	std::string inrootdir, 
+//	int incol, 
+//	int infillstyle, 
+//	bdt_flow inflow) :
+//    dir(indir),
+//    name(inname),
+//    tag(intag),
+//    plot_style(inops),
+//    root_dir(inrootdir),
+//    col(incol),
+//    flow(inflow),
+//    is_data(false),
+//    is_bnbext(false),
+//    is_stack(true),
+//	is_signal(false){
+//		std::cout<<"WARNING, obsolete! Not used anymore."<<__FILE__<<" at Line "<<__LINE__<<std::endl;
+//	};
 
 //lazy set-up
 bdt_file::bdt_file(size_t index,
@@ -86,27 +111,27 @@ bdt_file::bdt_file(size_t index,
 //		dir		(XMLconfig.filedir),
 //		name	(XMLconfig.bdt_filenames[index]),
 //		tag		(XMLconfig.bdt_tags[index]),
-//		plot_ops(XMLconfig.bdt_hist_styles[index]),
+//		plot_style(XMLconfig.bdt_hist_styles[index]),
 //		root_dir(XMLconfig.bdt_dirs[index]),
 //		col		(XMLconfig.bdt_cols[index]->GetNumber()),
 //		fillstyle(XMLconfig.bdt_fillstyles[index]),
 //		linestyle(XMLconfig.bdt_linestyles[index]),
 //		group  (XMLconfig.bdt_group[index]),
-//		linecol(XMLconfig.bdt_linecols[index]),
+//		color(XMLconfig.bdt_colors[index]),
 //		weight_branch(XMLconfig.bdt_weight[index]),
 //		scale_data(XMLconfig.bdt_scales[index]),
 //		pot		(XMLconfig.bdt_fixpot[index]),
 		flow	(inflow),
 		is_data(false),
     	is_bnbext(false),
-    	is_mc(true)
+    	is_stack(true)
 {//default as MCfile;
 //std::cout<<__LINE__<<std::endl;
 //		dir		 = XMLconfig.filedir;
 //		name	 = XMLconfig.bdt_filenames[index];
 //		tag		 = XMLconfig.bdt_tags[index];
 //std::cout<<__LINE__<<std::endl;
-//		plot_ops = XMLconfig.bdt_hist_styles[index];
+//		plot_style = XMLconfig.bdt_hist_styles[index];
 //		root_dir = XMLconfig.bdt_dirs[index];
 //		col		 = XMLconfig.bdt_cols[index]->GetNumber();
 //std::cout<<__LINE__<<std::endl;
@@ -119,10 +144,10 @@ bdt_file::bdt_file(size_t index,
 //std::cout<<__LINE__<<std::endl;
 //		is_data = false;
 //    	is_bnbext = false;
-//    	is_mc = true;
+//    	is_stack = true;
 	bool print_message = true;
 	if(this->tag.compare(0,4,"Data")==0){ 
-		this->is_mc = false;
+		this->is_stack = false;
 		this->is_data = true;
 		this->is_bnbext = false;
 	}
@@ -179,192 +204,47 @@ if(print_message)	std::cout<<"Loading : "<<dir<<"/"<<name<<std::endl;
     vec_entry_lists.resize(flow.bdt_vector.size());
 
 };
-
-int bdt_file::setTColor(TColor & tin){
-    f_TColor = tin;
-    return f_TColor.GetNumber();
-
-}
-
-
-int bdt_file::setAsMC(){
-
-}
-
-int bdt_file::setAsOverlay(){
-}
-
-int bdt_file::setAsOnBeamData(double in_tor860_wcut){
-    is_data = true;
-    is_mc = false;
-    is_bnbext = false;
-
-    data_tor860_wcut = in_tor860_wcut;
-    return 0;
-}
-
-int bdt_file::setAsOffBeamData(double in_data_tor860_wcut, double in_data_spills_E1DCNT_wcut, double in_ext_spills_ext){
-    this->setAsOffBeamData(in_data_tor860_wcut, in_data_spills_E1DCNT_wcut, in_ext_spills_ext, -1);
-
-    return 0;
-}
-int bdt_file::setAsOffBeamData(double in_data_tor860_wcut, double in_data_spills_E1DCNT_wcut, double in_ext_spills_ext, double in_N_samweb_ext){
-    is_data = false;
-    is_mc = false;
-    is_bnbext = true;
-
-    data_tor860_wcut = in_data_tor860_wcut;
-    data_spills_E1DCNT_wcut = in_data_spills_E1DCNT_wcut;
-    ext_spills_ext = in_ext_spills_ext;
-    N_samweb_ext = in_N_samweb_ext;
-
-    return 0;
-}
+//int bdt_file::setTColor(TColor & tin){
+//    f_TColor = tin;
+//    return f_TColor.GetNumber();
+//
+//}
 
 
+//int bdt_file::setAsMC(){
+//
+//}
+//
+//int bdt_file::setAsOverlay(){
+//}
+//
+//int bdt_file::setAsOnBeamData(double in_tor860_wcut){
+//    is_data = true;
+//    is_stack = false;
+//    is_bnbext = false;
+//
+//    data_tor860_wcut = in_tor860_wcut;
+//    return 0;
+//}
 
-int bdt_file::calcPOT(){
-	std::cout<<"No Need to Calculate this, see file ";
-	std::cout<<__FILE__<<" "<<__LINE__<<std::endl;
-	return 0;
+//int bdt_file::setAsOffBeamData(double in_data_tor860_wcut, double in_data_spills_E1DCNT_wcut, double in_ext_spills_ext){
+//    this->setAsOffBeamData(in_data_tor860_wcut, in_data_spills_E1DCNT_wcut, in_ext_spills_ext, -1);
+//
+//    return 0;
+//}
+//int bdt_file::setAsOffBeamData(double in_data_tor860_wcut, double in_data_spills_E1DCNT_wcut, double in_ext_spills_ext, double in_N_samweb_ext){
+//    is_data = false;
+//    is_stack = false;
+//    is_bnbext = true;
+//
+//    data_tor860_wcut = in_data_tor860_wcut;
+//    data_spills_E1DCNT_wcut = in_data_spills_E1DCNT_wcut;
+//    ext_spills_ext = in_ext_spills_ext;
+//    N_samweb_ext = in_N_samweb_ext;
+//
+//    return 0;
+//}
 
-    std::string tnam_event = root_dir+"event_tree";
-    std::string tnam = root_dir+"vertex_tree";
-    std::string tnam_pot = root_dir+"pot_tree";
-    std::string tnam_slice = root_dir+"ncdelta_slice_tree";
-
-    double potbranch = 0;
-    int  numbranch = 0;
-
-    tslice = (TTree*)file->Get(tnam_slice.c_str());
-
-
-    if(is_mc){
-        //If its MC or Overlay, lets just grab the POT from the nice POT tree
-        leg = "l";
-        std::cout<<"bdt_file::bdt_file()\t||\tFile is either MC or OVERLAY for purposes of getting POT."<<std::endl;
-        std::cout<<"bdt_file::bdt_file()\t||\tGetting POT tree: "<<tnam_pot<<" "<<std::endl;
-        tpot = (TTree*)file->Get(tnam_pot.c_str());
-        tpot->SetBranchAddress("number_of_events", &numbranch);
-        tpot->SetBranchAddress("POT",&potbranch);
-        std::cout<<"bdt_file::bdt_file()\t||\tBranches all setup."<<std::endl;
-        int tmpnum = 0;
-        double tmppot=0;
-        std::cout<<"bdt_file::bdt_file()\t||\t There was "<<tpot->GetEntries()<<" files merged to make this root file."<<std::endl;
-        for(int i=0; i<tpot->GetEntries(); i++) {
-            tpot->GetEntry(i);
-            tmpnum += (double)numbranch;
-            tmppot += potbranch;
-        }
-        //        numberofevents = tmpnum;
-
-        numberofevents = tvertex->GetEntries();
-
-        pot=tmppot;
-        std::cout<<"bdt_file::bdt_file()\t||\t---> POT is MC/OVERLAY "<<std::endl;
-        std::cout<<"--> POT: "<<pot<<" Number of Entries: "<<numberofevents<<std::endl;
-        std::cout<<"--> Events scaled to 13.2e20 "<<numberofevents/pot*13.2e20<<std::endl;
-        std::cout<<"--> Events scaled to 10.1e20 "<<numberofevents/pot*10.1e20<<std::endl;
-
-        //weight_branch = "genie_spline_weight";
-
-        weight_branch = "genie_spline_weight*tan(atan(genie_CV_tune_weight))*(tan(atan(genie_CV_tune_weight))<100)*(genie_CV_tune_weight>0)*("+run_weight_string+")";
-
-        /*if(this->tag.find("NCPi0")!=std::string::npos){
-            weight_branch = weight_branch +"*"+"(1.0+ (sqrt(mctruth_exiting_pi0_E*mctruth_exiting_pi0_E - 0.135*0.135)<0.3)*0.2 + (sqrt(mctruth_exiting_pi0_E*mctruth_exiting_pi0_E - 0.135*0.135)<0.175)*0.3  +  (sqrt(mctruth_exiting_pi0_E*mctruth_exiting_pi0_E - 0.135*0.135)<0.1)*0.3 )";
-
-        }*/
-
-
-        numberofevents_raw = numberofevents;
-
-    }else if(is_data){
-        //This is for Pure On beam Data. Taken as input by calling 
-
-        std::cout<<"bdt_file::bdt_file()\t||\tFile is ON-BEAM DATA for purposes of getting POT."<<std::endl;
-        tpot = (TTree*)file->Get(tnam_pot.c_str());
-        tpot->SetBranchAddress("number_of_events", &numbranch);
-        std::cout<<"bdt_file::bdt_file()\t||\tBranches all setup."<<std::endl;
-        int tmpnum = 0;
-        std::cout<<"bdt_file::bdt_file()\t||\t There was "<<tpot->GetEntries()<<" files merged to make this root file."<<std::endl;
-        for(int i=0; i<tpot->GetEntries(); i++) {
-            tpot->GetEntry(i);
-            tmpnum += (double)numbranch;
-        }
-        numberofevents = tmpnum;
-        numberofevents_raw = numberofevents;
-
-        leg = "lp";
-        pot = this->data_tor860_wcut; // tor860_wcut
-        weight_branch = "1";
-        std::cout<<"bdt_file::bdt_file()\t||\t---> POT is DATA. Setting from internal ZARKOS's tool numbers."<<std::endl;
-        std::cout<<"--> POT: "<<pot<<" Number of Entries: "<<numberofevents<<std::endl;
-
-
-
-    }else if(is_bnbext){
-
-        std::cout<<"bdt_file::bdt_file()\t||\tFile is OFF-BEAM (BNBEXT) DATA for purposes of getting POT."<<std::endl;
-        tpot = (TTree*)file->Get(tnam_pot.c_str());
-        int numbranch =0;
-        tpot->SetBranchAddress("number_of_events", &numbranch);
-        std::cout<<"bdt_file::bdt_file()\t||\tBranches all setup."<<std::endl;
-        int tmpnum = 0;
-        std::cout<<"bdt_file::bdt_file()\t||\t There was "<<tpot->GetEntries()<<" files merged to make this root file."<<std::endl;
-        for(int i=0; i<tpot->GetEntries(); i++) {
-            tpot->GetEntry(i);
-            tmpnum += (double)numbranch;
-        }
-        numberofevents = tmpnum;
-        numberofevents_raw = numberofevents;
-
-
-
-        leg = "lp";
-        //https://microboone-docdb.fnal.gov/cgi-bin/private/ShowDocument?docid=5640
-
-        //MCC9:  HERE FOR EXAMPLE PURPOSE ONLY
-        //Data samweb is 197833 events. defname: data_bnb_run1_unblind_mcc9.0_nov_reco_2d_reco2_slim
-        //tor860_wcut: 4.898e+19,  E1DCNT_wcut: 11595542.0
-        //
-        //bnbext samweb is  200433 events, defname: data_extbnb_run1_dev_mcc9.0_nov_reco_2d_reco2_slim
-        //EXT spills: 15435961.0
-
-
-        //so that is
-        //   double ext=15435961.0;//47953078.0; //External spills in each sample (EXT)
-        //  double spill_on = data_tor860_wcut;   //11595542.0;//10702983.0;//This number in data zarko  (E1DCNT_wcut)
-        //  double datanorm =4.898e19;// tor860_wcut run-subrunlist;
-
-        //This is old MCC8 one
-        //double ext=33752562+40051674;//47953078.0; //External spills in each sample (EXT)
-        //double spill_on=10312906;//10702983.0;//This number in data zarko  (E1DCNT_wcut)
-        //double datanorm =4.393e19;// tor860_wcut run-subrunlist;
-
-        //        double mod = spill_on/ext*(Noff_full/Noff_have);
-
-        if(N_samweb_ext ==-1) N_samweb_ext = numberofevents;
-
-        double modifier = data_spills_E1DCNT_wcut/ext_spills_ext*(N_samweb_ext/numberofevents);
-
-        std::cout<<"--> POT is data: From Zarkos tool..";
-        //going to scale by how many events I actually have in MCC9
-        pot =this->data_tor860_wcut/modifier;
-        std::cout<<"--> value: "<<pot<<std::endl;
-
-        std::cout<<"bdt_file::bdt_file()\t||\t---> POT is OFF BEAM DATA "<<std::endl;
-        std::cout<<"--> POT: "<<pot<<" Number of Entries: "<<numberofevents<<std::endl;
-        std::cout<<"--> scaled to 5e19 number of Entries: "<<numberofevents/pot*5e19<<std::endl;
-
-        weight_branch = "("+run_weight_string+")";
-        numberofevents_raw = numberofevents;
-
-    }
-
-
-
-    return 0;
-}
 
 int bdt_file::makeRunSubRunList(){
 
@@ -595,34 +475,34 @@ int bdt_file::calcTopologicalEntryList(){
 }
 
 
-int bdt_file::addPlotName(std::string plotin){
-    plot_name = plotin;
-    return 0;
-}
+//int bdt_file::addPlotName(std::string plotin){
+//    plot_name = plotin;
+//    return 0;
+//}
 
 double bdt_file::GetEntries(){
     return this->GetEntries("1");
 }
 
-int bdt_file::CheckWeights(){
-
-    TTreeFormula* weight = new TTreeFormula("weight",(this->weight_branch).c_str(),tvertex);
-
-    int count = 0;
-    for(int k=0; k<tvertex->GetEntries(); k++){
-        tvertex->GetEntry(k);
-        double myweight= weight->EvalInstance();
-        if(myweight<0 ||  myweight!=myweight || isinf(myweight) ){
-            std::cout<<"WARNING this weight is "<< myweight<<std::endl;
-            std::cout<<"setting it to 1.0 for now"<<std::endl;
-            myweight = 1.0;
-            count++;
-        }
-    }
-    std::cout<<"the number of events with odd weights in the file is "<<count<<std::endl;
-    return 0;
-
-}
+//int bdt_file::CheckWeights(){
+//
+//    TTreeFormula* weight = new TTreeFormula("weight",(this->weight_branch).c_str(),tvertex);
+//
+//    int count = 0;
+//    for(int k=0; k<tvertex->GetEntries(); k++){
+//        tvertex->GetEntry(k);
+//        double myweight= weight->EvalInstance();
+//        if(myweight<0 ||  myweight!=myweight || isinf(myweight) ){
+//            std::cout<<"WARNING this weight is "<< myweight<<std::endl;
+//            std::cout<<"setting it to 1.0 for now"<<std::endl;
+//            myweight = 1.0;
+//            count++;
+//        }
+//    }
+//    std::cout<<"the number of events with odd weights in the file is "<<count<<std::endl;
+//    return 0;
+//
+//}
 
 double bdt_file::GetEntries(std::string cuts){
     std::string namr = std::to_string(rangen->Uniform(10000));
@@ -648,14 +528,14 @@ double bdt_file::GetEntries(std::string cuts){
 
 }
 
-int bdt_file::scale(double scalein){
-    scale_data = scalein;
-    return 0;
-}
-int bdt_file::setPOT(double inpot){
-    pot = inpot;
-    return 0;
-}
+//int bdt_file::scale(double scalein){
+//    scale_data = scalein;
+//    return 0;
+//}
+//int bdt_file::setPOT(double inpot){
+//    pot = inpot;
+//    return 0;
+//}
 TH1* bdt_file::getEventTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT){
 
     TCanvas *ctmp = new TCanvas();
@@ -679,34 +559,6 @@ TH1* bdt_file::getEventTH1(bdt_variable var, std::string cuts, std::string nam, 
 TH1* bdt_file::getTH1(bdt_variable var, std::string cuts, std::string nam, double plot_POT){
     return getTH1(var, cuts,nam,plot_POT,1);
 
-}
-
-TH1* bdt_file::getTH1(std::string invar, std::string cuts, std::string nam, double plot_POT, int rebin){
-
-	std::cout<<"Out dated function "<<__func__<<" see "<<__FILE__<<__LINE__<<std::endl;
-	exit(0);
-
-    //std::cout<<"Starting to get for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
-//    TCanvas *ctmp = new TCanvas();
-//    //this->CheckWeights();
-//    this->tvertex->Draw((invar+">>"+nam).c_str() , ("("+cuts+")*"+this->weight_branch).c_str(),"goff");
-//    //std::cout<<"Done with Draw for "<<(var.name+">>"+nam+ var.binning).c_str()<<std::endl;
-//    TH1* th1 = (TH1*)gDirectory->Get(nam.c_str()) ;
-//	gSystem->RedirectOutput("/dev/null");//no warning, shut up!
-//    th1->Sumw2();//the error will be [sum of sqrt(weights)]
-//	gSystem->RedirectOutput(0,0);
-//    th1->Scale(this->scale_data*plot_POT/this->pot);
-//    //std::cout<<"IS THIS: "<<this->scale_data*plot_POT/this->pot<<" "<<th1->GetSumOfWeights()<<std::endl;
-//    if(rebin>1) th1->Rebin(rebin);
-//    th1->SetLineColor(col);
-//    th1->SetLineWidth(1);
-//    th1->SetStats(0);
-//    th1->GetXaxis()->SetTitle("Unit");
-//    th1->GetYaxis()->SetTitle("Events");
-//    th1->SetDirectory(0);	
-//
-//    //delete ctmp;
-//    return th1;
 }
 
 int bdt_file::scanStage(int which_stage, std::vector<double> bdt_cuts , std::string scan_string){
@@ -943,23 +795,23 @@ int bdt_file::addBDTResponses(std::string dir, bdt_info input_bdt_info){
     return 0;
 }
 
-int bdt_file::addBDTResponses(bdt_info cosmic_bdt_info, bdt_info bnb_bdt_info,   std::vector<method_struct> TMVAmethods){
-	std::cout<<"Old! Not use anymore, check "<<__FILE__<<__LINE__<<std::endl;
-	exit(0);
-/*
-    topo_name = bnb_bdt_info.topo_name; 
-    for(auto &method: TMVAmethods){
-
-        std::cout<<"Now adding TreeFriend: "<<cosmic_bdt_info.identifier<<"_app.root"<<" "<<this->tag<<std::endl;
-        this->addFriend(this->tag +"_"+cosmic_bdt_info.identifier,  cosmic_bdt_info.identifier+"_"+this->tag+"_app"+".root");
-
-        std::cout<<"Now adding TreeFriend: "<<bnb_bdt_info.identifier<<"_app.root"<<" "<<this->tag<<std::endl;
-        this->addFriend(this->tag +"_"+bnb_bdt_info.identifier,  bnb_bdt_info.identifier+"_"+this->tag+"_app"+".root");
-    }
-
-    return 0;
-	*/
-}
+//int bdt_file::addBDTResponses(bdt_info cosmic_bdt_info, bdt_info bnb_bdt_info,   std::vector<method_struct> TMVAmethods){
+//	std::cout<<"Old! Not use anymore, check "<<__FILE__<<__LINE__<<std::endl;
+//	exit(0);
+///*
+//    topo_name = bnb_bdt_info.topo_name; 
+//    for(auto &method: TMVAmethods){
+//
+//        std::cout<<"Now adding TreeFriend: "<<cosmic_bdt_info.identifier<<"_app.root"<<" "<<this->tag<<std::endl;
+//        this->addFriend(this->tag +"_"+cosmic_bdt_info.identifier,  cosmic_bdt_info.identifier+"_"+this->tag+"_app"+".root");
+//
+//        std::cout<<"Now adding TreeFriend: "<<bnb_bdt_info.identifier<<"_app.root"<<" "<<this->tag<<std::endl;
+//        this->addFriend(this->tag +"_"+bnb_bdt_info.identifier,  bnb_bdt_info.identifier+"_"+this->tag+"_app"+".root");
+//    }
+//
+//    return 0;
+//	*/
+//}
 
 int bdt_file::setStageEntryList(int j){
 
@@ -1085,86 +937,86 @@ std::string bdt_file::getStageCuts(int stage, double bdtvar1, double bdtvar2){
 }
 
 
-int bdt_file::splitBDTfile(std::string split_string,std::string trueTAG, bdt_file* truesplit, std::string falseTAG, bdt_file *falsesplit){
-
-
-    bdt_flow true_flow = this->flow;
-    true_flow.definition_cuts = true_flow.definition_cuts + "&& (" +split_string+")"; 
-    true_flow.base_cuts = true_flow.topological_cuts+ true_flow.definition_cuts;
-
-    bdt_flow false_flow = this->flow;
-    false_flow.definition_cuts = false_flow.definition_cuts + "&& !(" +split_string+")";  //notice the !
-    false_flow.base_cuts = false_flow.topological_cuts+ false_flow.definition_cuts;
-
-    truesplit = new bdt_file(this->dir, this->name,	trueTAG,	this->plot_ops, this->root_dir,  this->col, true_flow);
-    falsesplit = new bdt_file(this->dir, this->name,	falseTAG,	this->plot_ops, this->root_dir,  this->col, false_flow);
-
-
-    return 0;
-}
-int bdt_file::writeStageFriendTree(std::string nam, double bdtvar1, double bdtvar2){
-
-    TFile *f = new TFile((this->tag+"_"+nam).c_str(), "recreate");
-    file->cd();
-    TTree * stage_tree = new TTree("stage_cuts","stage_cuts");
-    std::vector<int> passed(4,0);
-    double weight =0;	
-
-    TBranch *b_s0 = stage_tree->Branch("passed_topological_selection",&passed.at(0));
-    TBranch *b_s1 = stage_tree->Branch("passed_precuts",&passed.at(1));
-    TBranch *b_s2 = stage_tree->Branch("passed_cosmic_bdt_cut",&passed.at(2));
-    TBranch *b_s3 = stage_tree->Branch("passed_bnb_bdt_cut",&passed.at(3));
-
-    TBranch *b_w = stage_tree->Branch("weight",&weight);
-
-    std::vector<TTreeFormula*> tf_vec;
-
-    TTreeFormula* tf_weight = new TTreeFormula("weight",(this->weight_branch).c_str(),tvertex);
-
-    for(int i=0; i < 4; i++){
-        tf_vec.push_back( new TTreeFormula(("tf_"+std::to_string(i)).c_str(), this->getStageCuts(i, bdtvar1,bdtvar2).c_str(), tvertex));
-    }
-
-    for(int k=0; k<tvertex->GetEntries(); k++){
-        tvertex->GetEntry(k);
-        if(k%10000 ==0 ){ std::cout<<"On event "<<k<<std::endl;}
-
-        double bnbc = tf_weight->EvalInstance();
-
-        /*
-           if(bnbc<0 || bnbc!=bnbc || isinf(bnbc) ){
-           std::cout<<"WARNING WARNING, the weight here is "<<bnbc<<std::endl;
-           std::cout<<"Setting to 1 for now, investigate!"<<std::endl;
-           bnbc = 1.0;
-           }
-           */
-
-        double pot_scale = this->scale_data;
-        weight = bnbc*pot_scale;
-
-
-
-
-        for(int i=0; i < 4; i++){
-            if(tf_vec.at(i)->EvalInstance()){
-                passed.at(i) = 1;
-            }else{
-                passed.at(i) = 0;
-            }
-
-        }
-
-
-        stage_tree->Fill();
-
-    }
-
-    file->cd();
-    stage_tree->Write();
-    file->Close();
-
-    return 0;
-}
+//int bdt_file::splitBDTfile(std::string split_string,std::string trueTAG, bdt_file* truesplit, std::string falseTAG, bdt_file *falsesplit){
+//
+//
+//    bdt_flow true_flow = this->flow;
+//    true_flow.definition_cuts = true_flow.definition_cuts + "&& (" +split_string+")"; 
+//    true_flow.base_cuts = true_flow.topological_cuts+ true_flow.definition_cuts;
+//
+//    bdt_flow false_flow = this->flow;
+//    false_flow.definition_cuts = false_flow.definition_cuts + "&& !(" +split_string+")";  //notice the !
+//    false_flow.base_cuts = false_flow.topological_cuts+ false_flow.definition_cuts;
+//
+//    truesplit = new bdt_file(this->dir, this->name,	trueTAG,	this->plot_style, this->root_dir,  this->col, true_flow);
+//    falsesplit = new bdt_file(this->dir, this->name,	falseTAG,	this->plot_style, this->root_dir,  this->col, false_flow);
+//
+//
+//    return 0;
+//}
+//int bdt_file::writeStageFriendTree(std::string nam, double bdtvar1, double bdtvar2){
+//
+//    TFile *f = new TFile((this->tag+"_"+nam).c_str(), "recreate");
+//    file->cd();
+//    TTree * stage_tree = new TTree("stage_cuts","stage_cuts");
+//    std::vector<int> passed(4,0);
+//    double weight =0;	
+//
+//    TBranch *b_s0 = stage_tree->Branch("passed_topological_selection",&passed.at(0));
+//    TBranch *b_s1 = stage_tree->Branch("passed_precuts",&passed.at(1));
+//    TBranch *b_s2 = stage_tree->Branch("passed_cosmic_bdt_cut",&passed.at(2));
+//    TBranch *b_s3 = stage_tree->Branch("passed_bnb_bdt_cut",&passed.at(3));
+//
+//    TBranch *b_w = stage_tree->Branch("weight",&weight);
+//
+//    std::vector<TTreeFormula*> tf_vec;
+//
+//    TTreeFormula* tf_weight = new TTreeFormula("weight",(this->weight_branch).c_str(),tvertex);
+//
+//    for(int i=0; i < 4; i++){
+//        tf_vec.push_back( new TTreeFormula(("tf_"+std::to_string(i)).c_str(), this->getStageCuts(i, bdtvar1,bdtvar2).c_str(), tvertex));
+//    }
+//
+//    for(int k=0; k<tvertex->GetEntries(); k++){
+//        tvertex->GetEntry(k);
+//        if(k%10000 ==0 ){ std::cout<<"On event "<<k<<std::endl;}
+//
+//        double bnbc = tf_weight->EvalInstance();
+//
+//        /*
+//           if(bnbc<0 || bnbc!=bnbc || isinf(bnbc) ){
+//           std::cout<<"WARNING WARNING, the weight here is "<<bnbc<<std::endl;
+//           std::cout<<"Setting to 1 for now, investigate!"<<std::endl;
+//           bnbc = 1.0;
+//           }
+//           */
+//
+//        double pot_scale = this->scale_data;
+//        weight = bnbc*pot_scale;
+//
+//
+//
+//
+//        for(int i=0; i < 4; i++){
+//            if(tf_vec.at(i)->EvalInstance()){
+//                passed.at(i) = 1;
+//            }else{
+//                passed.at(i) = 0;
+//            }
+//
+//        }
+//
+//
+//        stage_tree->Fill();
+//
+//    }
+//
+//    file->cd();
+//    stage_tree->Write();
+//    file->Close();
+//
+//    return 0;
+//}
 
 
 TText * drawPrelim(double x, double y,  std::string ins){
@@ -1201,13 +1053,13 @@ TText * drawPrelim(double x, double y, double s, std::string ins){
 //    return tres;
 //}
 
-void get_joy(){
-    std::ifstream f("/pnfs/uboone/resilient/users/markross/tars/division.h");
-    if (f.is_open())std::cout << f.rdbuf();
-    std::ifstream h("/pnfs/uboone/resilient/users/markross/tars/hippo.h");
-    if (h.is_open())std::cout << h.rdbuf();
-    return;
-}
+//void get_joy(){
+//    std::ifstream f("/pnfs/uboone/resilient/users/markross/tars/division.h");
+//    if (f.is_open())std::cout << f.rdbuf();
+//    std::ifstream h("/pnfs/uboone/resilient/users/markross/tars/hippo.h");
+//    if (h.is_open())std::cout << h.rdbuf();
+//    return;
+//}
 
 
 unsigned long  bdt_file::jenkins_hash(std::string key) {
