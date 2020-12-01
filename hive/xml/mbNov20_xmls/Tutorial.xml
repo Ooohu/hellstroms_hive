@@ -1,0 +1,164 @@
+<?xml version="1.0" ?>
+
+<!--LoadEnv() from below -->
+<!-- Some basic information, a tag that defines uniquely this analysis, and a topology that also defines it -->
+<topology tag="Test" name ="#nu_{e}" def = "1" bdtcut = "( 0.5, 0, 0, 0, 0, 0)"/> 
+<inputdir>/scratch/condor-tmp/klin/data_timing_root</inputdir>
+<verbosity> 2 </verbosity> <!--0, minimal; 1, normal message; 2, debug_message --> 
+
+
+<!-- use these aliases with #<key># -->
+<!-- ================================================== Alias   ==================================================== -->
+<alias key = "leptonP" value = "sqrt(pow(el.E,2)+el.E*0.511)"/>
+<alias key = "Enu" value ="sqrt(pow(el.UZ*#leptonP#,2)-0.511*0.511) -25"/>
+<alias key = "Qsquare2" value ="(2*el.EnuQE*(el.E+0.511)*(1-#leptonP#/(el.E+0.511)*el.UZ)-pow(0.511,2))"/>
+<alias key = "Qsquare" value ="-pow(0.511,2)+2*el.EnuQE*((el.E+0.511)-sqrt(pow(el.E+0.511,2)-pow(0.511,2))*el.UZ) "/>
+
+<alias key = "cut_fullosc" value = "(backgroundType[0]==1||backgroundType[0]==2||backgroundType[0]==3)" />
+<alias key = "cut_pi0misid" value = "(backgroundType[0]==9)" />
+<alias key = "cut_intrinsicnue" value = "(backgroundType[0]>0 && backgroundType[0]<6)" />
+<!--
+<alias key = "regular" value = "data,other,pi0misid,intrinsicnue,delta"/>
+<alias key = "regular" value = "data,other,pi0misid,munue,kpmnue,k0nue,delta"/>
+<alias key = "regular" value = "data"/>
+-->
+<alias key = "cut_regular" value = "1"/>
+
+
+<!-- ================================================== PRE-CUTS   ==================================================== -->
+<precut def = "el.EnuQE[0]<1250&amp;&amp;el.EnuQE[0]>200" name = "EnuQE Cut"/>
+
+
+
+<!--LoadBDTfiles() from below -->
+<!-- ================================================== BDT FILES [First the ones that we stack in things]==================================================== -->
+<!--
+<bdtfile filename = "timing_MC_fullosc_may07_2.root" tag = "fullosc" hist_style = "hist" Tdir = "" col = "(255,255,255)" linecol = "1" linestyle = "7" plot_name = "best-fit" scale = "1.0" signal = "true" plot_on_top = "false" weight = "wgt*pow(1.267*0.04*nuleng/enugen,2)">
+    <definition>
+        <cut> (backgroundType==1||backgroundType==2||backgroundType==3) </cut>
+    </definition>
+	<fixPOT> 13.278e19 </fixPOT>
+</bdtfile>
+
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "pi0misid" hist_style = "hist" Tdir = "" col = "(207,94,97)" plot_name = "#pi^{0} misid" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType[0]==9 </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "intrinsicnue" hist_style = "hist" Tdir = "" col = "(176,207,199)" plot_name = "Intrinsic #nu_{e}" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> (backgroundType[0]&gt;0) </cut>
+        <cut> (backgroundType[0]&lt;6) </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "electron_analysis/timing2.0_data_nue_07to19_EvisCorrected.root" tag = "data" hist_style = "hist" Tdir = "" col = "(0.2,0.8,0.2)" plot_name = "Data" fillstyle = "3333" scale = "1">
+    <definition>
+		<cut>1</cut>
+    </definition>
+	<fixPOT>18.75e20</fixPOT>
+</bdtfile>
+-->
+
+<!--demo-->
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "intrinsicnue" weight = "wgt" Tdir = "" isdata = "true" issignal = "false" group = "-1" scale = "1.0" >
+	<plotstyle isstack = "true" color = "(176,207,199)" histstyle = "hist" fillstyle = "1001" linecolor = "1" linestyle = "1" legend = "lp" on_top = "false" plot_name = "Intrinsic #nu_{e}" >
+	</plotstyle>
+    <definition>
+        <cut> #cut_intrinsicnue# </cut>
+    </definition>
+	<fixPOT> 4.108e21 </fixPOT>
+</bdtfile>
+
+
+<!-- ================ systematic files are loaded here, as a bdtfile ============ -->
+<bdtfile filename = "systematic_files/Nuemay06OM_MC_66.root" tag = "nueomsw">
+	<systematics systag = "NueMCOpticalModel" var = "CV[0]" varname = "XsecxFlux" throws = "66" isCV = "false" isOpticalModel = "true" >
+	</systematics>
+    <definition>
+        <cut> #cut_regular# </cut>
+    </definition>
+	<fixPOT> 6.58848e29 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "systematic_files/Nuemay06OM_MCCV.root" tag = "nueomcv" >
+	<systematics systag = "NueMCOpticalModel" var = "CV[0]" varname = "CV" throws = "1" isCV = "true" isOpticalModel = "true" >
+	</systematics>
+    <definition>
+        <cut> #cut_regular# </cut>
+    </definition>
+	<fixPOT> 43.8925e20 </fixPOT>
+</bdtfile>
+
+
+<!-- ================================== BDT FILES [Now the training files]========================================= -->
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "pi0Train" hist_style = "hist" Tdir = "" col = "(0.81,0.37,0.38)" plot_name = "#pi^{0} Train" weight = "wgt" >
+    <training>
+        <cut> 1 </cut>
+     </training>
+    <definition>
+        <cut> backgroundType[0]==9 </cut>
+        <cut> ibkgd!=1 </cut>
+        <cut> Entry$%2==1 </cut>
+    </definition>
+	<fixPOT> 2.054E21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "other_numuTrain" hist_style = "hist" Tdir = "" col = "(163,143,163)" plot_name = "#bar{#nu}_{#mu}/#nu_{#mu} Train" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType[0]==11 </cut>
+        <cut> ibkgd!=1 </cut>
+        <cut> Entry$%2==1 </cut>
+		<cut> MCBEAM.ntp&gt;2</cut>
+    </definition>
+    <training>
+        <cut> 1 </cut>
+     </training>
+	<fixPOT> 2.054E21 </fixPOT>
+</bdtfile>
+
+<!-- ============================================== ACTUAL BDT TMVA Setup ==================================== -->
+<mva type="BDT" use="yes" tag = "sample_train" name ="NueVsPi0" binning = "(36,0.9,1.0)">
+    <method type = "XGBoost" use = "yes">
+        <param> n_trees=200</param>
+        <param> tree_method=exact</param>
+        <param> n_gpus=0</param>
+        <param> objective=binary:logistic</param>
+        <param> eval_metric=logloss</param>
+        <param> min_child_weight=1</param> 
+        <param> gamma=1.2</param>          
+        <param> max_depth=2</param>    
+        <param> eta=0.04</param>      
+        <param> subsample=0.3</param> 
+        <param> colsample_bytree= 0.95</param>
+        <param> verbosity=1</param>
+    </method>
+    <file
+        bkg_train_tag= "pi0misid" 
+        bkg_test_tag = "pi0misid"
+        bkg_test_cut = "Entry$%5<2" 
+        sig_train_tag= "intrinsicnue"
+        sig_test_tag = "intrinsicnue"
+        sig_test_cut = "Entry$%5<2"
+        />
+    <scan min = "0.2" max = "0.95" steps="160"/>
+</mva>
+
+<!-- ============================================== Variables, BDT training and otherwise ====================================== -->
+
+<!-- 9 well, might need UZ -->
+<var def = "el.UZ" binning="(20,-1,1)" training = "0" unit = "cos#theta"/>
+<!-- 0 Pre: Use this to prepare hist_elEnuQE_bgap25_s1_h8261672200918285872.root traditional smoothing -->
+<var def = "el.EnuQE" binning="(25,100,3000)" unit = "E_{#nu}^{QE} [MeV]"  logplot = "false"  training = "" group = "1"  covarfile = "TBD"  custombin = "true"/>
+
+<!-- 50 MeV binnings, but it has low stat problem at high energy; -->
+<var def = "el.EnuQE" binning="(21, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" logplot = "false"  training = "0" group = "1" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap50_s1_h8261672200918285872_200_1250.root"  custombin = "false"/>
+
+<!-- OK, below are historical variables -->
+<var def = "el.R" binning="(12,0,600)" unit = "R [cm]"  logplot = "false"  training = "0" group = "1" covarfile = "MiniBooNEOct20systematics/finalcov_elR_bgap50_s1_h8261672200918285872.root" />
+
+
+
