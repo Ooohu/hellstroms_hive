@@ -1,0 +1,135 @@
+<?xml version="1.0" ?>
+
+<!-- Some basic information, a tag that defines uniquely this analysis, and a topology that also defines it -->
+<topology tag="Tutorial" name ="#nu_{e}" def = "1" bdtcut = "( 0.5, 0, 0, 0, 0, 0)"/> 
+<filedir>../../../toys/</filedir>
+
+<!-- ================================================== BDT FILES [First the ones that we stack in things]==================================================== -->
+
+<bdtfile filename = "nue_analysis/timing_MC_nue_may07_2.root" tag = "intrinsicnue" hist_style = "hist" dirs = "" col = "(176,207,199)" plot_name = "Intrinsic #nu_{e}" scale = "1.0" signal = "true" plot_on_top = "true" weight = "wgt">
+    <definition>
+        <cut> (backgroundType[0]&gt;0) </cut>
+        <cut> (backgroundType[0]&lt;6) </cut>
+        <cut> Entry$%2==0 </cut>
+    </definition>
+	<fixPOT> 2.054E21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "nue_analysis/timing_MC_nue_may07_2.root" tag = "nonnue" hist_style = "hist" dirs = "" col = "(207,94,97)" plot_name = "Others" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> backgroundType[0]&gt;8 </cut>
+        <cut> Entry$%2==0 </cut>
+    </definition>
+	<fixPOT> 2.054E21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "nue_analysis/timing_MC_dirt_may07_2.root" tag = "dirt" hist_style = "hist" dirs = "" col = "(137,104,89)" plot_name = "Dirt" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut>1 </cut>
+    </definition>
+	<fixPOT> 4.108E21 </fixPOT>
+</bdtfile>
+
+
+
+<!-- DATA!!!!-->
+<bdtfile filename = "nue_analysis/timing_data_nue_jul07.root" tag = "data" hist_style = "hist" dirs = "" col = "(0.2,0.8,0.2)" plot_name = "Data" fillstyle = "3333" scale = "1">
+    <definition>
+		<cut>1</cut>
+    </definition>
+	<fixPOT>6.46e20</fixPOT>
+   <data type="OnBeam">
+   </data>
+</bdtfile>
+
+<!-- ================================================== BDT FILES [Now the training files]==================================================== -->
+<bdtfile filename = "nue_analysis/timing_MC_nue_may07_2.root" tag = "pi0Train" hist_style = "hist" dirs = "" col = "(0.81,0.37,0.38)" plot_name = "#pi^{0} Train" weight = "wgt" >
+    <definition>
+        <cut> backgroundType[0]==9 </cut>
+        <cut> ibkgd!=1 </cut>
+        <cut> Entry$%2==1 </cut>
+    </definition>
+    <training>
+        <cut> 1 </cut>
+     </training>
+	<fixPOT> 2.054E21 </fixPOT>
+</bdtfile>
+
+<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "nueTrain" hist_style = "hist" dirs = "" col = "(163,143,163)" plot_name = "#nu_{e} Train" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+    <definition>
+        <cut> (backgroundType[0]&gt;0) </cut>
+        <cut> (backgroundType[0]&lt;6) </cut>
+        <cut> ibkgd==1 </cut>
+        <cut> Entry$%2==1 </cut>
+		<cut> MCBEAM.ntp&lt;3</cut>
+    </definition>
+    <training>
+        <cut> 1 </cut>
+     </training>
+	<fixPOT> 2.054E21 </fixPOT>
+</bdtfile>
+<!-- ============================================== ACTUAL BDT TMVA Setup ==================================== -->
+<mva type="BDT" use="yes" tag = "sample_bdt" name ="nueCCQE_pi0" binning = "(36,0.9,1.0)">
+    <method type = "XGBoost" use = "yes">
+        <param> n_trees=200</param>
+        <param> max_depth=4</param>    
+        <param> gamma=1.2</param>          
+        <param> tree_method=exact</param>
+        <param> n_gpus=0</param>
+        <param> objective=binary:logistic</param>
+        <param> eval_metric=logloss</param>
+        <param> min_child_weight=1</param> 
+        <param> eta=0.04</param>      
+        <param> subsample=0.3</param> 
+        <param> colsample_bytree= 0.95</param>
+        <param> verbosity=1</param>
+    </method>
+    <file
+        bkg_train_tag= "pi0Train" 
+        bkg_test_tag = "pi0Train"
+        bkg_test_cut = "1" 
+        sig_train_tag= "nueTrain"
+        sig_test_tag = "nueTrain"
+        sig_test_cut = "1"
+        />
+    <scan min = "0.2" max = "0.95" steps="160"/>
+</mva>
+<!-- ================================================== PRE-CUTS   ==================================================== -->
+
+<!--
+<precut def = "el.EnuQE<1250&amp;&amp;el.EnuQE>200" name = "EnuQE Cut"/>
+<precut def = "nueCCQE_pi0_mva>0.33 &amp;&amp; nueCCQE_pi0_mva<0.66" name = " BDT cut"/>
+<precut def = "el.UZ<0.9" name = "UZ Cut"/>
+<precut def = "el.R<300" name = "R Cut"/>
+<precut def = "el.R<400" name = "R Cut"/>
+<precut def = "el.UZ>0.9" name = "UZ Cut"/>
+-->
+<precut def = "el.EnuQE[0]<1250&amp;&amp;el.EnuQE[0]>200" name = "EnuQE Cut"/>
+
+
+<!--
+<alias key = "regular" value = "data,other,pi0misid,munue,kpmnue,k0nue,delta"/>
+-->
+<alias key = "regular" value = "data"/>
+
+<!-- ============================================== Variables, BDT training and otherwise ====================================== -->
+
+<!-- 0 generate equal and fine binning systematic histograms-->
+<var def = "el.EnuQE" binning="(25,100,3000)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "EMPTY"  custombin = "true"/>
+
+<!-- 1 EnuQE plot wiht variable binning, systematics -->
+<var def = "el.EnuQE" binning="(25, 200, 250, 300, 375, 475, 550, 600, 675, 800, 950, 1100, 1150,1250,1300,1500,1700,1900,3000)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h8261672200918285872_CombinedFitPlus.root"  custombin = "true" />
+
+<!-- 2 EnuQE plot with equal binning, systematics -->
+<var def = "el.EnuQE" binning="(21, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap50_s1_h8261672200918285872_200_1250.root"  custombin = "false"/>
+
+<!-- 3 (R/500)^2 without systematics -->
+<var def = "pow(el.R/500.0,3)" binning="(10,0,1)" unit = "(R/500cm)^{3}" type = "d" logplot = "false"  training = "0" group = "0" />
+
+<!-- ==================================== Add systematics ====================================-->
+
+<!--Multisims-->
+<systematics tag = "NueMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "KpProd[0],KmProd[0]" varnam = "KpProd,KmProd" pot = "41.08e20" throws = "100"  isCV = "false" isMultithrows = "true" OpticalModel = "false" />
+
+<systematics tag = "NueMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+
