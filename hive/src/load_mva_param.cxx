@@ -344,19 +344,38 @@ void MVALoader::LoadBDTSettings(){
 
 					if(method_type=="XGBoost"){
 						//Loop over all parameters, splitting by "=" sign and saving parameters into a vector of pairs of strings.
-						//x = 1 -> pair(x,1)
+						//x = 1 , y = 2-> pair(x,1) (y,2)
 						if(verbosity > 0) std::cout<<"\tReading XGBoost config \n\t";
 
 						std::replace(xgboost_string.begin(), xgboost_string.end(), "=",",");
 						std::vector<std::string> vec_params = gadget_Tokenizer(std::string) (xgboost_string);
-						
+
 						for(int nndex = 0; nndex<vec_params/2;nndex ++){
-                            std::pair<std::string,std::string> pairs = std::make_pair(vec_params[2*nndex],vec_params[2*nndex+1]);
-							(tmp_bdtInfo.xg_config0.push_back(pairs);
+							std::pair<std::string,std::string> pairs = std::make_pair(vec_params[2*nndex],vec_params[2*nndex+1]);
+							(tmp_bdtInfo.xg_config).push_back(pairs);
 							if(verbosity>1) std::cout<<vec_params[2*nndex]<<" = "<<vec_params[2*nndex+1]<<", ";
 						}
 						if(verbosity>1) std::cout<<std:endl;
 					}
+					//choose what bdt_files are used  in this training;
+					TiXmlElement *pMVAfile = pMVA->FirstChildElement("file");
+					while(pMVAfile){
+						const char* tmp_bkg_train_tag = pMVAfile->Attribute("bkg_train_tag");
+						const char* tmp_bkg_test_tag = pMVAfile->Attribute("bkg_test_tag");
+						const char* tmp_bkg_test_cut = pMVAfile->Attribute("bkg_test_cut");
+						const char* tmp_sig_train_tag = pMVAfile->Attribute("sig_train_tag");
+						const char* tmp_sig_test_tag = pMVAfile->Attribute("sig_test_tag");
+						const char* tmp_sig_test_cut = pMVAfile->Attribute("sig_test_cut");
+
+						if(tmp_bkg_train_tag!=NULL)		tmp_bdtInfo.bkg_train_tag = tmp_bkg_train_tag;
+						if(tmp_bkg_test_tag !=NULL)		tmp_bdtInfo.bkg_test_tag  = tmp_bkg_test_tag;
+						if(tmp_bkg_test_cut !=NULL)		tmp_bdtInfo.bkg_test_cut  = tmp_bkg_test_cut;
+						if(tmp_sig_train_tag!=NULL)		tmp_bdtInfo.sig_train_tag = tmp_sig_train_tag;
+						if(tmp_sig_test_tag !=NULL)		tmp_bdtInfo.sig_test_tag  = tmp_sig_test_tag;
+						if(tmp_sig_test_cut !=NULL)		tmp_bdtInfo.sig_test_cut  = tmp_sig_test_cut;
+						pMVAfile = pMVA->NextSiblingElement("file");
+					}//end file
+
 
             }
 //            while(pMethod ){

@@ -22,6 +22,15 @@ struct bdt_info{
 	std::string str;//read from type; =  XGBoost;
     std::vector<std::pair<std::string,std::string>> xg_config;
 
+    //tags for training; for locating the corresponding bdt_file
+    std::string bkg_test_tag;
+    std::string bkg_train_tag;
+    std::string bkg_test_cut;
+    std::string sig_train_tag;
+    std::string sig_test_tag;
+    std::string sig_test_cut;
+
+
 	std::string base_cuts ;
  	std::string pre_cuts;
 	std::string bdt_cosmic_cuts;
@@ -53,14 +62,6 @@ struct bdt_info{
     std::string foldername;
     std::string training_cut;
     double training_fraction;
-
-    //tags for training v2.2
-    std::string bkg_test_tag;
-    std::string bkg_train_tag;
-    std::string bkg_test_cut;
-    std::string sig_train_tag;
-    std::string sig_test_tag;
-    std::string sig_test_cut;
 
     double scan_max;
     double scan_min;
@@ -96,6 +97,14 @@ struct bdt_info{
 		bdt_bnb_cuts = "1";
 		signal_definition = "1";
 		background_definition = "1";
+		bkg_test_tag= "EMPTY";
+		bkg_train_tag= "EMPTY";
+		bkg_test_cut= "1";
+		sig_train_tag= "EMPTY";
+		sig_test_tag= "EMPTY";
+		sig_test_cut= "1";
+
+
 	}
 
 	int setName(std::string in){ identifier = in;return 0;};
