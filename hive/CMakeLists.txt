@@ -40,3 +40,19 @@ add_subdirectory(xgboost)
 
 #file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/xml/default.xml DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/build/src/)
 
+#CMAKE Error on macOS Mojave (10.14.4), saying  Could NOT find OpenMP_C (missing: OpenMP_C_FLAGS OpenMP_C_LIB_NAMES)? 
+# IT IS Clang, mac default compile's fault.
+# to make cmake works: https://www.iditect.com/how-to/53889826.html
+# install gcc before make: brew install gcc; and use it instead of Clang
+# export CC=<your gcc>; see `ls /usr/local/bin/gc*`, dont use Clang.. (check by looking at CC --version)
+# similarly CXX=<your g++>;
+
+# if export does not work, us `ln -s`
+# see linking command: https://apple.stackexchange.com/questions/99077/how-to-set-gcc-4-8-as-default-gcc-compiler
+
+
+#CMake Error at /usr/local/Cellar/cmake/3.11.4/share/cmake/Modules/TestBigEndian.cmake:49 (message):
+#  no suitable type found
+#
+# (NO) might need to update xcode? see https://stackoverflow.com/questions/34617452/how-to-update-xcode-from-command-line
+# down load xcode, then libraries will be available.
