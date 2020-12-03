@@ -14,7 +14,7 @@ void gadget_summary(bdt_variable var, std::vector<bdt_file*>  bdtfiles, std::vec
 
 	for(size_t lndex = 0; lndex < hists.size(); ++lndex){
 		std::string summary_tag = bdtfiles[lndex]->tag;
-		std::string summary_tagErr = (var.has_covar)? "TotalErr" : "StatErr";
+		std::string summary_tagErr = "StatErr";//(var.has_covar)? "TotalErr" : "StatErr";
 		summary[0] << std::setw(gap)<<std::left<<summary_tag <<std::setw(gap)<<std::left<<summary_tagErr;//title
 		for(int bin = 1; bin < hists[0]->GetNbinsX() + 1; bin++){
 			if(summary_headers[bin]){
