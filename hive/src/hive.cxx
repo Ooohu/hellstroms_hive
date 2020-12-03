@@ -764,7 +764,6 @@ int main (int argc, char *argv[]){
 				
 				//do systematics
 				if(true&&use_vars[0].has_covar){
-
 					sysConfig.setStageHash(which_stage, stack_bdt_files[0],fbdtcuts);
 
 					sysConfig.InitSys({use_vars[0]}, systematics);//prepare 1dhist, save them in systematics
