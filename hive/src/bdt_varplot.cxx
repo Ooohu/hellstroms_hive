@@ -104,7 +104,7 @@ int  plot_var_allF(std::vector< bdt_file *> MCfiles, bdt_file* datafile, std::ve
 		int num_MC = MCfiles.size();
 		double is_bestfit_in = false;//false - not include signal in the output;
 //		bool do_pair_plot = true;//true - excess vs each MC;
-		bool draw_estimator = false;
+		bool draw_estimator = true;
 		bool debug_message = true;
 
 		double yaxis_factor = 1.2;

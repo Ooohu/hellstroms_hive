@@ -121,10 +121,10 @@
 
 
 <!-- 2 EnuQE plot wiht variable binning, systematics -->
-<var def = "el.EnuQE[0]" binning="(25, 200, 250, 300, 375, 475, 550, 600, 675, 800, 950, 1100, 1150,1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "EMPTY"  custombin = "true" />
+<var def = "el.EnuQE[0]" binning="(25, 200, 250, 300, 375, 475, 550, 600, 675, 800, 950, 1100, 1150,1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" covarfile = "EMPTY"  custombin = "true" />
 
 <!-- 3 EnuQE plot with equal binning, systematics -->
-<var def = "el.EnuQE[0]" binning="(21, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "0" group = "1" minidef = "el.EnuQE[0]" covarfile = "EMPTY"  custombin = "false"/>
+<var def = "el.EnuQE[0]" binning="(21, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "0" group = "1" covarfile = "EMPTY" />
 
 <!--BDT scores-->
 <var def = "Tutorialsample_bdt_mva" binning="(10,0,1)" unit = "sample_bdt score" type = "d" logplot = "false"  training = "" group = "0" />
