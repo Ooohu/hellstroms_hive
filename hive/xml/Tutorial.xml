@@ -55,7 +55,7 @@
 	<fixPOT> 2.054E21 </fixPOT>
 </bdtfile>
 
-<bdtfile filename = "timing_MC_nue_may07_2.root" tag = "nueTrain" hist_style = "hist" dirs = "" col = "(163,143,163)" plot_name = "#nu_{e} Train" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
+<bdtfile filename = "nue_analysis/timing_MC_nue_may07_2.root" tag = "nueTrain" hist_style = "hist" dirs = "" col = "(163,143,163)" plot_name = "#nu_{e} Train" scale = "1.0" signal = "false" plot_on_top = "false" weight = "wgt">
     <definition>
         <cut> (backgroundType[0]&gt;0) </cut>
         <cut> (backgroundType[0]&lt;6) </cut>
@@ -121,10 +121,13 @@
 <var def = "el.EnuQE" binning="(25, 200, 250, 300, 375, 475, 550, 600, 675, 800, 950, 1100, 1150,1250,1300,1500,1700,1900,3000)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]"  covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h8261672200918285872_CombinedFitPlus.root"  custombin = "true" />
 
 <!-- 2 EnuQE plot with equal binning, systematics -->
-<var def = "el.EnuQE" binning="(21, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap50_s1_h8261672200918285872_200_1250.root"  custombin = "false"/>
+<var def = "el.EnuQE" binning="(21, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "0" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap50_s1_h8261672200918285872_200_1250.root"  custombin = "false"/>
 
 <!-- 3 (R/500)^2 without systematics -->
 <var def = "pow(el.R/500.0,3)" binning="(10,0,1)" unit = "(R/500cm)^{3}" type = "d" logplot = "false"  training = "0" group = "0" />
+
+<!--BDT scores-->
+<var def = "Tutorialsample_bdt_mva" binning="(10,0,1)" unit = "sample_bdt score" type = "d" logplot = "false"  training = "" group = "0" />
 
 <!-- ==================================== Add systematics ====================================-->
 
