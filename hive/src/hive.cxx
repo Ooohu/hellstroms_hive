@@ -1,76 +1,4 @@
-#include <getopt.h>
-#include <sys/stat.h> 
-
-#include "TFriendElement.h"
-#include "TList.h"
-
-//#include "variable_list.h"
-#include "bdt_file.h"
-#include "bdt_datamc.h"
-#include "bdt_var.h"
-#include "bdt_varplot.h"
-#include "bdt_precalc.h"
-#include "bdt_info.h"
-#include "bdt_train.h"
-#include "bdt_app.h"
-#include "bdt_response.h"
-#include "bdt_recomc.h"
-#include "bdt_sig.h"
-#include "bdt_boxcut.h"
-#include "bdt_spec.h"
-#include "bdt_eff.h"
-#include "bdt_test.h"
-#include "bdt_scatter.h"
-#include "load_mva_param.h"
-#include "tinyxml.h"
-
-#include "bdt_systematics.h"
-/*
- * A gadget to make a directory after
- * checking if that directory exist.
- *
- */
-void gadget_buildfolder( std::string name){
-	std::cout<<"Starting "<<name<<std::endl;
-	if (access(name.c_str(),F_OK) == -1){
-		mkdir(name.c_str(),0777);//Create a folder for pdf.
-	}
-	else{
-		std::cout<<"Overwrite "<<name<<"/ in 2 seconds, 1 seconds, ..."<<std::endl;
-//CHECK		sleep(2);
-	}
-}
-
-//This is called in the hive.cxx. It is used var2D for reading var1,var2,var3 argument
-//std::vector<bdt_variable> gadget_GetSelectVars(std::string vector, std::vector<bdt_variable> vars){
-//    std::vector<bdt_variable> select_vars = {};
-//    //first parse string as a vector
-//
-//    std::vector<int> vect;
-//    std::stringstream ss(vector);
-//
-//    //for each character in the string add the ints
-//    for (int i; ss >> i;) {
-//        vect.push_back(i);    
-//        if (ss.peek() == ',')
-//            ss.ignore();
-//    }
-//
-//    //then for each number, add that variable to the vars list
-//    for (std::size_t i = 0; i < vect.size(); i++){
-//        select_vars.push_back(vars[vect[i]]);
-//    }
-//
-//    for(auto vars: select_vars){
-//        std::cout<<"added vars to list "<<vars.safe_unit<<std::endl;
-//
-//    }
-//
-//    return select_vars;
-//}
-
-//int compareQuick(bdt_variable var, std::vector<bdt_file*> files, std::vector<std::string> cuts, std::string name);
-//int compareQuick(bdt_variable var, std::vector<bdt_file*> files, std::vector<std::string> cuts, std::string name,bool shape_only);
+#include "hive.h"
 
 int main (int argc, char *argv[]){
 
@@ -249,28 +177,6 @@ int main (int argc, char *argv[]){
 		if(verbosity>1) std::cout<<" Stage "<<index<<"cut: "<< basic_str<<std::endl; 
 		stage_cuts.push_back(basic_str);
 	}
-//    if(fbdtcuts.size()==0){
-//        std::cout<<"No BDT cuts set, so setting all to 0 for now"<<std::endl;
-//        fbdtcuts.resize(TMVAmethods.size(),0);
-//    }else{
-//        std::cout<<"BDT cuts have been loaded and set as: "<<std::endl;
-//        for(auto &c: fbdtcuts)std::cout<<c<<" ";
-//        std::cout<<std::endl;
-//    }
-
-
-
-//    std::cout<<TMVAmethods.size()<<" different BDT's: "<<std::endl;
-//    for(int k=0; k< TMVAmethods.size(); k++){
-//        bdt_infos.push_back( bdt_info(analysis_tag, TMVAmethods[k]));
-//        std::cout<<"["<<k<<"] BDT is on "<<bdt_infos.back().name;
-//        std::cout<<" with "<<bdt_infos.back().train_vars.size()<<" training variables."<<std::endl;
-//    }
-//	std::cout<<std::endl;
-
-    //This is a vector each containing a precut, they are all added together to make the whole "precut"
-    //Get all the variables you want to use	
-
 
     //**** Setting up bdt_files NWO style
 
@@ -338,8 +244,10 @@ int main (int argc, char *argv[]){
 
 		std::string def = cur_file->definition;
         if(verbosity>1) std::cout<<"\tDefinition: "<<def<<std::endl;
-
-        bdt_flow analysis_flow(topological_cuts, def, 	vec_precuts,	postcuts,	bdt_infos);
+		
+		//fill in stage_cuts to each file;
+		cur_file->stage_cuts = stage_cuts;
+//        bdt_flow analysis_flow(topological_cuts, def, 	vec_precuts,	postcuts,	bdt_infos);
 
         tagToFileMap[cur_file->tag] = cur_file;
 
@@ -358,7 +266,6 @@ int main (int argc, char *argv[]){
 			}
 		}
     }
-	std::cout<<__LINE__<<std::endl;
 		//set systematic enviroments;
 	sysConfig.out_POT = onbeam_data_file->pot;
 //	sysConfig.setCutStage(which_stage);
@@ -368,12 +275,6 @@ int main (int argc, char *argv[]){
 	std::cout<<"# of signal files "<<signal_bdt_files.size()<<std::endl;
 	std::cout<<"# of bkg files "<<bkg_bdt_files.size()<<std::endl;
 
-
-    //The "signal" is whichever signal BDT you define first.
-//    signal = signal_bdt_files[0];//only used in "sss"
-
-
-
     //===========================================================================================
     //===========================================================================================
     //		Main flow of the program , using OPTIONS
@@ -381,7 +282,6 @@ int main (int argc, char *argv[]){
     //===========================================================================================
     std::cout<<"--------------------------------------------------------------------------"<<std::endl;
     std::cout<<"--------------------------------------------------------------------------"<<std::endl;
-
     std::cout<<"--------------------------------------------------------------------------"<<std::endl;
     std::cout<<" Going to add any trained BDT responses  and precal some EntryLists  "<<std::endl;
     std::cout<<" If you see warnings, but havenet yet ran app stage, thats ok!            "<<std::endl;
@@ -392,24 +292,18 @@ int main (int argc, char *argv[]){
 	//}
 	gadget_buildfolder( analysis_tag+"entrylists");
 
-    for(auto &f: bdt_files){
-
-        if(mode_option != "app" && mode_option !="train" ){
-            for(int k=0; k<bdt_infos.size(); k++){
-                f->addBDTResponses(analysis_tag+"/", bdt_infos[k]);
-            }
-        }
-        if(mode_option != "train"  && mode_option != "sbnfit"){
-            f->calcBaseEntryList(analysis_tag);
-        }
-
-//        if(topo_tag != "notrack"){
-//            f->addFriend("sss_precalc",analysis_tag+"_"+f->tag+"_SSSprecalc.root");
-//        }
-//
-//        f->addFriend("track_tree",analysis_tag+"_"+f->tag+"_simtrack.root");
-
-    }
+	for(auto &f: bdt_files){
+		if(mode_option != "train"){
+			if(mode_option != "app"){
+				for(int k=0; k<bdt_infos.size(); k++){
+					f->addBDTResponses(analysis_tag+"/", bdt_infos[k]);
+				}
+			}
+			if( mode_option != "sbnfit"){
+				f->calcBaseEntryList(analysis_tag);
+			}
+		}
+	}
 	
 //prepare variable vector
 	std::vector<bdt_variable> use_vars;
@@ -481,72 +375,52 @@ int main (int argc, char *argv[]){
 
 
     if(mode_option == "train") {
-        //First lets create the bdt_file's* and flows for training
 
-        for(auto &f: bdt_files){
-            f->calcBaseEntryList(analysis_tag);
-        }
-
-        for(int i=0; i< bdt_infos.size(); i++){
-
+        for(int i=0; i< bdt_infos.size(); i++){//training essential;
             if(bdt_infos[i].TMVAmethod.str=="XGBoost"){
 				try{
-					if(tagToFileMap.count(bdt_infos[i].TMVAmethod.sig_train_tag)!=1) throw "signal training";
-					if(tagToFileMap.count(bdt_infos[i].TMVAmethod.sig_test_tag)!=1) throw "signal testing";
-					if(tagToFileMap.count(bdt_infos[i].TMVAmethod.bkg_train_tag)!=1) throw "bkg training";
-					if(tagToFileMap.count(bdt_infos[i].TMVAmethod.bkg_test_tag)!=1) throw "bkg testing";
+					if(tagToFileMap.count(bdt_infos[i].sig_train_tag)!=1) throw "signal training";
+					if(tagToFileMap.count(bdt_infos[i].sig_test_tag)!=1) throw "signal testing";
+					if(tagToFileMap.count(bdt_infos[i].bkg_train_tag)!=1) throw "bkg training";
+					if(tagToFileMap.count(bdt_infos[i].bkg_test_tag)!=1) throw "bkg testing";
 				}
-
 				catch ( std::string errorM){
-				
-					std::cerr<<"ERROR! the "<<errorM<<" tag "<<bdt_infos[i].TMVAmethod.sig_train_tag<<" is not in the bdt_files list!"<<std::endl;
+					std::cerr<<"ERROR! the "<<errorM<<" tag "<<bdt_infos[i].sig_train_tag<<" is not in the bdt_files list!"<<std::endl;
 					exit(EXIT_FAILURE);
 				}
             }
 		}
+	
+        //First lets create the bdt_file's* and flows for training
 
-//                if(tagToFileMap.count(bdt_infos[i].TMVAmethod.sig_train_tag)!=1){
-//                    std::cerr<<"ERROR! the signal training tag "<<bdt_infos[i].TMVAmethod.sig_train_tag<<" is not in the bdt_files list!"<<std::endl;
-//                    exit(EXIT_FAILURE);
-//                }
-//                if(tagToFileMap.count(bdt_infos[i].TMVAmethod.sig_test_tag)!=1){
-//                    std::cerr<<"ERROR! the signal testing tag "<<bdt_infos[i].TMVAmethod.sig_test_tag<<" is not in the bdt_files list!"<<std::endl;
-//                    exit(EXIT_FAILURE);
-//                }
-//                if(tagToFileMap.count(bdt_infos[i].TMVAmethod.bkg_train_tag)!=1){
-//                    std::cerr<<"ERROR! the bkg training tag "<<bdt_infos[i].TMVAmethod.bkg_train_tag<<" is not in the bdt_files list!"<<std::endl;
-//                    exit(EXIT_FAILURE);
-//                }
-//                if(tagToFileMap.count(bdt_infos[i].TMVAmethod.bkg_test_tag)!=1){
-//                    std::cerr<<"ERROR! the bkg testing tag "<<bdt_infos[i].TMVAmethod.bkg_test_tag<<" is not in the bdt_files list!"<<std::endl;
-//                    exit(EXIT_FAILURE);
-//                }
+std::cout<<__LINE__<<std::endl;
+        for(auto &f: bdt_files){//prepare EntryList;
+            f->calcBaseEntryList(analysis_tag);
+        }
+std::cout<<__LINE__<<std::endl;
 
-
-        for(int i=0; i< bdt_infos.size(); i++){
-
-            if(!(which_bdt==i || which_bdt==-1)) continue;
-
-            bdt_file * training_signal = tagToFileMap[bdt_infos[i].TMVAmethod.sig_train_tag]; 
-            bdt_file * testing_signal = tagToFileMap[bdt_infos[i].TMVAmethod.sig_test_tag]; 
-            bdt_file * training_background = tagToFileMap[bdt_infos[i].TMVAmethod.bkg_train_tag]; 
-            bdt_file * testing_background = tagToFileMap[bdt_infos[i].TMVAmethod.bkg_test_tag]; 
+        for(int jndex =0; jndex< bdt_infos.size(); jndex++){
+			bdt_info cur_binfo = bdt_infos[jndex];
+std::cout<<__LINE__<<std::endl;
+            if(!(which_bdt==jndex || which_bdt==-1)) continue;
+std::cout<<__LINE__<<std::endl;
+            bdt_file * training_signal = tagToFileMap[cur_binfo.sig_train_tag]; 
+            bdt_file * testing_signal = tagToFileMap[cur_binfo.sig_test_tag]; 
+            bdt_file * training_background = tagToFileMap[cur_binfo.bkg_train_tag]; 
+            bdt_file * testing_background = tagToFileMap[cur_binfo.bkg_test_tag]; 
 
 			gadget_buildfolder(analysis_tag);
 
-            if(bdt_infos[i].TMVAmethod.str=="XGBoost"){
+std::cout<<__LINE__<<std::endl;
+            if(cur_binfo.str=="XGBoost"){
 
-                //This is NAF, need to save it and not repeat
-				std::string sig_test_cut = bdt_infos[i].TMVAmethod.sig_test_cut;
-				std::string bkg_test_cut = bdt_infos[i].TMVAmethod.bkg_test_cut;
+                convertToLibSVMTT(analysis_tag+"/", cur_binfo, training_signal, testing_signal, cur_binfo.sig_test_cut , training_background, testing_background, cur_binfo.bkg_test_cut);
+                bdt_XGtrain(analysis_tag+"/", cur_binfo);
 
-                convertToLibSVMTT(analysis_tag+"/", bdt_infos[i], training_signal, testing_signal, sig_test_cut , training_background, testing_background, bkg_test_cut);
-                bdt_XGtrain(analysis_tag+"/", bdt_infos[i]);
+            }else if(cur_binfo.TMVAmethod.str=="TMVA"){
 
-            }else if(bdt_infos[i].TMVAmethod.str=="TMVA"){
-
-                bdt_train(bdt_infos[i], training_signal, testing_signal, training_background, testing_background);
-                plot_train(bdt_infos[i], training_signal, testing_signal, training_background, testing_background);
+                bdt_train(cur_binfo, training_signal, testing_signal, training_background, testing_background);
+                plot_train(cur_binfo, training_signal, testing_signal, training_background, testing_background);
             }
 
         }
@@ -682,93 +556,17 @@ int main (int argc, char *argv[]){
     }    else if(mode_option == "datamc"){
 
 		gadget_buildfolder( mode_option);
-//        TFile * ftest = new TFile(("test+"+analysis_tag+".root").c_str(),"recreate");//new root file to store histograms
-//        bdt_stack *histogram_stack = new bdt_stack(analysis_tag+"_datamc");
-//        histogram_stack->plot_pot = onbeam_data_file->pot;//Pot based on onbeam data;
-//
-//        for(size_t f =0; f< stack_bdt_files.size(); ++f){//stack up plots that is not on top
-//            if(stack_bdt_files[f]->is_data) continue;
-//            if(!plotOnTopMap[stack_bdt_files[f]] ){
-//                histogram_stack->addToStack(stack_bdt_files[f]);
-//                std::cout<<"adding to stack ON BOTTOM: "<<stack_bdt_files[f]->tag<<std::endl;
-//            }
-//        }
-//
-//        for(size_t f =0; f< stack_bdt_files.size(); ++f){//add plot that is on top;
-//            if(stack_bdt_files[f]->is_data) continue;
-//			if(plotOnTopMap[stack_bdt_files[f]] ){
-//				histogram_stack->addToStack(stack_bdt_files[f],true);
-//                std::cout<<"adding to stack ON BOTTOM (Check, TOP?): "<<stack_bdt_files[f]->tag<<std::endl;
-//            }
-//        }
-
-//			bdt_datamc datamc(onbeam_data_file, histogram_stack, analysis_tag+"_datamc");//last element of histogram_stack is signal
-//			datamc.setPlotStage(which_stage);//set through -s option;
-
-//		if(true){//Use this for datamc;
-			//prepare input variables for the plotStacks function;
-
-//			std::vector<bdt_variable> use_vars;
-
 			if(number>-1){//a specific variable
-//				use_vars = {vars.at(number)};
-				
 				//do systematics
 				if(true&&use_vars[0].has_covar){
 
 					sysConfig.setStageHash(which_stage, stack_bdt_files[0],fbdtcuts);
-
 					sysConfig.InitSys({use_vars[0]}, systematics);//prepare 1dhist, save them in systematics
-
 				}
-
-			}else{//all varaibles;
-//				for(auto &v: vars){//load variables
-//					if(which_group == -1 || which_group == v.cat){
-//						use_vars.push_back(v);
-//					}
-//				}
 			}
-
-//			if(which_bdt>-1){//a bdt is specified
-//				use_vars = bdt_infos[which_bdt].train_vars;
-//			}
-
 //			datamc.plotStacks(ftest, use_vars, fbdtcuts, bdt_infos);
 			real_datamc->plotStacksSys(use_vars, fbdtcuts, bdt_infos, systematics);
-//		}
 
-
-//        if(false){//do the same thing with above if statement
-//            if(number != -1){//number is defined as a specific variable
-//                bdt_datamc datamc(onbeam_data_file, histogram_stack, analysis_tag+"_datamc");	
-//                datamc.setPlotStage(which_stage);                
-//
-//                std::vector<bdt_variable> tmp_var = {vars.at(number)};
-//                datamc.plotStacks(ftest,  tmp_var , fbdtcuts, bdt_infos);
-//                //datamc.plotEfficiency(tmp_var,fbdtcuts,1,2);
-//            }else{
-//
-//                std::vector<bdt_variable> use_vars;
-//                for(auto &v: vars){
-//                    if(which_group == -1 || which_group == v.cat){
-//                        use_vars.push_back(v);
-//                    }
-//                }
-//
-//                bdt_datamc real_datamc(onbeam_data_file, histogram_stack, analysis_tag+"_datamc");//histogram_stack becomes mc_stack;
-//                real_datamc->setPlotStage(which_stage);                
-//
-//                if(which_bdt==-1){//the index of bdt's not specific
-//                    real_datamc->plotStacks(ftest, use_vars, fbdtcuts, bdt_infos);
-//                    //real_datamc->plotEfficiency(vars,fbdtcuts,1,2);
-//                }else{
-//                    real_datamc->plotStacks(ftest, bdt_infos[which_bdt].train_vars, fbdtcuts, bdt_infos);
-//
-//				}
-//                    //    real_datamc->plotEfficiency(bdt_infos[which_bdt].train_vars,fbdtcuts,1,2);
-//            }
-//        }
     }
     else if(mode_option == "var2D"){
 		gadget_buildfolder( mode_option);

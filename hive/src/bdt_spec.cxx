@@ -435,125 +435,125 @@ THStack* bdt_stack::getStack(bdt_variable var, int level, double cut1, double cu
 
 
 int bdt_stack::plotStacks(TFile *ftest, std::vector<bdt_variable> vars, double c1, double c2){
-
-    ftest->cd();
-
-    double hatch_width =  gStyle->GetHatchesLineWidth();
-    double hatch_space =  gStyle->GetHatchesSpacing(); 
-
-    std::vector<std::string> stage_names = {"Topological Selection","Pre-Selection Cuts","Cosmic BDT Cut","BNB BDT cut"};
-    //Loop over all stages
-    for(int s = 0; s< 4; s++){
-        std::cout<<"On stage: "<<s<<std::endl;
-        //First set the files at this stage
-        for(auto &f: this->stack){
-            std::cout<<"Calculating any necessary EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
-            if(s==2) f->calcCosmicBDTEntryList(c1, c2);
-            if(s==3) f->calcBNBBDTEntryList(c1, c2);
-            std::cout<<"Setting up EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
-            f->setStageEntryList(s);
-
-            //Also usable on BNBCosmics
-            if(s==3 && false && f->tag == "NCPi0Cosmics") f->tvertex->Scan("run_number:subrun_number:event_number:reco_nuvertx:reco_nuverty:reco_nuvertz:reco_track_vertdirx[0]:reco_track_vertdiry[0]:reco_track_vertdirz[0]:reco_shower_startx[0]:reco_shower_starty[0]:reco_shower_startz[0]:reco_shower_dirx[0]:reco_shower_diry[0]:reco_shower_dirz[0]");
-        }	
-        std::cout<<"Done with computations on TTrees and bdt_stacks"<<std::endl;
-
-
-        //And all variables in the vector var
-        for(auto &var: vars){
-            std::cout<<"Starting on variable "<<var.name<<std::endl;
-            TCanvas *cobs = new TCanvas(("can_"+var.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var.safe_name+"_stage_"+std::to_string(s)).c_str(),1800,1600);
-            //cobs->Divide(2,2,0.0025,0.0000001);
-
-            THStack *stk = (THStack*)this->getEntryStack(var,s);
-            TH1 * tsum = (TH1*)this->getEntrySum(var,s);
-
-            tsum->SetMarkerSize(0);
-
-            cobs->cd();
-            std::cout<<"hatch width/spacing = "<<hatch_width<<"/"<<hatch_space<<std::endl;
-            //gStyle->SetHatchesLineWidth(1);
-            //gStyle->SetHatchesSpacing(hatch_space);
-
-            stk->Draw("hist");
-            stk->SetTitle("");
-            stk->GetXaxis()->SetTitle(var.unit.c_str());
-            stk->GetYaxis()->SetTitle("Events");
-            stk->GetYaxis()->SetTitleOffset(1.5);
-            double max_scale = 1.35;
-            if(s == 3){
-                max_scale = 2.0;
-            }
-            if (s==2){
-                max_scale = 1.85;
-            }
-            stk->SetMaximum(tsum->GetMaximum()*max_scale);
-            TLegend *l3 = new TLegend(0.11,0.70,0.89,0.89);
-            //tsum->DrawCopy("Same E2"); 
-            //gStyle->SetHatchesLineWidth(2);
-            // gStyle->SetHatchesSpacing(1);
-
-            tsum->DrawCopy("Same E2");
-            TH1 *tmp_tsum = (TH1*)tsum->Clone(("tmp_tsum"+std::to_string(s)).c_str());
-
-            tsum->SetFillStyle(0);
-            tsum->Draw("hist same");
-
-            //	tsum->DrawCopy("Same E1"); tsum->SetFillStyle(0);tsum->Draw("hist same");
-            for(auto &f: this->stack){
-                double Nevents = f->GetEntries()*(plot_pot/f->pot )*f->scale_data;
-
-                cobs->cd(s);
-                auto h1 = new TH1F(("tmp_"+std::to_string(s)+"_"+var.name+f->tag).c_str(),"TLegend Example",200,-10,10);
-                h1->SetFillStyle(f->fillstyle);
-                h1->SetFillColor(f->col);
-                h1->SetLineColor(kBlack);
-                l3->AddEntry(h1,("#splitline{"+f->plot_name+"}{"+to_string_prec(Nevents,2)+"}").c_str(),"f");
-                //l3->AddEntry(h1,(f->plot_name).c_str(),"f");
-
-            }
-            l3->AddEntry(tmp_tsum,"MC Stats Only Error", "f");
-            l3->Draw();
-            l3->SetLineColor(kWhite);
-            l3->SetLineWidth(0);
-            l3->SetFillStyle(0);
-            l3->SetTextSize(0.03);
-            l3->SetNColumns(2);
-
-            TLatex pottex;
-            pottex.SetTextSize(0.045);
-            pottex.SetTextAlign(13);  //align at top
-            pottex.SetNDC();
-            std::string pot_draw = this->stack[0]->topo_name+" "+to_string_prec(plot_pot/1e20,1)+"e20 POT";
-
-            //pottex.DrawLatex(.60,.64, pot_draw.c_str());
-            pottex.DrawLatex(.6,.69, pot_draw.c_str());
-
-            TText *tbdt2 = drawPrelim(0.11,0.91,0.035,"MicroBooNE Simulation - In Progress");
-            tbdt2->Draw();
-
-
-            //TText *titbdt2 = drawPrelim(0.91, 0.91, 0.035, stage_names.at(s).c_str());
-            //TText *titbdt2 = drawPrelim(0.48, 0.6, 0.05, stage_names.at(s).c_str());
-            //titbdt2->SetTextAlign(10);
-            //titbdt2->Draw();
-
-            //cobs->Write();
-            cobs->SaveAs(("stack/"+this->name+"_"+var.safe_unit+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
-
-            delete cobs;
-            delete stk;
-            delete tsum;
-            delete l3;
-
-
-
-        }
-    }
-
-
-
-    return 0;
+//	
+//    ftest->cd();
+//
+//    double hatch_width =  gStyle->GetHatchesLineWidth();
+//    double hatch_space =  gStyle->GetHatchesSpacing(); 
+//
+//    std::vector<std::string> stage_names = {"Topological Selection","Pre-Selection Cuts","Cosmic BDT Cut","BNB BDT cut"};
+//    //Loop over all stages
+//    for(int s = 0; s< 4; s++){
+//        std::cout<<"On stage: "<<s<<std::endl;
+//        //First set the files at this stage
+//        for(auto &f: this->stack){
+//            std::cout<<"Calculating any necessary EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
+//            if(s==2) f->calcCosmicBDTEntryList(c1, c2);
+//            if(s==3) f->calcBNBBDTEntryList(c1, c2);
+//            std::cout<<"Setting up EntryLists for "<<f->tag<<" On stage "<<s<<"."<<std::endl;
+//            f->setStageEntryList(s);
+//
+//            //Also usable on BNBCosmics
+//            if(s==3 && false && f->tag == "NCPi0Cosmics") f->tvertex->Scan("run_number:subrun_number:event_number:reco_nuvertx:reco_nuverty:reco_nuvertz:reco_track_vertdirx[0]:reco_track_vertdiry[0]:reco_track_vertdirz[0]:reco_shower_startx[0]:reco_shower_starty[0]:reco_shower_startz[0]:reco_shower_dirx[0]:reco_shower_diry[0]:reco_shower_dirz[0]");
+//        }	
+//        std::cout<<"Done with computations on TTrees and bdt_stacks"<<std::endl;
+//
+//
+//        //And all variables in the vector var
+//        for(auto &var: vars){
+//            std::cout<<"Starting on variable "<<var.name<<std::endl;
+//            TCanvas *cobs = new TCanvas(("can_"+var.safe_name+"_stage_"+std::to_string(s)).c_str(),("can_"+var.safe_name+"_stage_"+std::to_string(s)).c_str(),1800,1600);
+//            //cobs->Divide(2,2,0.0025,0.0000001);
+//
+//            THStack *stk = (THStack*)this->getEntryStack(var,s);
+//            TH1 * tsum = (TH1*)this->getEntrySum(var,s);
+//
+//            tsum->SetMarkerSize(0);
+//
+//            cobs->cd();
+//            std::cout<<"hatch width/spacing = "<<hatch_width<<"/"<<hatch_space<<std::endl;
+//            //gStyle->SetHatchesLineWidth(1);
+//            //gStyle->SetHatchesSpacing(hatch_space);
+//
+//            stk->Draw("hist");
+//            stk->SetTitle("");
+//            stk->GetXaxis()->SetTitle(var.unit.c_str());
+//            stk->GetYaxis()->SetTitle("Events");
+//            stk->GetYaxis()->SetTitleOffset(1.5);
+//            double max_scale = 1.35;
+//            if(s == 3){
+//                max_scale = 2.0;
+//            }
+//            if (s==2){
+//                max_scale = 1.85;
+//            }
+//            stk->SetMaximum(tsum->GetMaximum()*max_scale);
+//            TLegend *l3 = new TLegend(0.11,0.70,0.89,0.89);
+//            //tsum->DrawCopy("Same E2"); 
+//            //gStyle->SetHatchesLineWidth(2);
+//            // gStyle->SetHatchesSpacing(1);
+//
+//            tsum->DrawCopy("Same E2");
+//            TH1 *tmp_tsum = (TH1*)tsum->Clone(("tmp_tsum"+std::to_string(s)).c_str());
+//
+//            tsum->SetFillStyle(0);
+//            tsum->Draw("hist same");
+//
+//            //	tsum->DrawCopy("Same E1"); tsum->SetFillStyle(0);tsum->Draw("hist same");
+//            for(auto &f: this->stack){
+//                double Nevents = f->GetEntries()*(plot_pot/f->pot )*f->scale_data;
+//
+//                cobs->cd(s);
+//                auto h1 = new TH1F(("tmp_"+std::to_string(s)+"_"+var.name+f->tag).c_str(),"TLegend Example",200,-10,10);
+//                h1->SetFillStyle(f->fillstyle);
+//                h1->SetFillColor(f->col);
+//                h1->SetLineColor(kBlack);
+//                l3->AddEntry(h1,("#splitline{"+f->plot_name+"}{"+to_string_prec(Nevents,2)+"}").c_str(),"f");
+//                //l3->AddEntry(h1,(f->plot_name).c_str(),"f");
+//
+//            }
+//            l3->AddEntry(tmp_tsum,"MC Stats Only Error", "f");
+//            l3->Draw();
+//            l3->SetLineColor(kWhite);
+//            l3->SetLineWidth(0);
+//            l3->SetFillStyle(0);
+//            l3->SetTextSize(0.03);
+//            l3->SetNColumns(2);
+//
+//            TLatex pottex;
+//            pottex.SetTextSize(0.045);
+//            pottex.SetTextAlign(13);  //align at top
+//            pottex.SetNDC();
+//            std::string pot_draw = this->stack[0]->topo_name+" "+to_string_prec(plot_pot/1e20,1)+"e20 POT";
+//
+//            //pottex.DrawLatex(.60,.64, pot_draw.c_str());
+//            pottex.DrawLatex(.6,.69, pot_draw.c_str());
+//
+//            TText *tbdt2 = drawPrelim(0.11,0.91,0.035,"MicroBooNE Simulation - In Progress");
+//            tbdt2->Draw();
+//
+//
+//            //TText *titbdt2 = drawPrelim(0.91, 0.91, 0.035, stage_names.at(s).c_str());
+//            //TText *titbdt2 = drawPrelim(0.48, 0.6, 0.05, stage_names.at(s).c_str());
+//            //titbdt2->SetTextAlign(10);
+//            //titbdt2->Draw();
+//
+//            //cobs->Write();
+//            cobs->SaveAs(("stack/"+this->name+"_"+var.safe_unit+"_stage_"+std::to_string(s)+".pdf").c_str(),"pdf");
+//
+//            delete cobs;
+//            delete stk;
+//            delete tsum;
+//            delete l3;
+//
+//
+//
+//        }
+//    }
+//
+//
+//
+//    return 0;
 }
 
 

@@ -118,24 +118,37 @@ class bdt_file{
         std::vector<std::string> friend_names;
         int numberofevents_raw;//before POT scaling?
 
+		//items done in hive.cxx
+        TEntryList * topological_list;
+        TEntryList * precut_list;
 
 		//function
 		//constructor;
 		bdt_file(std::string ininput_root, std::string in_tag)
 		:
 		input_root(ininput_root.c_str()),
-		tag(in_tag){
-		
-		
-		};
+		tag(in_tag){};
 
         ~bdt_file();
+
+
+        void calcBaseEntryList(std::string);
 
 		//copy constructor forbdt_sys; THIS CAUSE LINKING PROBLEM...
 //		bdt_file( const bdt_file& copy);
 
 		void SetDefaultAttributes();
 		
+		
+		//do these in hive.cxx;
+		std::vector< std::string > stage_cuts;
+		//out this, use new variable above
+        bdt_flow flow;
+
+
+
+
+
 		//CHECK to do;
 		void outputRoot(int stage);
 
@@ -145,10 +158,6 @@ class bdt_file{
         TH2* getTH2(bdt_variable varx, bdt_variable vary, std::string cuts, std::string nam, double plot_POT);
 
         unsigned long jenkins_hash(std::string key);
-
-
-
-
 
 
 
@@ -198,10 +207,6 @@ class bdt_file{
         TTree *teventweight;
         TTree *tslice;
 
-        std::string topological_list_name;
-        TEntryList * topological_list;
-        std::string precut_list_name;
-        TEntryList * precut_list;
         std::string cosmicbdt_list_name;
         TEntryList * cosmicbdt_list;
         std::string bnbbdt_list_name;
@@ -223,16 +228,11 @@ class bdt_file{
 
         int setStageEntryList(int j);
         int setStageEntryList(int j, double, double);
-        int calcPrecutEntryList();
-        int calcTopologicalEntryList();
-        int calcCosmicBDTEntryList(double,double);
-        int calcBNBBDTEntryList(double,double);
         int calcBDTEntryList(int stage, std::vector<double> bdt_cuts);
 
         int scanStage(int which_stage, std::vector<double> bdt_cuts , std::string scan_string);
 
 
-        int calcBaseEntryList(std::string);
         double data_tor860_wcut;
         double data_spills_E1DCNT_wcut;
         double ext_spills_ext;
@@ -252,7 +252,6 @@ class bdt_file{
 
         double scale_data;
 
-        bdt_flow flow;
         bdt_variable getBDTVariable(bdt_info info);
         bdt_variable getBDTVariable(bdt_info info, std::string bin);
         //legacy code, and damned lazy too
