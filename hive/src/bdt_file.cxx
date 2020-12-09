@@ -59,10 +59,12 @@ void bdt_file::SetDefaultAttributes(){
 	definition = "1";
 	plot_name = tag;
 	is_data = false;
-	is_stack = false;
 	is_signal = false;
 	is_train = false;
 	is_systematic = false;
+
+	is_stack = false;
+	bdt_on_top = false;
 
 	group = -1;
 	pot = 0;

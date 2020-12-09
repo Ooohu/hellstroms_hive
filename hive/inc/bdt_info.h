@@ -10,12 +10,12 @@
 
 /******** Root includes *****/
 
-struct bdt_info{
+class bdt_info{
 
 	public:
 	
 	//some convientant labels
-	TMVA::Types::EMVA  type;
+	TMVA::Types::EMVA type;
 	std::string identifier;
 	std::string name;	
 	std::string binning;
@@ -30,6 +30,12 @@ struct bdt_info{
     std::string sig_test_tag;
     std::string sig_test_cut;
 
+
+    double scan_max;
+    double scan_min;
+    double scan_steps;
+
+//BELOW ARE NOT ASSIGNED YET;
 
 	std::string base_cuts ;
  	std::string pre_cuts;
@@ -63,9 +69,6 @@ struct bdt_info{
     std::string training_cut;
     double training_fraction;
 
-    double scan_max;
-    double scan_min;
-    double scan_steps;
 
     std::string topological_name;
     std::string topological_definition;

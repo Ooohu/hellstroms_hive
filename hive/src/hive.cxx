@@ -75,7 +75,7 @@ void gadget_buildfolder( std::string name){
 int main (int argc, char *argv[]){
 
     //This is a standardized location on /pnfs/ that everyone can use. 
-    std::string dir = "(this dir should be changed)";
+    std::string dir = "(this dir will be updated)";
     std::string mydir = "/uboone/app/users/amogan/wes_ncpi0_filter/workdir/";
 
     std::string mode_option = "enter_a_mode_please"; 
@@ -218,53 +218,97 @@ int main (int argc, char *argv[]){
     //Most TMVA arguments are loaded in here via XML
     std::cout<<"Getting xml variables"<<std::endl;
     MVALoader XMLconfig(xml);
-    std::vector<method_struct> TMVAmethods;//  = XMLconfig.GetMethods(); 
+	std::cout<<"XML loaded!!"<<std::endl;
+//    std::vector<method_struct> TMVAmethods;//  = XMLconfig.GetMethods(); 
+
+	//read members from XMLconfig;
     std::string analysis_tag = XMLconfig.analysis_tag;
-
-    std::vector<double> fbdtcuts = XMLconfig.bdt_cuts;
-    if(fbdtcuts.size()==0){
-        std::cout<<"No BDT cuts set, so setting all to 0 for now"<<std::endl;
-        fbdtcuts.resize(TMVAmethods.size(),0);
-    }else{
-        std::cout<<"BDT cuts have been loaded and set as: "<<std::endl;
-        for(auto &c: fbdtcuts)std::cout<<c<<" ";
-        std::cout<<std::endl;
-    }
-
-
     dir = XMLconfig.inputdir;
+	int verbosity = XMLconfig.verbosity;
     std::cout<<"Core File dir set as "<<dir<<std::endl;
 
-    std::cout<<TMVAmethods.size()<<" different BDT's: "<<std::endl;
-    std::vector<bdt_info> bdt_infos;
-    for(int k=0; k< TMVAmethods.size(); k++){
-        bdt_infos.push_back( bdt_info(analysis_tag, TMVAmethods[k]));
-        std::cout<<"["<<k<<"] BDT is on "<<bdt_infos.back().name;
-        std::cout<<" with "<<bdt_infos.back().train_vars.size()<<" training variables."<<std::endl;
-    }
-	std::cout<<std::endl;
-
-    //This is a vector each containing a precut, they are all added together to make the whole "precut"
-    std::vector<std::string> vec_precuts = TMVAmethods[0].precuts;
-    //Get all the variables you want to use	
-    std::vector<bdt_variable> vars = TMVAmethods[0].bdt_all_vars;
     std::string postcuts = "1";  //We dont currently use postcuts
 
+    std::vector<bdt_info> bdt_infos		= XMLconfig.GetBDTInfo();
+    std::vector<std::string> vec_precuts= XMLconfig.GetPreCuts();
+    std::vector<bdt_variable> vars		= XMLconfig.GetVar();
+    std::string topological_cuts		= XMLconfig.GetCuts(0);//0-topo, 1- all precuts, 2 - 1st bdt cut...
+    std::vector<bdt_file*> bdt_files	= XMLconfig.GetFiles();//all files to be fed into bdt;
+    std::vector<double> fbdtcuts;  //CHECK, big move!! 
 
-    std::string topological_cuts = TMVAmethods[0].topological_definition;
+	std::vector<std::string> stage_cuts;
+	std::string basic_str = "1";
+	for( int index = 0; index < XMLconfig.GetStagesCount(); index ++){
+		if(index>1+bdt_infos.size() ) break;//no more bdts can be used; thats it
+		if(index>1){ //bdt
+			std::string BDTVariable = bdt_infos[index-2].identifier + "_mva";//BDT Variable
+			basic_str+= "&&" + BDTVariable + ">" + XMLconfig.GetCuts(index);// <bdt_tag>_mva;
+		} else{//topo, precuts;
+			basic_str+= "&&" + XMLconfig.GetCuts(index);
+		}
+		if(verbosity>1) std::cout<<" Stage "<<index<<"cut: "<< basic_str<<std::endl; 
+		stage_cuts.push_back(basic_str);
+	}
+//    if(fbdtcuts.size()==0){
+//        std::cout<<"No BDT cuts set, so setting all to 0 for now"<<std::endl;
+//        fbdtcuts.resize(TMVAmethods.size(),0);
+//    }else{
+//        std::cout<<"BDT cuts have been loaded and set as: "<<std::endl;
+//        for(auto &c: fbdtcuts)std::cout<<c<<" ";
+//        std::cout<<std::endl;
+//    }
+
+
+
+//    std::cout<<TMVAmethods.size()<<" different BDT's: "<<std::endl;
+//    for(int k=0; k< TMVAmethods.size(); k++){
+//        bdt_infos.push_back( bdt_info(analysis_tag, TMVAmethods[k]));
+//        std::cout<<"["<<k<<"] BDT is on "<<bdt_infos.back().name;
+//        std::cout<<" with "<<bdt_infos.back().train_vars.size()<<" training variables."<<std::endl;
+//    }
+//	std::cout<<std::endl;
+
+    //This is a vector each containing a precut, they are all added together to make the whole "precut"
+    //Get all the variables you want to use	
+
+
     //**** Setting up bdt_files NWO style
 
-    std::vector<bdt_file*> bdt_files;//all files to be fed into bdt;
 
+	//among all files, we can separate them into tree categories
     std::vector<bdt_file*> signal_bdt_files;//for -o sig
     std::vector<bdt_file*> bkg_bdt_files;//for -o sig
-
     std::vector<bdt_file*> training_bdt_files;
+    bdt_file * signal;
+	bdt_file * onbeam_data_file;
+	for( auto cur_file : bdt_files){
+		if(cur_file->is_systematic){ 
+			continue;
+		}
+		if(verbosity > 1) std::cout<<" File "<<cur_file->tag<<" is for ";
+
+		if(cur_file->is_train){ 
+			training_bdt_files.push_back(cur_file);
+			if(verbosity>1) std::cout<<" training "<<std::endl;
+			continue;
+		}
+
+		if(cur_file->is_signal){ 
+		signal_bdt_files.push_back(cur_file);
+		signal = cur_file;
+			if(verbosity>1) std::cout<<" signal "<<std::endl;
+		} else if(cur_file->is_data){
+			onbeam_data_file = cur_file;
+			if(verbosity>1) std::cout<<" data "<<std::endl;
+		} else{
+			bkg_bdt_files.push_back(cur_file);
+			if(verbosity>1) std::cout<<" background "<<std::endl;
+		}
+
+	}
 
 //    std::vector<bdt_file*> validate_files;//"valid" mode
 
-    bdt_file * signal;
-    bdt_file * onbeam_data_file;
 
     std::map<std::string, bdt_file*> tagToFileMap;
     std::map<bdt_file*,bool> plotOnTopMap;
@@ -284,111 +328,76 @@ int main (int argc, char *argv[]){
     std::cout<<"================ Loading all samples for this analysis ========================="<<std::endl;
     std::cout<<"================================================================================"<<std::endl;
 
-    for(size_t f = 0; f < XMLconfig.GetNFiles(); ++f){//load up ROOT files!
+    for(size_t index = 0; index < bdt_files.size(); ++index){//load up ROOT files!
+		bdt_file* cur_file = bdt_files[index];
+		if(verbosity>0){ 
+		std::cout<<"["<<index<<"] tag:"<<cur_file->tag;
+		if(cur_file->is_systematic) std::cout<<", a systematic sample ";
+		std::cout<<std::endl;
+		}
 
-//        std::cout<<"======= Starting bdt_file number "<<f<<" (0 is the first one) with tag -- "<<XMLconfig.bdt_tags[f]<<"====="<<std::endl;
-        //First build a bdt_flow for this file.
-		//CHECK, print out bdt_file stuff, instead of XMLconfig stuff;
-		std::cout<<"["<<f<<"] tag:"<<XMLconfig.bdt_tags[f]<<std::endl;
-        std::string def = "1";
-        for(int i=0; i< XMLconfig.bdt_definitions[f].size(); ++i){
-            def += "&&" + XMLconfig.bdt_definitions[f][i];
-        }
-
-        //If its a training file we are working with, add the training definitions 
-        if(XMLconfig.bdt_is_training_signal[f]){//with  <training> sectionin the xml;
-            for(int i=0; i< XMLconfig.bdt_training_cuts[f].size(); ++i){
-                def += "&&" + XMLconfig.bdt_training_cuts[f][i];
-            }
-        }
-
-        std::cout<<"\tDefinition: "<<def<<std::endl;
+		std::string def = cur_file->definition;
+        if(verbosity>1) std::cout<<"\tDefinition: "<<def<<std::endl;
 
         bdt_flow analysis_flow(topological_cuts, def, 	vec_precuts,	postcuts,	bdt_infos);
 
-        std::cout<<" -- Filename "<<XMLconfig.bdt_filenames[f]<<" subdir "<<XMLconfig.bdt_dirs[f]<<std::endl;
-        std::cout<<" -- ";XMLconfig.bdt_cols[f]->Print();std::cout<<" and hist style "<<XMLconfig.bdt_hist_styles[f]<<" fillstyle "<<XMLconfig.bdt_fillstyles[f]<<std::endl;
-        std::cout<<" -- With the following Definition Cuts: "<<std::endl;
-        for(int i=0; i< XMLconfig.bdt_definitions[f].size(); ++i){
-            std::cout<<" -----> "<<XMLconfig.bdt_definitions[f][i]<<std::endl;
-        }
+//        std::cout<<" -- Filename "<<XMLconfig.bdt_filenames[f]<<" subdir "<<XMLconfig.bdt_dirs[f]<<std::endl;
+//        std::cout<<" -- ";XMLconfig.bdt_cols[f]->Print();std::cout<<" and hist style "<<XMLconfig.bdt_hist_styles[f]<<" fillstyle "<<XMLconfig.bdt_fillstyles[f]<<std::endl;
+//        std::cout<<" -- With the following Definition Cuts: "<<std::endl;
+//        for(int i=0; i< XMLconfig.bdt_definitions[f].size(); ++i){
+//            std::cout<<" -----> "<<XMLconfig.bdt_definitions[f][i]<<std::endl;
+//        }
 
 		//load up all bdt files
 
 //		bdt_files.push_back( new bdt_file(f, XMLconfig, analysis_flow));
 //        bdt_files.back()->addPlotName(XMLconfig.bdt_plotnames[f]);
-        tagToFileMap[XMLconfig.bdt_tags[f]] = bdt_files.back();
+        tagToFileMap[cur_file->tag] = cur_file;
 
 //        bool incl_in_stack = true;
 
-        if(XMLconfig.bdt_scales[f] != 1.0){
-            std::cout<<" -- Scaling "<<XMLconfig.bdt_tags[f]<<" file by a factor of "<<XMLconfig.bdt_scales[f]<<std::endl;
-//            bdt_files.back()->scale_data = XMLconfig.bdt_scales[f];//do this in the bdt_file.cxx
-        }
-
-        if(XMLconfig.bdt_on_top[f]){//specific marks for general bdtfiles
-            plotOnTopMap[bdt_files.back()] = true;
-			std::cout<<" -- This goes on top of the stack plot"<<std::endl;
-        }else{
-            plotOnTopMap[bdt_files.back()] = false;
-        }
+        if(verbosity>1 && cur_file->scale != 1.0) std::cout<<" -- Scaling "<<cur_file->tag<<" file by a factor of "<<cur_file->scale<<std::endl;
+		if(cur_file->bdt_on_top){
+			if(verbosity> 1 ) std::cout<< " -- plot on top "<<std::endl;
+			plotOnTopMap[cur_file] = true;
+		} else {
+				plotOnTopMap[cur_file] = false;
+				}
 
 
-        if(XMLconfig.bdt_is_onbeam_data[f]){
-            std::cout<<" -- Setting as ON beam "<<std::endl;//data with "<<XMLconfig.bdt_onbeam_pot[f]/1e19<<" e19 POT equivalent"<<std::endl;
-//            bdt_files.back()->setAsOnBeamData(XMLconfig.bdt_onbeam_pot[f]); //tor860_wc
-//            incl_in_stack = false;
-            onbeam_data_file = bdt_files.back();
-        }
-
-        if(is_combined) bdt_files.back()->addFriend("output_"+bdt_files.back()->tag ,analysis_tag+"_superMVA.root");//Keng not sure what is this;
+//        if(is_combined) bdt_files.back()->addFriend("output_"+bdt_files.back()->tag ,analysis_tag+"_superMVA.root");//Keng not sure what is this;
 
 
-        if(XMLconfig.bdt_is_offbeam_data[f]){
-            std::cout<<" -- Setting as Off beam data with "<<XMLconfig.bdt_offbeam_spills[f]<<" EXT spills being normalized to "<<XMLconfig.bdt_onbeam_spills[f]<<" BNB spills at a "<<XMLconfig.bdt_onbeam_pot[f]/1e19<<" e19 POT equivalent"<<std::endl;
-//            bdt_files.back()->setAsOffBeamData( XMLconfig.bdt_onbeam_pot[f], XMLconfig.bdt_onbeam_spills[f], XMLconfig.bdt_offbeam_spills[f]);  //onbeam tor860_wcut, on beam spills E1DCNT_wcut, off beam spills EXT)
+ //       if(XMLconfig.bdt_is_offbeam_data[f]){
+ //           std::cout<<" -- Setting as Off beam data with "<<XMLconfig.bdt_offbeam_spills[f]<<" EXT spills being normalized to "<<XMLconfig.bdt_onbeam_spills[f]<<" BNB spills at a "<<XMLconfig.bdt_onbeam_pot[f]/1e19<<" e19 POT equivalent"<<std::endl;
+////            bdt_files.back()->setAsOffBeamData( XMLconfig.bdt_onbeam_pot[f], XMLconfig.bdt_onbeam_spills[f], XMLconfig.bdt_offbeam_spills[f]);  //onbeam tor860_wcut, on beam spills E1DCNT_wcut, off beam spills EXT)
 
-//            bkg_bdt_files.push_back(bdt_files.back());
-        }
+////            bkg_bdt_files.push_back(bdt_files.back());
+ //       }
 
-        if(!bdt_files.back()->is_data && !XMLconfig.bdt_is_training_signal[f]  && !XMLconfig.bdt_is_validate_file[f]){//mark stack_files, signal or bkg;
-            if(XMLconfig.bdt_is_signal[f]){
-                std::cout<<" -- For the purposes of calculting a significance, this is a signal file"<<std::endl;
-				bdt_files[f]->is_signal = true;
-                signal_bdt_files.push_back(bdt_files.back());
-//				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");
-//            f->addFriend("sss_precalc",analysis_tag+"_"+f->tag+"_SSSprecalc.root");
-            }else{
-				bdt_files[f]->is_signal = false;
-                std::cout<<" -- For the purposes of calculting a significance, this is a BKG file"<<std::endl;
-                bkg_bdt_files.push_back(bdt_files.back());
-            }
-        }
-        //Lets collate the training files, these are only used for BDT purposes
-        if(XMLconfig.bdt_is_training_signal[f]){//Mark training files
-//            incl_in_stack = false;
-            training_bdt_files.push_back(bdt_files.back());
-//				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");//CHECK
-        }
+//        if(!bdt_files.back()->is_data && !XMLconfig.bdt_is_training_signal[f]  && !XMLconfig.bdt_is_validate_file[f]){//mark stack_files, signal or bkg;
+//            if(XMLconfig.bdt_is_signal[f]){
+//                std::cout<<" -- For the purposes of calculting a significance, this is a signal file"<<std::endl;
+//				bdt_files[f]->is_signal = true;
+//                signal_bdt_files.push_back(bdt_files.back());
+////				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");
+////            f->addFriend("sss_precalc",analysis_tag+"_"+f->tag+"_SSSprecalc.root");
+//            }else{
+//				bdt_files[f]->is_signal = false;
+//                std::cout<<" -- For the purposes of calculting a significance, this is a BKG file"<<std::endl;
+//                bkg_bdt_files.push_back(bdt_files.back());
+//            }
+////        }
+//        //Lets collate the training files, these are only used for BDT purposes
+//        if(XMLconfig.bdt_is_training_signal[f]){//Mark training files
+////            incl_in_stack = false;
+//            training_bdt_files.push_back(bdt_files.back());
+////				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");//CHECK
+//        }
 		
 		if(false){//add friends
-			if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-3,3,"Nue")==0){ 
-				//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root_Nue_mBtouB_weights.root");
-				//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights.root");
-				//			bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights_1499.root");
-				//		    bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Nue_3_weights_1699.root");
-				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/weights_Nue_1699.root");
-			}
-
-			if(bdt_files[f]->tag.compare("fulloscTrain")==0){ 
-				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/fullosc_step_weights.root");
-			}
-			if(bdt_files[f]->tag.compare("FulloscTrain")==0){ 
-				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/weights/weights_Nue_fullosc.root");
-			}
-
-			if(bdt_files[f]->tag.compare(bdt_files[f]->tag.size()-4,4,"Numu")==0){ 
-				bdt_files[f]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Numu_3_weights_1499.root");
+			if(bdt_files[index]->tag.compare(bdt_files[index]->tag.size()-4,4,"Numu")==0){ 
+				bdt_files[index]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Numu_3_weights_1499.root");
 			}
 		}
 	//        bdt_files.back()->calcPOT();
@@ -402,17 +411,17 @@ int main (int argc, char *argv[]){
 
  
 		//load Initialize systematic files for each bdt_file
-		for(int sys_index = 0; sys_index < XMLconfig.n_sys;sys_index ++){
-			std::vector<TString > temp_s = XMLconfig.sys_for_files[sys_index];
-			TString this_s = XMLconfig.bdt_tags[f];
-			if( std::find( temp_s.begin(), temp_s.end(), XMLconfig.bdt_tags[f]) != temp_s.end() ){//we want this systematics
-			std::cout<<this_s<<" systematic is inheritated from the bdt_file."<<std::endl;
-//CHECK				systematics.push_back( new bdt_sys(sys_index, f, analysis_flow));
-//				(systematics.back())->setCutStage(which_stage);
-
-			}
-		}
-		std::cout<<std::endl;
+//		for(int sys_index = 0; sys_index < XMLconfig.n_sys;sys_index ++){
+//			std::vector<TString > temp_s = XMLconfig.sys_for_files[sys_index];
+//			TString this_s = XMLconfig.bdt_tags[f];
+//			if( std::find( temp_s.begin(), temp_s.end(), XMLconfig.bdt_tags[f]) != temp_s.end() ){//we want this systematics
+//			std::cout<<this_s<<" systematic is inheritated from the bdt_file."<<std::endl;
+////CHECK				systematics.push_back( new bdt_sys(sys_index, f, analysis_flow));
+////				(systematics.back())->setCutStage(which_stage);
+//
+//			}
+//		}
+//		std::cout<<std::endl;
     }
 		//set systematic enviroments;
 	sysConfig.out_POT = onbeam_data_file->pot;
@@ -425,7 +434,7 @@ int main (int argc, char *argv[]){
 
 
     //The "signal" is whichever signal BDT you define first.
-    signal = signal_bdt_files[0];//only used in "sss"
+//    signal = signal_bdt_files[0];//only used in "sss"
 
 
 
@@ -442,9 +451,10 @@ int main (int argc, char *argv[]){
     std::cout<<" If you see warnings, but havenet yet ran app stage, thats ok!            "<<std::endl;
     std::cout<<"--------------------------------------------------------------------------"<<std::endl;
 
-	if (access((analysis_tag+"entrylists").c_str(),F_OK) == -1){
-		mkdir((analysis_tag+"entrylists").c_str(),0777);//Create a folder for entrylists;
-	}
+	//if (access((analysis_tag+"entrylists").c_str(),F_OK) == -1){
+	//	mkdir((analysis_tag+"entrylists").c_str(),0777);//Create a folder for entrylists;
+	//}
+	gadget_buildfolder( analysis_tag+"entrylists");
 
     for(auto &f: bdt_files){
 
@@ -1171,35 +1181,35 @@ else if (mode_option == "valid"){
 */
 else if(mode_option == "eff"){
 
-	if(which_file == -1)which_file = 1;
-
-	//which_file = 7;//checking ext
-	std::vector<std::string> v_denom = XMLconfig.bdt_definitions[which_file];
-	std::vector<std::string> v_topo = {TMVAmethods[0].topological_definition};//{,"sim_shower_pdg==22","sim_track_pdg==2212","sim_shower_overlay_fraction<0.9","sim_track_overlay_fraction<0.9"};
-
-	if(which_stage==-1)which_stage=0;
-
-	what_pot = 10.1e20;
-
-	//added 1g0p case but need to use -t option
-	bool is0p = false;
-	if (topo_tag == "notrack"){
-		is0p = true;
-	}
-
-	bdt_efficiency(bdt_files[which_file], v_denom, v_topo, vec_precuts, fbdtcuts, what_pot,false,which_stage,analysis_tag, false, is0p);
-
-
-	//specifically for protond/photons pre-topological
-	// bdt_efficiency(bdt_files[which_file], v_denom, v_topo, vec_precuts, fbdtcuts, what_pot,false,which_stage,analysis_tag, true);
-	//normally stops here
-
-	//Ok, this runs now for a full cut
-	// Cut for NC pi0 filter
-	//std::string full_cut = "reco_asso_showers==2 && reco_asso_tracks==1 && reco_vertex_size>0 && (reco_vertex_x > 5.0 && reco_vertex_x < 251 && reco_vertex_y > -112 && reco_vertex_y < 112 && reco_vertex_z > 5 && reco_vertex_z < 1031) && reco_shower_conversion_distance[0]>1 && reco_shower_conversion_distance[1]>1";
-	//bdt_efficiency(bdt_files,full_cut);
-
-
+//	if(which_file == -1)which_file = 1;
+//
+//	//which_file = 7;//checking ext
+//	std::vector<std::string> v_denom = XMLconfig.bdt_definitions[which_file];
+//	std::vector<std::string> v_topo = {TMVAmethods[0].topological_definition};//{,"sim_shower_pdg==22","sim_track_pdg==2212","sim_shower_overlay_fraction<0.9","sim_track_overlay_fraction<0.9"};
+//
+//	if(which_stage==-1)which_stage=0;
+//
+//	what_pot = 10.1e20;
+//
+//	//added 1g0p case but need to use -t option
+//	bool is0p = false;
+//	if (topo_tag == "notrack"){
+//		is0p = true;
+//	}
+//
+//	bdt_efficiency(bdt_files[which_file], v_denom, v_topo, vec_precuts, fbdtcuts, what_pot,false,which_stage,analysis_tag, false, is0p);
+//
+//
+//	//specifically for protond/photons pre-topological
+//	// bdt_efficiency(bdt_files[which_file], v_denom, v_topo, vec_precuts, fbdtcuts, what_pot,false,which_stage,analysis_tag, true);
+//	//normally stops here
+//
+//	//Ok, this runs now for a full cut
+//	// Cut for NC pi0 filter
+//	//std::string full_cut = "reco_asso_showers==2 && reco_asso_tracks==1 && reco_vertex_size>0 && (reco_vertex_x > 5.0 && reco_vertex_x < 251 && reco_vertex_y > -112 && reco_vertex_y < 112 && reco_vertex_z > 5 && reco_vertex_z < 1031) && reco_shower_conversion_distance[0]>1 && reco_shower_conversion_distance[1]>1";
+//	//bdt_efficiency(bdt_files,full_cut);
+//
+//
 }
 
 // Last-minute garbage function I added for NC pi0 filter studies. Ignore
@@ -1378,39 +1388,39 @@ else if(mode_option == "eff2"){
 }else if(mode_option == "recomc"){
 	gadget_buildfolder( mode_option);
 
-    std::vector<int> recomc_cols;
-    for(auto &c: XMLconfig.recomc_cols){
-        recomc_cols.push_back(c->GetNumber());
-    }
-    recomc_cols.push_back(kGray);
-
-    std::vector<std::string> recomc_names = XMLconfig.recomc_names; 
-    recomc_names.push_back("Other");
-
-
-    std::vector<std::string> recomc_cuts = XMLconfig.recomc_defs;
-
-    std::string other = "1";
-    for(auto &c: XMLconfig.recomc_defs){
-        other += "&& !("+c+")";
-    }
-    recomc_cuts.push_back(other);
-
-    bdt_recomc recomc(recomc_names, recomc_cuts, recomc_cols,analysis_tag);
-    recomc.setPlotStage(which_stage);                
-
-    TFile * ftest = new TFile(("test+"+analysis_tag+".root").c_str(),"recreate");
-    int h=0;
-    if(which_file == -1) which_file =0;
-
-    if(number != -1){
-        std::vector<bdt_variable> tmp = {vars.at(number)};
-        recomc.plot_recomc(ftest, bdt_files[which_file], tmp, fbdtcuts,what_pot);
-        return 0;
-    }else{
-        recomc.plot_recomc(ftest, bdt_files[which_file], vars, fbdtcuts,what_pot);
-    }	
-
+//    std::vector<int> recomc_cols;
+//    for(auto &c: XMLconfig.recomc_cols){
+//        recomc_cols.push_back(c->GetNumber());
+//    }
+//    recomc_cols.push_back(kGray);
+//
+//    std::vector<std::string> recomc_names = XMLconfig.recomc_names; 
+//    recomc_names.push_back("Other");
+//
+//
+//    std::vector<std::string> recomc_cuts = XMLconfig.recomc_defs;
+//
+//    std::string other = "1";
+//    for(auto &c: XMLconfig.recomc_defs){
+//        other += "&& !("+c+")";
+//    }
+//    recomc_cuts.push_back(other);
+//
+//    bdt_recomc recomc(recomc_names, recomc_cuts, recomc_cols,analysis_tag);
+//    recomc.setPlotStage(which_stage);                
+//
+//    TFile * ftest = new TFile(("test+"+analysis_tag+".root").c_str(),"recreate");
+//    int h=0;
+//    if(which_file == -1) which_file =0;
+//
+//    if(number != -1){
+//        std::vector<bdt_variable> tmp = {vars.at(number)};
+//        recomc.plot_recomc(ftest, bdt_files[which_file], tmp, fbdtcuts,what_pot);
+//        return 0;
+//    }else{
+//        recomc.plot_recomc(ftest, bdt_files[which_file], vars, fbdtcuts,what_pot);
+//    }	
+//
 
 
     /*

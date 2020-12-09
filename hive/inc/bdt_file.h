@@ -124,7 +124,10 @@ class bdt_file{
 		bdt_file(std::string ininput_root, std::string in_tag)
 		:
 		input_root(ininput_root.c_str()),
-		tag(in_tag){};
+		tag(in_tag){
+		
+		
+		};
 
         ~bdt_file();
 
