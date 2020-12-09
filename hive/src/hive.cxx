@@ -341,20 +341,8 @@ int main (int argc, char *argv[]){
 
         bdt_flow analysis_flow(topological_cuts, def, 	vec_precuts,	postcuts,	bdt_infos);
 
-//        std::cout<<" -- Filename "<<XMLconfig.bdt_filenames[f]<<" subdir "<<XMLconfig.bdt_dirs[f]<<std::endl;
-//        std::cout<<" -- ";XMLconfig.bdt_cols[f]->Print();std::cout<<" and hist style "<<XMLconfig.bdt_hist_styles[f]<<" fillstyle "<<XMLconfig.bdt_fillstyles[f]<<std::endl;
-//        std::cout<<" -- With the following Definition Cuts: "<<std::endl;
-//        for(int i=0; i< XMLconfig.bdt_definitions[f].size(); ++i){
-//            std::cout<<" -----> "<<XMLconfig.bdt_definitions[f][i]<<std::endl;
-//        }
-
-		//load up all bdt files
-
-//		bdt_files.push_back( new bdt_file(f, XMLconfig, analysis_flow));
-//        bdt_files.back()->addPlotName(XMLconfig.bdt_plotnames[f]);
         tagToFileMap[cur_file->tag] = cur_file;
 
-//        bool incl_in_stack = true;
 
         if(verbosity>1 && cur_file->scale != 1.0) std::cout<<" -- Scaling "<<cur_file->tag<<" file by a factor of "<<cur_file->scale<<std::endl;
 		if(cur_file->bdt_on_top){
@@ -363,66 +351,14 @@ int main (int argc, char *argv[]){
 		} else {
 				plotOnTopMap[cur_file] = false;
 				}
-
-
-//        if(is_combined) bdt_files.back()->addFriend("output_"+bdt_files.back()->tag ,analysis_tag+"_superMVA.root");//Keng not sure what is this;
-
-
- //       if(XMLconfig.bdt_is_offbeam_data[f]){
- //           std::cout<<" -- Setting as Off beam data with "<<XMLconfig.bdt_offbeam_spills[f]<<" EXT spills being normalized to "<<XMLconfig.bdt_onbeam_spills[f]<<" BNB spills at a "<<XMLconfig.bdt_onbeam_pot[f]/1e19<<" e19 POT equivalent"<<std::endl;
-////            bdt_files.back()->setAsOffBeamData( XMLconfig.bdt_onbeam_pot[f], XMLconfig.bdt_onbeam_spills[f], XMLconfig.bdt_offbeam_spills[f]);  //onbeam tor860_wcut, on beam spills E1DCNT_wcut, off beam spills EXT)
-
-////            bkg_bdt_files.push_back(bdt_files.back());
- //       }
-
-//        if(!bdt_files.back()->is_data && !XMLconfig.bdt_is_training_signal[f]  && !XMLconfig.bdt_is_validate_file[f]){//mark stack_files, signal or bkg;
-//            if(XMLconfig.bdt_is_signal[f]){
-//                std::cout<<" -- For the purposes of calculting a significance, this is a signal file"<<std::endl;
-//				bdt_files[f]->is_signal = true;
-//                signal_bdt_files.push_back(bdt_files.back());
-////				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");
-////            f->addFriend("sss_precalc",analysis_tag+"_"+f->tag+"_SSSprecalc.root");
-//            }else{
-//				bdt_files[f]->is_signal = false;
-//                std::cout<<" -- For the purposes of calculting a significance, this is a BKG file"<<std::endl;
-//                bkg_bdt_files.push_back(bdt_files.back());
-//            }
-////        }
-//        //Lets collate the training files, these are only used for BDT purposes
-//        if(XMLconfig.bdt_is_training_signal[f]){//Mark training files
-////            incl_in_stack = false;
-//            training_bdt_files.push_back(bdt_files.back());
-////				bdt_files[f]->addFriend("T","/scratch/condor-tmp/klin/data_timing_root/fullosc_step_weights.root");//CHECK
-//        }
 		
 		if(false){//add friends
 			if(bdt_files[index]->tag.compare(bdt_files[index]->tag.size()-4,4,"Numu")==0){ 
 				bdt_files[index]->addFriend("T","/nashome/k/klin/ROOTOperation/2dreweighting/root2_Numu_3_weights_1499.root");
 			}
 		}
-	//        bdt_files.back()->calcPOT();
-	//std::string r1 = "run_number>=5121 && run_number <=5946";
-	//bdt_files.back()->scale( bdt_files.back()->tvertex->GetEntries(r1.c_str())/(double)bdt_files.back()->tvertex->GetEntries() );
-
-
-	//        if(incl_in_stack) stack_bdt_files.push_back(bdt_files.back());
-
-//		if(XMLconfig.bdt_is_validate_file[f]) validate_files.push_back(bdt_files.back());//Mark validate files
-
- 
-		//load Initialize systematic files for each bdt_file
-//		for(int sys_index = 0; sys_index < XMLconfig.n_sys;sys_index ++){
-//			std::vector<TString > temp_s = XMLconfig.sys_for_files[sys_index];
-//			TString this_s = XMLconfig.bdt_tags[f];
-//			if( std::find( temp_s.begin(), temp_s.end(), XMLconfig.bdt_tags[f]) != temp_s.end() ){//we want this systematics
-//			std::cout<<this_s<<" systematic is inheritated from the bdt_file."<<std::endl;
-////CHECK				systematics.push_back( new bdt_sys(sys_index, f, analysis_flow));
-////				(systematics.back())->setCutStage(which_stage);
-//
-//			}
-//		}
-//		std::cout<<std::endl;
     }
+	std::cout<<__LINE__<<std::endl;
 		//set systematic enviroments;
 	sysConfig.out_POT = onbeam_data_file->pot;
 //	sysConfig.setCutStage(which_stage);
