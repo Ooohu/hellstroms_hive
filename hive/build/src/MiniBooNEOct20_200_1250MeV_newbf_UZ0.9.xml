@@ -209,7 +209,7 @@
 <var def = "el.UZ" binning="(10,-1,1)" unit = "cos#theta" type = "d" logplot = "false"  training = "" group = "0" minidef = "el.UZ[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elUZ_bgap0_s1_h15325677860544080736.root" />
 
 <!-- 11 150 MeV binnings, but it has low stat problem at high energy; -->
-<var def = "el.EnuQE" binning="(5, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap25_s1_h15325677860544080736.root"  custombin = "false"/>
+<var def = "el.EnuQE" binning="(5, 200, 1250)" unit = "E_{#nu}^{QE} [MeV]" type = "d" logplot = "false"  training = "" group = "1" minidef = "el.EnuQE[0]" covarfile = "MiniBooNEOct20systematics/finalcov_elEnuQE_bgap210_s1_h15325677860544080736.root"  custombin = "false"/>
 
 <!-- 12 -->
 <var def = "el.UZ" binning="(10,-1,1)" unit = "cos#theta" type = "d" logplot = "false"  training = "" group = "0" />
@@ -256,9 +256,10 @@
 <!-- ==================================== Add systematics ====================================-->
 
 <!--dirt Multisim-->
-<systematics tag = "NueMCDetDirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "Dirt[0]" varnam = "Dirt" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" OpticalModel = "false" />
+<systematics tag = "NueMCDetDirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "data" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "Dirt[0]" varnam = "Dirt" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" OpticalModel = "false" />
 
-<systematics tag = "NueMCDetDirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "dirt" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+<systematics tag = "NueMCDetDirtMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "data" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+
 <!--Multisims-->
 <systematics tag = "NueMCMultism" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetDirtMC_Oct20.root" tree = "TTiming" var = "KpProd[0],KmProd[0],K0Prod[0],PipProd_RawAboutSW[0],PimProd_RawAboutSW[0],BeamUnisims[0],XSec[0],CCQECCpi[0],Hadronic[0],Pi0Yield[0]" varnam = "KpProd,KmProd,K0Prod,PipProd_RawAboutSW,PimProd_RawAboutSW,BeamUnisims,XSec,CCQECCpi,Hadronic,Pi0Yield" pot = "41.08e20" throws = "1000"  isCV = "false" isMultithrows = "true" OpticalModel = "false" />
 
@@ -279,6 +280,7 @@
 <systematics tag = "NueMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07QTCORRMC.root" tree = "TTiming" var = "CV[0]" varnam = "QtcorrXsecxFluxWgt" pot = "41.13e20" throws = "1"  isCV = "false" isMultithrows = "false" OpticalModel = "false" />
 
 <systematics tag = "NueMCUnisim" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/" bdtfiles = "#regular#" file = "Nuemay07DetMC_Oct20.root" tree = "TTiming" var = "CV[0]" varnam = "CV" pot = "41.08e20" throws = "1"  isCV = "true" isMultithrows = "false" OpticalModel = "false" />
+
 <!--OM-->
 <systematics tag = "NueMCOpticalModel" dir = "/scratch/condor-tmp/klin/data_timing_root/systematic_files/"  bdtfiles = "#regular#" file = "Nuemay06OM_MC_66.root" tree = "TTiming" var = "CV[0]" varnam = "XsecxFluxWgt" pot = "6.58848e20" throws = "66"  isCV = "false" isMultithrows = "true" OpticalModel = "true" />
 

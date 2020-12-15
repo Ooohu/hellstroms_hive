@@ -400,7 +400,7 @@ int main (int argc, char *argv[]){
 			std::vector<TString > temp_s = XMLconfig.sys_for_files[sys_index];
 			TString this_s = XMLconfig.bdt_tags[f];
 			if( std::find( temp_s.begin(), temp_s.end(), XMLconfig.bdt_tags[f]) != temp_s.end() ){//we want this systematics
-			std::cout<<this_s<<" systematic is inheritated from the bdt_file."<<std::endl;
+			std::cout<<this_s<<" systematic file is inheritated from the bdt_file."<<std::endl;
 				systematics.push_back( new bdt_sys(sys_index, XMLconfig, f, analysis_flow));
 //				(systematics.back())->setCutStage(which_stage);
 

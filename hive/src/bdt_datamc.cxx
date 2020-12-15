@@ -900,13 +900,17 @@ int bdt_datamc::plotStacksSys(TFile *ftest, std::vector<bdt_variable> vars, std:
 				//NOTE, all pure_bkg_hist in this part was tsum; CHECK
 				*covar_collapsed = gadget_PrepareMatrix(systematics, covar_f, pure_bkg_hist, data_file->pot, data_file->tag);
 
-//				gadget_SeparateMatrix(covar_collapsed, pure_bkg_hist, "datamc/"+this->tag+var.safe_unit+"_stage_"+std::to_string(stage)+"_ThreeFracM_");
+				std::vector<TMatrixD> tmp3matrices = gadget_SeparateMatrix(covar_collapsed, pure_bkg_hist, "datamc/"+this->tag+var.safe_unit+"_stage_"+std::to_string(stage)+"_ThreeFracM_");
+//				*covar_collapsed = tmp3matrices[0];//Shape only covariance matrix; NOT FRACTIONAL
+				*covar_collapsed = tmp3matrices[0]+tmp3matrices[1]+tmp3matrices[2];//Shape only covariance matrix; NOT FRACTIONAL
+//				std::cout<<"Take Shape Only "<<std::endl;
 
+			
 				double temp_sys_err2 = 0;
 				double temp_all_err2 = 0;
 				for(int c=0; c< tsum->GetNbinsX();c++){
 					double mc_stats_error = pure_bkg_hist->GetBinError(c+1);
-					double mc_sys_error = sqrt((*covar_collapsed)(c,c))*pure_bkg_hist->GetBinContent(c+1);
+					double mc_sys_error = sqrt((*covar_collapsed)(c,c));//*pure_bkg_hist->GetBinContent(c+1);
 //					std::cout<<(*covar_collapsed)(c,c)<<" check "<<pure_bkg_hist->GetBinError(c+1)<<std::endl;
 					double tot_error = sqrt(mc_stats_error*mc_stats_error+mc_sys_error*mc_sys_error);
 					std::cout<<"--- Yarp: "<<mc_sys_error<<"; and BkgMC: "<<mc_stats_error<<" total: "<<tot_error<<std::endl;

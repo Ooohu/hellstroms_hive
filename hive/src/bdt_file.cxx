@@ -128,7 +128,7 @@ bdt_file::bdt_file(size_t index,
 	}
     plot_name = tag;
     rangen = new TRandom3();
-if(print_message)	std::cout<<"Loading : "<<dir<<"/"<<name<<std::endl;
+if(print_message)	std::cout<<"Loading: "<<dir<<"/"<<name<<std::endl;
 	file = new TFile((dir+"/"+name).c_str(), "read");//ofc, f for file;
 
     if(!file->IsOpen() || !file){

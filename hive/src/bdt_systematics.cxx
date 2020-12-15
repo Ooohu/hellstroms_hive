@@ -89,6 +89,8 @@ TMatrixD gadget_PrepareMatrix(std::vector<bdt_sys*> syss, TFile* matrix_root , T
 	std::cout<<"\n Getting fracitonal matrices: ";
 	for(size_t index = 0; index < syss.size(); ++index){//loop over systematics
 
+//		std::cout<<" Looking at "<<syss[index]->tag<<std::endl;
+//		std::cout<<" vs "<<syss[index]->bdt_file::tag<<std::endl;
 		if(bdt_tag.compare(syss[index]->bdt_file::tag) != 0 ) continue;
 		if(syss[index]->its_CV) continue;//work with non-CV systematic weights, bdt_sys only provides names to retrieve contents;
 		bdt_sys* cur_sys = syss[index];
@@ -220,7 +222,7 @@ std::vector<TMatrixD> gadget_SeparateMatrix(TMatrixD* frac_cov, TH1* hist, TStri
 	bool message = true;
 	bool db_message = false;
 
-	std::cout<<"Handle and Separate the fractional covaraince matrix."<<std::endl;
+	std::cout<<"Handle and Separate the covaraince matrix."<<std::endl;
 	int nb = hist->GetNbinsX();
 	double nl = hist->GetBinLowEdge(1);
 	double nh = hist->GetBinLowEdge(nb+1);
@@ -418,7 +420,6 @@ bdt_sys::bdt_sys(int index, MVALoader XMLconfig, int bdtfile_index, bdt_flow inf
 		histNames.resize(num_vars);
 //		twodhistNames.resize(num_vars);
 		TdirNames.resize(num_vars);
-
 		histloaded.assign(num_vars, false);
 		for(int index = 0 ; index < num_vars; ++index){//loop through weights
 			TdirNames[index] = tag+"_"+vars_name[index];
